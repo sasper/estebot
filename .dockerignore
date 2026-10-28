@@ -1,0 +1,30 @@
+# The image needs pyproject.toml, README.md, LICENSE, src/ and deploy/. Everything else
+# stays out, and personal data most of all, even though a deploy is meant to run from a
+# clean git export that has none of it.
+.git
+.github
+.venv
+venv
+.claude
+.pytest_cache
+**/__pycache__
+**/*.pyc
+*.egg-info
+**/*.egg-info
+build
+dist
+tests
+estebot.toml
+*.sqlite
+data
+tidy
+raw
+annotations.csv
+corrections.csv
+renames.csv
+predictions.toml
+supplements.toml
+health-context.txt
+ledger.md
+context-log.md
+.DS_Store

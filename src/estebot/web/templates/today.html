@@ -1,0 +1,341 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EsteBot</title>
+<link rel="stylesheet" href="/static/app.css?v={{ css_v }}">
+<link rel="icon" type="image/svg+xml" href="/static/icon.svg?v={{ icon_v }}">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png?v={{ icon_v }}">
+<link rel="apple-touch-icon" href="/static/icon-180.png?v={{ icon_v }}">
+<div class="wrap">
+  {% set here = "/?day=" ~ day ~ "&" if not is_today else "/?" %}
+  <header class="top">
+    <h1>EsteBot</h1>
+    {% if present %}<a class="chip on" href="{{ here }}present=0" title="Notes and medical details are hidden. Click to show everything.">Presentation</a>
+    {% else %}<a class="chip" href="{{ here }}present=1" title="Hide notes and medical details, for showing the page to someone">Present</a>{% endif %}
+  </header>
+  <p class="sub" style="margin-bottom:10px">{{ "Today" if is_today else "Looking back" }} · {{ day_label }}</p>
+  <nav class="daynav">
+    <a href="/?day={{ prev_day }}">&larr;</a>
+    <form method="get" action="/"><input type="date" name="day" value="{{ day }}" onchange="this.form.submit()"></form>
+    <a href="/?day={{ next_day }}">&rarr;</a>
+    {% if not is_today %}<a class="tnow" href="/">today</a>{% endif %}
+  </nav>
+  {% if review_days and not demo %}
+  <p class="sub">Needs an answer:
+    {% for d in review_days %}<a href="/?day={{ d }}">{{ d }}</a>{{ ", " if not loop.last }}{% endfor %}
+  </p>
+  {% endif %}
+
+  <div class="card">
+    <h2>How should you train today?</h2>
+    <div class="verdict">
+      <span class="vbadge v-{{ r.verdict }}">{{ verdict_text }}</span>
+    </div>
+    <p class="headline">From training load, effort, sleep, HRV and resting heart rate, how you feel, nutrition and weight-loss pace.</p>
+    {% set AREA = {"load": "Training load", "effort": "Effort (RPE)", "sleep": "Sleep", "recovery": "HRV & resting HR",
+                   "feel": "How you feel", "nutrition": "Nutrition", "pace": "Weight-loss pace"} %}
+    {% set LEVEL = {"green": ("good", "pill-ok"), "amber": ("watch", "pill-warn"), "red": ("strain", "pill-bad")} %}
+    <table class="signals">
+      {% for x in r.signals %}
+      <tr><td class="nowrap">{{ AREA[x.area] }}</td>
+        <td>{% if x.level %}<span class="pill {{ LEVEL[x.level][1] }}">{{ LEVEL[x.level][0] }}</span>{% else %}<span class="pill pill-none">no data</span>{% endif %}</td>
+        <td class="small muted">{{ x.reasons|join("; ") }}</td></tr>
+      {% endfor %}
+    </table>
+    <p class="muted small" style="margin:8px 0 0">The call counts these: rest when two or more areas show strain, take it easy with one strain or two to watch, go all out only when everything is good. No single signal decides the day.</p>
+    {% if r.ramp %}<div class="ramp"><b>Ramp cap.</b> {{ r.ramp }}</div>{% endif %}
+    {% if r.subjective_review %}<div class="ramp review"><b>Check this.</b>
+      Your note for today carries conflicting signals, so nothing was inferred from it.
+      Answer below to resolve it.</div>{% endif %}
+    {% if pattern %}<div class="ramp pattern"><b>{{ "Rest" if pattern[0]=="rest" else pattern[0]|title ~ " day." }}</b> {{ pattern[1] }}</div>{% endif %}
+  </div>
+
+  {% if plan %}
+  <div class="card">
+    <h2>Today's session{% if plan.rest %}, if you train{% endif %}</h2>
+    <div class="verdict"><span class="vbadge">{{ plan.kind|title }} {{ plan.variant }}{% if plan.main %} · {{ plan.main }}{% endif %}</span></div>
+    <p class="headline">Next in your push → pull → legs rotation after {{ plan.after.kind }} on {{ plan.after.date|shortdate }}.
+      {% if plan.template %}Exercises from your last {{ plan.kind|title }} {{ plan.variant }} ({{ plan.template|shortdate }}); each target comes from the last time you did that exercise.{% endif %}</p>
+    {% if plan.rest %}<div class="ramp"><b>Rest day.</b> The verdict above says rest; this is what the next session looks like when you do train.</div>{% endif %}
+    {% if plan.exercises %}
+    <table class="plan">
+      <thead><tr><th>Exercise</th><th>Today</th><th>Why</th><th>Last time</th></tr></thead>
+      {% for i in plan.exercises %}
+      <tr{% if i.main %} class="main"{% endif %}>
+        <td>{{ i.exercise }}</td>
+        <td><b>{{ i.target }}</b><div class="small muted">{{ i.action }}</div></td>
+        <td class="small">{{ i.why }}{% if i.adjust %}<div class="adjust">{{ i.adjust }}</div>{% endif %}</td>
+        <td class="small muted">{{ i.last }}{% if i.last_date %} · {{ i.last_date|shortdate }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    <p class="muted small" style="margin:10px 0 0">One rule for every exercise, applied to its last session. Strength work (top set of 5 or fewer): RPE 8 or under adds load, 8.5–9 adds a rep. Accessories: add a rep up to 12 (15 for calves, laterals, shrugs, face pulls, leg extensions, flyes), then add load and drop to the bottom of the range. Bodyweight: beat the last total reps by 1–2. Any top set at RPE 9.5+: hold the load and make it cleaner. No RPE logged: repeat it. A take-it-easy verdict holds every load; a sore back drops the spine-loading lifts.</p>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Recovery</h2>
+    <div class="metrics">
+      <div class="metric"><div class="k">HRV 7-day</div><div class="v">
+        {{ "%.0f"|format(r.hrv7) if r.hrv7 else "–" }}{% if r.hrv_baseline %}<span class="muted" style="font-size:13px;font-weight:400"> / {{ "%.0f"|format(r.hrv_baseline) }}</span>{% endif %}</div></div>
+      <div class="metric"><div class="k">Resting HR</div><div class="v">
+        {{ "%.0f"|format(r.rhr7) if r.rhr7 else "–" }}</div></div>
+      <div class="metric"><div class="k">Sleep</div><div class="v">
+        {{ "%.1f"|format(r.last_sleep) ~ "h" if r.last_sleep else "–" }}</div></div>
+      <div class="metric"><div class="k">Load ratio</div><div class="v">
+        {{ "%.2f"|format(r.acwr) if r.acwr else "–" }}</div></div>
+      <div class="metric"><div class="k">Days since rest</div><div class="v">{{ r.streak_now }}<span class="muted" style="font-size:13px;font-weight:400">{% if r.last_rest %} · rest {{ r.last_rest|shortdate }}{% endif %}{% if r.streak_now != r.streak %} · {{ r.streak }} before today{% endif %}</span></div></div>
+    </div>
+    {% if checkin %}
+    {% set parts = [] %}
+    {% if checkin.back_reported %}{% set _ = parts.append("back " ~ checkin.back) %}{% endif %}
+    {% if checkin.energy is not none %}{% set _ = parts.append("energy " ~ checkin.energy ~ "/3") %}{% endif %}
+    {% if checkin.inter_set_recovery is not none %}{% set _ = parts.append("recovery between sets " ~ checkin.inter_set_recovery ~ "/3") %}{% endif %}
+    {% if parts or checkin.note %}
+    <p class="muted" style="font-size:13px;margin:12px 0 0">From your {{ "check-in" if present else "notes" }}{{ " (answered here)" if checkin.source == "manual" }}{{ ", " ~ checkin.date|shortdate if checkin.date != day }}:
+      {{ parts|join(", ") }}{% if checkin.note %} — “{{ checkin.note }}”{% endif %}</p>{% endif %}
+    {% endif %}
+    {% if checkin and checkin.needs_review and checkin.date == day and not present and not demo %}
+    <form method="post" action="/checkin" class="checkin" style="margin-top:12px">
+      <input type="hidden" name="day" value="{{ day }}">
+      <label>Lower back
+        <select name="back">{% for v in ["ok","tired","sore","spasm"] %}<option value="{{ v }}" {{ "selected" if checkin.back==v }}>{{ v }}</option>{% endfor %}</select></label>
+      <label>Energy
+        <select name="energy">{% for v in [0,1,2,3] %}<option value="{{ v }}" {{ "selected" if (checkin.energy if checkin.energy is not none else 2)==v }}>{{ v }}</option>{% endfor %}</select></label>
+      <label>Recovery between sets
+        <select name="inter_set_recovery">{% for v in [0,1,2,3] %}<option value="{{ v }}" {{ "selected" if (checkin.inter_set_recovery if checkin.inter_set_recovery is not none else 2)==v }}>{{ v }}</option>{% endfor %}</select></label>
+      <input type="hidden" name="soreness" value="{{ checkin.soreness or 0 }}">
+      <input type="hidden" name="note" value="{{ checkin.note or '' }}">
+      <button type="submit">Save</button>
+    </form>
+    {% endif %}
+    <div class="multiples">
+      {% for title, svg in multiples %}<div><h3>{{ title }}</h3>{{ svg|safe }}</div>{% endfor %}
+    </div>
+    <p class="muted" style="font-size:12.5px;margin:10px 0 0">
+      Spinal load by day type, from your own sessions:
+      {% for k, v in axial.items() %}<b>{{ k }}</b> {{ "%.2f"|format(v) }}{{ " · " if not loop.last }}{% endfor %} (0–3).</p>
+  </div>
+
+  <div class="card">
+    <h2>Training calendar</h2>
+    <div class="legend">
+      <span><i class="swatch cal-train"></i>Training: lifting 5+ sets, or any workout but a walk</span>
+      <span><i class="swatch cal-move"></i>Rest-day movement: a walk, nothing else</span>
+      <span><i class="swatch cal-rest"></i>Rest</span>
+      {% if not present %}<span><i class="swatch cal-unwell"></i>Sick or injured, from your notes</span>{% endif %}
+    </div>
+    <div class="cal">
+      {% for m in calendar %}
+      <div class="calmonth">
+        <h3 class="charttitle">{{ m.title }}</h3>
+        <div class="calgrid">
+          {% for w in ["M","T","W","T","F","S","S"] %}<div class="calhead">{{ w }}</div>{% endfor %}
+          {% for week in m.weeks %}{% for c in week %}
+            {% if c is none %}<div class="calcell empty"></div>
+            {% elif c.future %}<div class="calcell future"><span>{{ c.n }}</span></div>
+            {% else %}{% set i = c.info %}{% set l = i.lift %}
+            {% set KIND = {"training": ("train", "Training"), "movement": ("move", "Rest day, light movement"), "rest": ("rest", "Rest day")} %}
+            {% set u = c.unwell %}{% set ul = u and (["sick"] if u.sick else []) + (["injured"] if u.injured else []) %}
+            <a class="calcell {{ KIND[c.kind][0] }}{{ ' today' if c.today }}{{ ' unwell' if u }}" href="/?day={{ c.date }}"
+               aria-label="{{ c.date }}: {{ KIND[c.kind][1]|lower }}{% if u %}, {{ ul|join(' and ') }}{% endif %}">
+              <span>{{ c.n }}</span>
+              <div class="caltip" role="tooltip">
+                <b>{{ c.date|shortdate }} · {{ KIND[c.kind][1] }}</b>
+                {% if u %}<div class="unwell-note"><b>{{ ul|join(" and ")|capitalize }}.</b> {{ u.notes|join(" · ")|truncate(160) }}</div>{% endif %}
+                {% if l %}<div>Lifting: {{ l.n_sets }} sets{% if l.hard_sets is not none %} ({{ l.hard_sets }} hard){% endif %}{% if l.total_volume_lb %} · {{ "%.1f"|format(l.total_volume_lb / 1000) }}k lb{% endif %}{% if l.n_exercises %} · {{ l.n_exercises }} exercises{% endif %}{% if l.session_min %} · {{ "%.0f"|format(l.session_min) }} min{% endif %}</div>
+                {% if l.muscle_groups %}<div class="muted">{{ l.muscle_groups|replace("|", ", ") }}</div>{% endif %}{% endif %}
+                {% for a, dm, light in c.workouts %}<div>{{ a }}{% if dm %} · {{ "%.0f"|format(dm) }} min{% endif %}{% if light %} <span class="muted">· light movement</span>{% endif %}</div>{% endfor %}
+                {% if i.exercise_min is not none %}<div class="muted">{{ "%.0f"|format(i.exercise_min) }} exercise minutes (Apple)</div>{% endif %}
+                {% if not l and not c.workouts %}<div class="muted">Nothing logged</div>{% endif %}
+              </div>
+            </a>
+            {% endif %}
+          {% endfor %}{% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="muted small" style="margin:10px 0 0">Hover a day for its sessions; click to open the page as of that day.</p>
+  </div>
+
+  <div class="card">
+    <h2>Body weight</h2>
+    <div class="verdict">
+      {# The headline is the 14-day average, not this morning: a day's reading swings ±1.5 lb
+         on water, against a real change of ~0.1 lb/day, so a flat morning number says nothing. #}
+      <span class="hero">{{ "%.1f"|format(ws.current) if ws.current is not none else "–" }}<span style="font-size:17px;font-weight:500"> lb</span></span>
+      <span class="muted">14-day average{% if latest_w %} · this morning {{ "%.1f"|format(latest_w) }}{% endif %}</span>
+      {% if ws.rate is not none %}<br><span class="muted">{{ "%+.2f"|format(ws.rate) }} lb/week, line fitted through the last 4 weeks of weigh-ins{% if ws.pct_per_week is not none and ws.pct_per_week > 0 %} ({{ "%.2f"|format(ws.pct_per_week) }}% of body weight){% endif %}</span>{% endif %}
+    </div>
+    {% set PACE = {"on_pace": ("On pace", "pill-ok"), "slow": ("Losing less than expected", "pill-warn"),
+                   "fast": ("Losing faster than planned", "pill-warn"), "gaining": ("Gaining", "pill-warn")} %}
+    <table class="paces">
+      {% for key, label in (("wow", "Average this week vs last week"), ("mom", "Average last 4 weeks vs the 4 before")) %}{% set c = wc[key] %}
+      <tr><td class="muted">{{ label }}</td>
+        {% if c.status %}
+        <td class="n">{{ "%+.1f"|format(c.change_lb) }} lb{% if key == "mom" %} <span class="muted">({{ "%+.2f"|format(c.rate) }}/wk)</span>{% endif %}</td>
+        <td class="n">{{ "%.2f"|format(c.pct) }}%/wk</td>
+        <td><span class="pill {{ PACE[c.status][1] }}">{{ PACE[c.status][0] }}</span></td>
+        {% else %}
+        <td colspan="3" class="muted small">not enough weigh-ins to compare ({{ c.n[0] }} and {{ c.n[1] }})</td>
+        {% endif %}</tr>
+      {% endfor %}
+    </table>
+    <p class="muted small" style="margin:6px 0 0">Planned pace: losing {{ pace_range[0] }}–{{ pace_range[1] }}% of body weight a week (estebot.toml).
+      {% if wc.trend == "slowing" %}<b>Loss is slowing:</b> this week is well under the 4-week pace.
+      {% elif wc.trend == "speeding_up" %}<b>Loss is speeding up:</b> this week is well over the 4-week pace.{% endif %}
+      A single week moves 2–3 lb on water and glycogen alone, so the 4-week line is the one to act on.</p>
+    <div class="goal">
+      {% if present or demo %}<p>Goal: <b>{{ '%g'|format(ws.goal) }} lb</b></p>
+      {% else %}<form method="post" action="/goal" class="goalform">
+        <input type="hidden" name="day" value="{{ day if not is_today else '' }}">
+        <label>Goal <input type="number" name="goal_weight_lb" step="0.5" min="50" max="600" value="{{ '%g'|format(ws.goal) }}"> lb</label>
+        <button type="submit">Set</button>
+      </form>{% endif %}
+      {% if ws.current is none %}
+        <p>No weigh-ins in the last 14 days, so there is no trend to forecast from.</p>
+      {% elif ws.eta %}
+        <p><b>{{ ws.eta.strftime("%-d %b %Y") }}</b> at the current pace —
+          {{ "%.1f"|format(ws.current - ws.goal) }} lb to go from a 14-day trend of {{ "%.1f"|format(ws.current) }},
+          about {{ "%.0f"|format(ws.weeks) }} weeks. A straight line: weight loss usually slows, so treat it as the pace you are on, not a promise.</p>
+      {% elif ws.current <= ws.goal %}
+        <p>The 14-day trend ({{ "%.1f"|format(ws.current) }}) is at or below the goal.</p>
+      {% else %}
+        <p>The last 4 weeks are not trending toward {{ '%g'|format(ws.goal) }} lb, so there is no date to forecast.</p>
+      {% endif %}
+      {% if ws.too_fast %}
+        <div class="ramp"><b>Faster than your limit.</b> Losing {{ "%.2f"|format(ws.pct_per_week) }}% of body weight a week,
+          over the {{ '%g'|format(goals_max) }}%/week line you set for keeping muscle. Watch protein and the pull-up / e1RM trend.</div>
+      {% endif %}
+    </div>
+    <div class="legend" style="margin-top:14px">
+      <span><i class="swatch" style="background:var(--series-1)"></i>14-day trend</span>
+      <span><i class="swatch" style="background:var(--series-2)"></i>morning weigh-in</span>
+    </div>
+    {{ wchart|safe }}
+  </div>
+
+  {% set st = strength %}
+  <div class="card">
+    <h2>Strength standards — best estimated 1RM, last {{ st.weeks }} weeks</h2>
+    {% if st.body_lb %}
+    <div style="overflow-x:auto">
+    <table class="gaps">
+      <tr><th>Lift</th><th class="n">e1RM</th><th class="n">× body weight</th><th>Level</th><th class="n">Next level at</th>{% if st.goal_lb %}<th>At {{ '%g'|format(st.goal_lb) }} lb</th>{% endif %}</tr>
+      {% for x in st.rows %}
+      <tr><td>{{ x.label }}</td>
+        {% if x.e1rm %}
+        <td class="n">{{ "%.0f"|format(x.e1rm) }} lb</td>
+        <td class="n">{{ "%.2f"|format(x.ratio) }}</td>
+        <td><b>{{ x.level|capitalize }}</b></td>
+        <td class="n">{{ "%.0f"|format(x.next_at) ~ " lb" if x.next_at else "–" }}</td>
+        {% if st.goal_lb %}<td>{{ x.goal_level|capitalize }}</td>{% endif %}
+        {% else %}
+        <td colspan="{{ 5 if st.goal_lb else 4 }}" class="muted small">not logged in the last {{ st.weeks }} weeks</td>
+        {% endif %}</tr>
+      {% endfor %}
+    </table>
+    </div>
+    {% if st.dots %}
+    <p style="margin:10px 0 0">Squat + bench + deadlift: <b>{{ "{:,.0f}".format(st.total) }} lb</b>, DOTS <b>{{ "%.0f"|format(st.dots) }}</b>{% if st.goal_dots %} ({{ "%.0f"|format(st.goal_dots) }} at {{ '%g'|format(st.goal_lb) }} lb with the same lifts){% endif %}.</p>
+    {% endif %}
+    <p class="muted small" style="margin:6px 0 0">Levels use common 1RM-to-body-weight bands, scaled to your {{ "%.0f"|format(st.body_lb) }} lb 14-day average by body weight<sup>2/3</sup>, because a plain ratio underrates heavier lifters.
+      e1RM comes from your best set (Epley), so lifts trained in sets of 3–5 read a little high or low against a tested single. The bands are a rough guide, not a federation standard.
+      DOTS compares totals across body weights: roughly 300–350 is a good recreational lifter, about 400 national level, 500+ world class.</p>
+    {% else %}
+    <p class="muted">No weigh-ins in the last 14 days, so there is no body weight to compare against.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Nutrition — last 14 days marked complete</h2>
+    {% set e = nut.energy %}{% set pr = nut.protein %}
+    <div class="metrics" style="margin-top:0;padding-top:0;border-top:0">
+      <div class="metric"><div class="k">Calories in</div><div class="v">{{ "{:,.0f}".format(e.intake) if e.intake else "–" }}</div></div>
+      <div class="metric"><div class="k">Deficit, logged</div><div class="v">{{ "{:,.0f}".format(e.logged) if e.logged is not none else "–" }}</div></div>
+      <div class="metric"><div class="k">Deficit, measured</div><div class="v">{{ "{:,.0f}".format(e.measured) if e.measured is not none else "–" }}</div></div>
+      <div class="metric"><div class="k">Protein / day</div><div class="v">{{ "%.0f"|format(pr.mean) ~ " g" if pr.mean else "–" }}{% if nut.protein_target_g %}<span class="muted" style="font-size:13px;font-weight:400"> / {{ "%.0f"|format(nut.protein_target_g) }} target</span>{% elif pr.g_per_kg %}<span class="muted" style="font-size:13px;font-weight:400"> · {{ "%.1f"|format(pr.g_per_kg) }} g/kg</span>{% endif %}</div></div>
+    </div>
+    <p class="muted small" style="margin:10px 0 0">
+      kcal/day over {{ e.n }} complete days. <b>Logged</b> = Apple's burn (active + resting) minus Cronometer intake.
+      <b>Measured</b> = what the 4-week weight trend implies (lb/week × 3,500 ÷ 7).
+      {% if e.logged is not none and e.measured is not none %}They differ by {{ "{:,.0f}".format((e.logged - e.measured)|abs) }} kcal/day.{% endif %}
+      {% if nut.protein_target_g %}Protein target: {{ nut.protein_per_lb }} g per lb of body weight = <b>{{ "%.0f"|format(nut.protein_target_g) }} g/day</b> at the 14-day trend (estebot.toml){% if pr.mean %}; you're averaging {{ "%.0f"|format(pr.mean) }} g, {{ "%.0f"|format(pr.mean / nut.protein_target_g * 100) }}% of it{% endif %}.{% endif %}
+      For reference, 1.2–1.6 g per kg (0.54–0.73 g/lb) is the range usually cited for keeping muscle while losing weight.</p>
+    {% macro amt(g, v) %}{{ ("{:,.1f}" if g.reference < 20 else "{:,.0f}").format(v) }}{% endmacro %}
+    <h3 class="charttitle" style="margin-top:16px">Micronutrients under 90% of the reference intake — food + supplements, last 28 days</h3>
+    {% if nut.gaps %}
+    <table class="gaps">
+      <tr><th>Nutrient</th><th class="n">Food</th><th class="n">+ Supplements</th><th class="n">Total</th><th class="n">Of reference</th><th>Foods that close it</th></tr>
+      {% for g in nut.gaps %}
+      <tr><td>{{ g.nutrient }}</td>
+        <td class="n">{{ amt(g, g.food) }}</td>
+        <td class="n">{{ amt(g, g.supplements) if g.supplements else "–" }}</td>
+        <td class="n">{{ amt(g, g.mean) }} {{ g.unit }}</td>
+        <td class="n"><span class="{{ 'behind' if g.pct < 75 else '' }}">{{ "%.0f"|format(g.pct) }}%</span></td>
+        <td class="small">{{ g.foods }}{% if g.note %}<div class="muted">{{ g.note }}</div>{% endif %}</td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="small">No gaps on the days with enough data.</p>{% endif %}
+    {% if nut.near_limit %}
+    <h3 class="charttitle" style="margin-top:16px">Close to an upper limit (50% or more)</h3>
+    <table class="gaps">
+      <tr><th>Nutrient</th><th class="n">Counted</th><th class="n">Upper limit</th><th class="n">Of limit</th><th>Note</th></tr>
+      {% for g in nut.near_limit %}
+      <tr><td>{{ g.nutrient }}</td>
+        <td class="n">{{ amt(g, g.amount) }} {{ g.unit }}</td>
+        <td class="n">{{ "{:,.0f}".format(g.limit) if g.limit >= 20 else g.limit }} {{ g.unit }}</td>
+        <td class="n"><span class="{{ 'behind' if g.limit_pct >= 75 else '' }}">{{ "%.0f"|format(g.limit_pct) }}%</span></td>
+        <td class="small muted">{{ "supplements only: the limit applies to supplemental intake" if g.basis == "supplements" else "food + supplements" }}{% if g.note %}. {{ g.note }}{% endif %}</td></tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    <p class="muted small" style="margin:10px 0 0">Reference: US Dietary Reference Intakes and upper limits, men 31–50.
+      Food counts only complete days where at least 80% of the day's calories came from foods that report the nutrient.
+      {% if present %}{% elif nut.supplements %}Supplements: {{ nut.supplements|join(", ") }}, every day, from supplements.toml.{% else %}No supplements.toml, so this is food only.{% endif %}
+      {% if nut.unmeasured %}Not enough food data to judge: {{ nut.unmeasured|join(", ") }}.{% endif %}
+      Food-log and label arithmetic, not a blood test.</p>
+  </div>
+
+  <div class="card">
+    <h2>Predictions</h2>
+    <div class="tablewrap">
+    <table class="preds">
+      <tr><th>Prediction</th><th>Resolves</th><th class="n">So far</th><th>Target</th><th>Data logged</th></tr>
+      {% for p in preds %}
+      <tr>
+        <td><span class="muted">{{ p.id }}</span> {{ p.title }}
+          {% if p.progress and p.progress.detail %}<div class="muted small">{{ p.progress.detail }}</div>{% endif %}
+          {% if p.caveat %}<div class="muted small">{{ p.caveat }}</div>{% endif %}</td>
+        <td class="nowrap">{{ p.resolves|shortdate if p.resolves else "–" }}{% if p.days_left is defined %}<div class="muted small">{{ p.days_left }} days</div>{% endif %}</td>
+        <td class="n">{% if p.progress and p.progress.value %}{{ p.progress.value }}
+          <div><span class="pill {{ 'pill-ok' if p.progress.inside else 'pill-warn' }}">{{ "inside" if p.progress.inside else "outside" }}</span></div>
+          {% elif p.progress %}<span class="muted">no data yet</span>{% else %}<span class="muted">judged in the ledger</span>{% endif %}</td>
+        <td class="small">{{ p.progress.target if p.progress else "–" }}</td>
+        <td class="small">{% if p.coverage %}{% set c = p.coverage %}<span class="pill {{ 'pill-ok' if c.on_track else 'pill-warn' }}">{{ "on track" if c.on_track else "behind" }}</span>
+          <div class="muted">{{ c.label }}: {{ c.logged }} of {{ c.need }}{% if c.excused %}, {{ c.excused }} excused{% endif %}{% if c.gap is not none %}; longest gap {{ c.gap }} (max {{ c.max_gap }}){% endif %}</div>{% else %}<span class="muted">–</span>{% endif %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No open predictions in ledger.md.</td></tr>
+      {% endfor %}
+    </table>
+    </div>
+    <p class="muted small" style="margin-top:10px">Interim progress only. Each prediction resolves in ledger.md by its criterion as written, including the judgement calls a number can't make.</p>
+  </div>
+
+  <div class="card">
+    <h2>Training load — 8 weeks</h2>
+    {% for title, svg in load_charts %}<h3 class="charttitle">{{ title }}</h3>{{ svg|safe }}{% endfor %}
+  </div>
+
+  {% if notes %}
+  <div class="card">
+    <h2>Recent context</h2>
+    {% for n in notes %}
+    <div class="note"><b>{{ n.start_date }}{% if n.end_date and n.end_date != n.start_date %} → {{ n.end_date }}{% endif %}</b>
+      — {{ n.note or n.label }}{% if n.excused %} <span class="muted">(excused)</span>{% endif %}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>

@@ -1,0 +1,238 @@
+"""FastAPI app. Thin layer over analysis/engine.py - it formats, it does not compute."""
+import os, re, statistics as st
+from datetime import date, timedelta
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
+from estebot import config
+from estebot.analysis import engine as an, nutrition, predictions
+from estebot.web import db, charts
+
+HERE = os.path.dirname(__file__)
+app = FastAPI(title="health")
+app.mount("/static", StaticFiles(directory=os.path.join(HERE, "static")), name="static")
+tpl = Jinja2Templates(directory=os.path.join(HERE, "templates"))
+# The stylesheet URL carries a hash of its content, so a browser never pairs new markup with
+# a cached old stylesheet (15 Oct: unstyled reference labels and one-column charts).
+import hashlib
+def _static_v(name):
+    with open(os.path.join(HERE, "static", name), "rb") as f:
+        return hashlib.sha1(f.read()).hexdigest()[:10]
+tpl.env.globals["css_v"] = _static_v("app.css")
+tpl.env.globals["icon_v"] = _static_v("icon.svg")       # same reason: a cached old icon
+tpl.env.filters["shortdate"] = lambda iso: date.fromisoformat(iso).strftime("%a %-d %b")
+GOALS = config.load().goals            # starting values; the page can override the goal
+db.init().close()                      # authored tables (setting) exist before the first GET
+
+# The public demo (ESTEBOT_DEMO=1) is one page shared by every visitor, so nobody gets to
+# change it: the forms are not rendered and the POST routes refuse.
+def demo_mode():
+    return os.environ.get("ESTEBOT_DEMO") == "1"
+
+def _refuse_in_demo():
+    if demo_mode():
+        return PlainTextResponse("This is a read-only demo.", status_code=403)
+
+# The engine's verdicts, in words. "hard" means everything lines up for a big session.
+VERDICT_TEXT = {"hard": "Go all out", "normal": "Normal", "light": "Take it easy", "rest": "Rest day"}
+
+@app.get("/", response_class=HTMLResponse)
+def today(request: Request, day: str | None = None, present: str | None = None):
+    con = db.connect()
+    day = day or an.default_day(con, date.today().isoformat())
+    r = an.readiness(con, day, GOALS)
+
+    cfg = config.load()
+    ledger = cfg.data_file("ledger.md")
+    preds = predictions.panel(con, an, ledger.read_text() if ledger.exists() else "",
+                              predictions.load_specs(cfg.data_file("predictions.toml")), day)
+
+    # weight: raw points + 14-day rolling trend
+    since = (date.fromisoformat(day) - timedelta(days=120)).isoformat()
+    w = an.weight_series(con, since, day)
+    roll = an.rolling(w, 14)
+    wchart = charts.line_chart(
+        [{"name": "14-day trend", "points": roll, "slot": 1},
+         {"name": "morning weigh-in", "points": w, "slot": 2, "dashed": True}],
+        ylabel="body weight (lb)", fmt="{:.0f}")
+    goal = float(db.get_setting(con, "goal_weight_lb", GOALS.get("target_weight_lb", 0)) or 0)
+    ws = an.weight_status(con, day, goal, GOALS.get("max_loss_pct_per_week"))
+    pace_range = (GOALS.get("min_loss_pct_per_week", 0.5), GOALS.get("max_loss_pct_per_week", 1.0))
+    wc = an.weight_changes(con, day, *pace_range)
+    strength = an.strength_standards(con, day, ws["current"], goal or None)
+
+    # training load, last 8 weeks
+    lstart = (date.fromisoformat(day) - timedelta(days=55)).isoformat()
+    # Training load: three measures, three charts on one shared day-by-day axis.
+    tl = an.training_load_series(con, lstart, day)
+    bars = dict(height=130)
+    load_charts = [
+        ("Exercise minutes (Apple, all activity)", charts.bar_chart(tl["minutes"], **bars)),
+        ("Hard sets (RPE 7+, or every working set where no RPE was logged)",
+         charts.bar_chart(tl["hard_sets"], **bars)),
+        ("Tonnage, thousand lb (logged weight × reps; pull-ups add sets, not pounds)",
+         charts.bar_chart(tl["tonnage_klb"], fmt="{:.0f}", **bars)),
+    ]
+
+    # The readiness inputs, one small chart each (one measure per axis), with the
+    # thresholds the verdict actually applies drawn on them.
+    rs = an.recovery_series(con, lstart, day)
+    small = dict(width=360, height=150, pad_l=40, dot=2.5)
+    multiples = [
+        ("Overnight HRV (ms)", charts.line_chart(
+            [{"name": "HRV", "points": rs["hrv"], "slot": 1}], **small,
+            refs=[(r["hrv_baseline"], "30-day baseline")] if r["hrv_baseline"] else [])),
+        ("Resting heart rate (bpm)", charts.line_chart(
+            [{"name": "Resting HR", "points": rs["rhr"], "slot": 1}], **small,
+            refs=[(r["rhr_baseline"] + 3, "baseline + 3")] if r["rhr_baseline"] else [])),
+        ("Sleep (hours asleep)", charts.line_chart(
+            [{"name": "Sleep", "points": rs["sleep"], "slot": 1}], **small, fmt="{:.1f}",
+            refs=[(5, "under 5 h: take it easy")])),
+        ("Load ratio (7-day vs 28-day)", charts.line_chart(
+            [{"name": "Load ratio", "points": rs["acwr"], "slot": 1}], **small, fmt="{:.1f}",
+            refs=[(0.8, "0.8"), (1.5, "1.5 injury risk")])),
+    ]
+
+    pattern = an.recommend_pattern(con, day, r["checkin"])
+    plan = an.training_plan(con, day, r["verdict"], r["checkin"])
+    axial = an.axial_by_day_type(con, day)
+    checkin = r["checkin"]               # the row the verdict used: today's, else yesterday's
+
+    # days that still need a subjective answer, so they can be reached from the UI
+    review_days = [r["date"] for r in con.execute(
+        "SELECT date FROM checkin WHERE needs_review=1 ORDER BY date DESC LIMIT 5")]
+    dd = date.fromisoformat(day)
+    prev_day, next_day = (dd - timedelta(days=1)).isoformat(), (dd + timedelta(days=1)).isoformat()
+
+    calendar = _calendar(con, day)
+    notes = [dict(r) for r in con.execute(
+        "SELECT * FROM annotation WHERE start_date >= ? ORDER BY start_date DESC LIMIT 6",
+        ((date.fromisoformat(day) - timedelta(days=45)).isoformat(),))]
+
+    # Nutrition: complete days only (nutrition.py), deficits from two labelled sources.
+    nut = {"energy": nutrition.energy_balance(con, day, ws["rate"]),
+           "protein": nutrition.protein(con, day, ws["current"]),
+           "protein_target_g": nutrition.protein_target(GOALS, ws["current"]),
+           "protein_per_lb": GOALS.get("protein_g_per_lb_target")}
+    products, supp_notes = nutrition.load_supplements(cfg.data_file("supplements.toml"))
+    nut["supplements"] = [p["name"] for p in products if nutrition.active(p, day)]
+    nut["gaps"], nut["near_limit"], nut["unmeasured"] = nutrition.micronutrients(
+        con, day, nutrition.supplement_amounts(products, day), supp_notes)
+    verdict_text = VERDICT_TEXT[r["verdict"]]
+    ctx = dict(verdict_text=verdict_text,
+        day_label=date.fromisoformat(day).strftime("%a %-d %b %Y"),
+        day=day, r=r, preds=preds, wchart=wchart, load_charts=load_charts,
+        multiples=multiples, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=GOALS.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,
+        pattern=pattern, plan=plan, axial=axial, checkin=checkin,
+        review_days=review_days, prev_day=prev_day, next_day=next_day,
+        is_today=(day == date.today().isoformat()), demo=demo_mode())
+    on = request.cookies.get(PRESENT_COOKIE) == "1" if present is None else present == "1"
+    resp = tpl.TemplateResponse(request, "today.html", presentable(ctx) if on else dict(ctx, present=False))
+    if present is not None:
+        resp.set_cookie(PRESENT_COOKIE, "1" if on else "0", max_age=365 * 86400,
+                        samesite="lax", httponly=True)
+    return resp
+
+
+# Presentation mode: the page as it can be shown to someone else. It keeps the training,
+# weight and strength story and leaves out what is medical or intimate. The filtering is
+# done here, before the template, so the hidden text never reaches the HTML; a CSS-hidden
+# note would still be one view-source away. A cookie keeps it on across ?day= links and
+# the redirects after a form post.
+PRESENT_COOKIE = "present"
+def presentable(ctx):
+    """A copy of the page context with the private parts taken out. Drops: every note's text
+    (check-in, recent context, calendar tooltips), the sick/injured calendar rings, back
+    status wherever it shows, the supplement list and per-nutrient notes, the upper-limit
+    table (it is about supplement doses) and predictions marked private. The template
+    drops the forms on `present` (the check-in form carries the note in a hidden field).
+    Numbers are untouched."""
+    c = dict(ctx, present=True, notes=[], review_days=[], pattern=None)
+    r = c["r"] = dict(ctx["r"], subjective_review=False)
+    # Back status is an injury detail: its reasons go and the rest of the signal stays.
+    r["signals"] = [dict(x, reasons=[t for t in x["reasons"] if "back" not in t] or
+                         ["from the daily check-in"]) if x["area"] == "feel" else x
+                    for x in r["signals"]]
+    if ctx["checkin"]:
+        c["checkin"] = r["checkin"] = dict(ctx["checkin"], note=None, back_reported=0, needs_review=0)
+    if ctx["plan"]:
+        c["plan"] = dict(ctx["plan"], exercises=[
+            dict(i, adjust=re.sub(r"^Back \w+: (\w)", lambda m: m[1].upper(), i["adjust"]))
+            if i.get("adjust") else i for i in ctx["plan"]["exercises"]])
+    c["calendar"] = [dict(m, weeks=[[x and dict(x, unwell=None) for x in w] for w in m["weeks"]])
+                     for m in ctx["calendar"]]
+    c["nut"] = dict(ctx["nut"], supplements=[], near_limit=[],
+                    gaps=[dict(g, note=None) for g in ctx["nut"]["gaps"]])
+    # predictions.toml marks the private ones; guessing from their wording would need a
+    # list of exactly the words that should stay out of a public repo.
+    c["preds"] = [p for p in ctx["preds"] if not p.get("private")]
+    return c
+
+
+def _activity_name(a):
+    """Apple's 'TraditionalStrengthTraining' -> 'Traditional strength training'."""
+    words = re.sub(r"(?<!^)(?=[A-Z])", " ", a or "").lower()
+    return words[:1].upper() + words[1:]
+
+
+def _calendar(con, day, months=3):
+    """Month grids (Mon-Sun) for the `months` months ending with the one holding `day`.
+    Only formats: the training/rest call is engine.training_days."""
+    end = date.fromisoformat(day)
+    first = date(end.year, end.month, 1)
+    for _ in range(months - 1):
+        first = (first - timedelta(days=1)).replace(day=1)
+    info = an.training_days(con, first.isoformat(), end.isoformat())
+    unwell = an.unwell_days(con, first.isoformat(), end.isoformat())
+    out, m = [], first
+    while m <= end:
+        nxt = (m.replace(day=28) + timedelta(days=4)).replace(day=1)
+        cells = [None] * m.weekday()
+        x = m
+        while x < nxt:
+            k = x.isoformat()
+            i = info.get(k)
+            cells.append({"date": k, "n": x.day, "future": i is None, "today": k == day,
+                          "training": bool(i and i["training"]), "kind": (i or {}).get("kind"), "unwell": unwell.get(k),
+                          "info": i,
+                          "workouts": [(_activity_name(a), dm, an.is_light_movement(a))
+                                       for a, dm in (i or {}).get("workouts", [])]})
+            x += timedelta(days=1)
+        cells += [None] * (-len(cells) % 7)
+        out.append({"title": m.strftime("%B %Y"), "weeks": [cells[i:i + 7] for i in range(0, len(cells), 7)]})
+        m = nxt
+    return out
+
+
+@app.post("/goal")
+def set_goal(goal_weight_lb: float = Form(...), day: str = Form("")):
+    if refused := _refuse_in_demo():
+        return refused
+    con = db.connect()
+    db.set_setting(con, "goal_weight_lb", round(goal_weight_lb, 1))
+    return RedirectResponse(f"/?day={day}" if day else "/", status_code=303)
+
+
+@app.post("/checkin")
+def checkin(day: str = Form(...), back: str = Form("ok"),
+            soreness: int = Form(0), energy: int = Form(2),
+            inter_set_recovery: int = Form(2), note: str = Form("")):
+    if refused := _refuse_in_demo():
+        return refused
+    con = db.connect()
+    # A manual save always wins over a derived row and clears the review flag - answering
+    # the question is what resolving it means.
+    con.execute("""INSERT INTO checkin
+                     (date, back, soreness, energy, inter_set_recovery, note, source, needs_review)
+                   VALUES (?,?,?,?,?,?,'manual',0)
+                   ON CONFLICT(date) DO UPDATE SET
+                     back=excluded.back, soreness=excluded.soreness,
+                     energy=excluded.energy,
+                     inter_set_recovery=excluded.inter_set_recovery,
+                     note=excluded.note, source='manual', needs_review=0""",
+                (day, back, soreness, energy, inter_set_recovery, note.strip() or None))
+    con.commit()
+    return RedirectResponse(f"/?day={day}", status_code=303)

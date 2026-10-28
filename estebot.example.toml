@@ -1,0 +1,105 @@
+# Copy to estebot.toml and edit. estebot.toml is gitignored — it points at
+# your data and holds your measurements, neither of which belong in this repo.
+
+# Where the private data repo lives. Parsers write their tidy CSVs here and
+# the app reads them back. Nothing is ever written inside the code repo.
+data_dir = "~/health-data"
+
+[sources.apple_health]
+# Newest match by mtime wins. Finder suffixes duplicate exports as
+# "apple_health_export 2", so this is a glob rather than a fixed path.
+export_glob = "~/Downloads/apple_health_export*/export.xml"
+
+[sources.jefit]
+# Jefit names the file after your account, e.g. <username>_20261008.csv.
+# All matches are merged, oldest first, so a narrow re-export never
+# clobbers history.
+export_glob = "~/Downloads/<your-jefit-username>_*.csv"
+
+[sources.cronometer]
+export_glob = "~/Downloads/dailysummary*.csv"
+
+[sources.notes]
+# Free-text notes written from the phone (iOS Shortcut -> iCloud Drive). Copied into
+# data_dir on every sync so they are versioned with the rest of the data.
+export_glob = "~/Library/Mobile Documents/com~apple~CloudDocs/health-context.txt"
+
+[sources.hevy]
+# Pulled from the Hevy API (Pro). The key is never stored in a file: it is read from
+# $HEVY_API_KEY if set, otherwise from the macOS Keychain entry named here.
+keychain_service = "estebot-hevy"
+keychain_account = "api-key"
+
+[sources.health_auto_export]
+# iPhone app "Health Auto Export": one JSON file per day in its iCloud folder (JSON,
+# Export Version 2, Date Range Day, Summarize Data OFF). Overlays the Apple Health
+# tables from from_date on; the full export.xml remains the record before that.
+metrics_glob = "~/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/EsteBot/HealthAutoExport-*.json"
+workouts_glob = "~/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/EsteBot Workouts/HealthAutoExport-*.json"
+from_date = "2026-10-11"
+
+[profile]
+height_in = 70
+birth_year = 1990
+sex = "male"          # used only for the Mifflin-St Jeor term
+units = "imperial"    # imperial | metric
+
+[goals]
+target_weight_lb = 180
+# Loss faster than this fraction of bodyweight per week risks lean mass.
+max_loss_pct_per_week = 1.0
+# Slower than this is 'losing less than expected' on the page (0.5-1.0 %/week is the usual
+# range for losing fat while keeping muscle).
+min_loss_pct_per_week = 0.5
+protein_g_per_lb_target = 0.65
+fat_g_per_lb_floor = 0.30
+
+[analysis]
+# Lifts the strength instrument resolves on. Machine work is deliberately
+# excluded: stacks are not comparable across gyms.
+main_lifts = [
+  "Barbell Squat",
+  "Barbell Deadlift",
+  "Barbell Bench Press",
+  "Barbell Military Press",
+]
+# Fewer than this many sets is not a session — an abs-only or cardio day
+# must not count toward a training streak.
+lift_streak_min_sets = 5
+# Epley drifts badly above this rep count, so e1RM ignores higher-rep sets.
+e1rm_max_reps = 10
+
+[training]
+# How you split your week, for the page's "next session" card. Every key is optional and
+# the values below are the defaults. A table you give (day_types, variants) replaces the
+# default table whole, so list every day of your rotation in both.
+#
+# The day types, in the order you cycle through them. A session's type is the one whose
+# muscle groups it hits most; the plan picks the type after the last session's.
+rotation = ["push", "pull", "legs"]
+# Exercises whose names contain one of these work in high_rep_range; the rest in rep_range.
+# An accessory adds a rep per session up to the top of its range, then adds load.
+high_rep = ["calf", "lateral raise", "shrug", "face pull", "leg extension", "fly"]
+rep_range = [8, 12]
+high_rep_range = [12, 15]
+
+[training.day_types]
+# Muscle groups as the parsers tag them: chest, shoulders, triceps, back, biceps, carry,
+# olympic, quads, hamstrings, calves, core, cardio.
+push = ["chest", "shoulders", "triceps"]
+pull = ["back", "biceps", "carry", "olympic"]
+legs = ["quads", "hamstrings", "calves"]
+
+# Versions of each day type, told apart by the main lift. The plan alternates them in the
+# order written here, and lists the main lift first. Exercise names as your log app spells them.
+[training.variants.push]
+A = ["Barbell Bench Press"]
+B = ["Barbell Military Press"]
+
+[training.variants.pull]
+A = ["Pendlay Row", "Barbell Bent-Over Row"]
+B = ["Barbell Deadlift", "Sumo Deadlift"]
+
+[training.variants.legs]
+A = ["Barbell Squat"]
+B = ["Barbell Front Squat"]
