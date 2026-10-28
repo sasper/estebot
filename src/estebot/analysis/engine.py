@@ -217,15 +217,27 @@ def training_days(con, start, end):
                   "workouts": workouts, "exercise_min": mins.get(k)}
     return out
 
-# Sick or injured, from the notes. The sick words are core.SICK. A sore back is not on the
-# injured list: it is a check-in level, and a week of mild soreness would ring every day.
+# Sick or injured, from the notes or the check-in toggles. The sick words are core.SICK. A sore
+# back is not on the injured list: it is a check-in level, and a week of mild soreness would
+# ring every day.
 INJURED = re.compile(r"injur|spasm|tweak", re.I)
 
 def unwell_days(con, start, end):
     """{date: {"sick": bool, "injured": bool, "notes": [...]}} over [start, end], for days a note
-    says sick or injured. A ranged note covers every day in its range; annotations typed
-    'injury' count without the keyword."""
+    says sick or injured or the check-in has either toggle on. A ranged note covers every day
+    in its range; annotations typed 'injury' count without the keyword. Either source is
+    enough: turning a toggle off does not cancel a note that says sick."""
     out = {}
+    def mark(day, sick, injured, text):
+        e = out.setdefault(day, {"sick": False, "injured": False, "notes": []})
+        e["sick"] |= sick
+        e["injured"] |= injured
+        if text and text not in e["notes"]:     # a saved check-in can carry the note's text
+            e["notes"].append(text)
+    for r in con.execute(
+            """SELECT date, sick, injured, note FROM checkin
+               WHERE date BETWEEN ? AND ? AND (sick = 1 OR injured = 1)""", (start, end)):
+        mark(r["date"], bool(r["sick"]), bool(r["injured"]), r["note"])
     for r in con.execute(
             """SELECT start_date, COALESCE(end_date, start_date) AS end_date, type, note
                FROM annotation WHERE start_date <= ? AND COALESCE(end_date, start_date) >= ?
@@ -235,10 +247,7 @@ def unwell_days(con, start, end):
         if not (sick or injured):
             continue
         for x in daterange(max(r["start_date"], start), min(r["end_date"], end)):
-            e = out.setdefault(s(x), {"sick": False, "injured": False, "notes": []})
-            e["sick"] |= sick
-            e["injured"] |= injured
-            e["notes"].append(text)
+            mark(s(x), sick, injured, text)
     return out
 
 # What the verdict reads, as (table, date column). A day "has data" if any of them has a row.

@@ -86,8 +86,100 @@ def test_the_public_demo_is_read_only(main, con, monkeypatch):
     shown, _ = page(main)
     assert 'action="/goal"' not in shown and 'action="/checkin"' not in shown
     assert "Needs an answer" not in shown and "Goal:" in shown
+    assert "present=1" not in shown          # nothing private on the demo, so no toggle
 
     assert main.set_goal(150.0, "").status_code == 403
     assert main.checkin(DAY, "ok", 0, 3, 3, "").status_code == 403
     assert con.execute("SELECT COUNT(*) FROM setting").fetchone()[0] == 0
     assert con.execute("SELECT source FROM checkin WHERE date=?", (DAY,)).fetchone()[0] == "notes"
+
+
+TAP_NOTE = "Slept badly, legs heavy"     # invented
+
+
+def save(main, day, back=None, energy=None, recovery=None, note="", sick=False, injured=False):
+    # Called directly, a route's unset parameters are Form() objects, so pass every one.
+    return main.checkin(day, back, 0, energy, recovery, note, sick, injured)
+
+
+def today_page(main, query=""):
+    req = Request({"type": "http", "method": "GET", "path": "/", "query_string": query.encode(),
+                   "headers": []})
+    present = dict(x.split("=") for x in query.split("&") if x).get("present")
+    return main.today(req, date.today().isoformat(), present).body.decode()
+
+
+def card(html):
+    return html.split('id="checkin"')[1].split("</form>")[0]
+
+
+def test_the_tap_card_is_there_every_day_without_a_note(main):
+    # A phone-only user never writes a note, so the check-in cannot wait for one to need
+    # review. Nothing is preselected: an untapped back must not save as "back ok".
+    html = today_page(main)
+    assert 'action="/checkin"' in html and 'type="radio" name="energy"' in html
+    assert "checked" not in card(html)
+
+
+def test_a_tap_check_in_is_saved_prefilled_and_read_by_the_verdict(main, con):
+    from estebot.analysis import engine
+    today = date.today().isoformat()
+    assert save(main, today, "sore", 1, 2, TAP_NOTE).status_code == 303
+    row = con.execute("SELECT * FROM checkin WHERE date=?", (today,)).fetchone()
+    assert (row["source"], row["back"], row["back_reported"], row["energy"],
+            row["inter_set_recovery"], row["note"], row["sick"]) == ("manual", "sore", 1, 1, 2, TAP_NOTE, 0)
+    feel = next(x for x in engine.readiness(con, today, {})["signals"] if x["area"] == "feel")
+    assert feel["level"] == "amber" and "energy 1/3 today" in feel["reasons"]
+
+    html = today_page(main)
+    assert 'value="sore" checked' in card(html) and 'name="energy" value="1" checked' in card(html)
+    assert TAP_NOTE in card(html) and "saved, tap to change" in html
+
+
+def test_a_sick_tap_with_no_energy_reads_as_energy_zero_and_rings_the_calendar(main, con):
+    # The same rule as a sick note (core.checkin_energy), so being sick cannot turn the feel
+    # signal red from a note and leave it empty from a tap.
+    from estebot.analysis import engine
+    today = date.today().isoformat()
+    save(main, today, sick=True)
+    row = con.execute("SELECT * FROM checkin WHERE date=?", (today,)).fetchone()
+    assert (row["energy"], row["sick"], row["injured"], row["back_reported"]) == (0, 1, 0, 0)
+    feel = next(x for x in engine.readiness(con, today, {})["signals"] if x["area"] == "feel")
+    assert feel["level"] == "red" and not any("back" in t for t in feel["reasons"])
+    assert engine.unwell_days(con, today, today)[today]["sick"]
+    assert f'aria-label="{today}: rest day, sick"' in today_page(main)
+
+
+def test_an_energy_answer_given_with_the_sick_tap_stands(main, con):
+    today = date.today().isoformat()
+    save(main, today, energy=3, sick=True, injured=True)
+    row = con.execute("SELECT energy, sick, injured FROM checkin WHERE date=?", (today,)).fetchone()
+    assert tuple(row) == (3, 1, 1)
+
+
+def test_saving_the_card_answers_a_note_that_needed_review(main, con):
+    # The fixture's day has a derived row flagged for review. The card replaces the old
+    # review-only form and is prefilled from that row.
+    html, _ = page(main)
+    assert "Check this." in html and 'value="sore" checked' in card(html)
+    save(main, DAY, "tired", 2, 2, "")
+    row = con.execute("SELECT * FROM checkin WHERE date=?", (DAY,)).fetchone()
+    assert (row["source"], row["needs_review"], row["back"]) == ("manual", 0, "tired")
+    assert 'id="checkin"' not in page(main)[0]   # a past day, now answered: no card
+
+
+def test_presentation_and_demo_modes_leave_the_tap_card_out(main, con, monkeypatch):
+    today = date.today().isoformat()
+    save(main, today, "spasm", 1, 1, TAP_NOTE, sick=True, injured=True)
+    normal = today_page(main)
+    assert TAP_NOTE in normal and "injured" in normal
+
+    shown = today_page(main, "present=1")
+    for private in ('action="/checkin"', TAP_NOTE, 'name="sick"', "spasm", "injured", "sick", "unwell"):
+        assert private not in shown, private
+
+    monkeypatch.setenv("ESTEBOT_DEMO", "1")
+    shown = today_page(main, "present=0")
+    assert 'action="/checkin"' not in shown and 'id="checkin"' not in shown
+    assert save(main, today, "ok", 3, 3, "").status_code == 403
+    assert con.execute("SELECT back FROM checkin WHERE date=?", (today,)).fetchone()[0] == "spasm"

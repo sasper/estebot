@@ -54,6 +54,23 @@ def test_init_is_idempotent(db):
     db.init(); db.init()
 
 
+def test_an_old_checkin_table_gains_the_sick_and_injured_columns(db):
+    # The tap check-in added two columns. A database from before them must take them in
+    # place, keep its rows, and read the old rows as neither sick nor injured.
+    raw = sqlite3.connect(db.DB)
+    raw.execute(OLD_CHECKIN)
+    raw.execute("INSERT INTO checkin (date, back, energy, note) VALUES ('2000-01-01','sore',1,'x')")
+    raw.commit(); raw.close()
+
+    con = db.init()
+    cols = {r["name"] for r in con.execute("PRAGMA table_info(checkin)")}
+    assert {"sick", "injured"} <= cols
+    old = con.execute("SELECT * FROM checkin WHERE date='2000-01-01'").fetchone()
+    assert (old["back"], old["energy"], old["note"], old["sick"], old["injured"]) == ("sore", 1, "x", 0, 0)
+    con.close()
+    db.init()                            # a second run leaves it alone
+
+
 
 @pytest.mark.parametrize("text", ["back is a bit tender after deadlifts",
                                   "back injury, took the day off",

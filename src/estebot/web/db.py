@@ -71,7 +71,11 @@ CREATE TABLE IF NOT EXISTS checkin (
   source TEXT NOT NULL DEFAULT 'manual', -- manual | derived; a manual row is never overwritten
   needs_review INT NOT NULL DEFAULT 0,   -- 1 = derived from conflicting notes; ask, don't guess
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  back_reported INT NOT NULL DEFAULT 1);
+  back_reported INT NOT NULL DEFAULT 1,
+  -- Tapped on the page. Notes say sick or injured in words, which unwell_days reads from
+  -- the annotations; these are the same two facts for someone who never writes a note.
+  sick INT NOT NULL DEFAULT 0,
+  injured INT NOT NULL DEFAULT 0);
 
 CREATE INDEX IF NOT EXISTS idx_ann_start ON annotation(start_date);
 """
@@ -97,6 +101,8 @@ _ADDED_COLUMNS = {
         # back='ok' (the column's default) and read as a green "back ok" (18 Oct 2026).
         # Manual check-ins always report it, hence the default.
         ("back_reported", "INT NOT NULL DEFAULT 1"),
+        ("sick", "INT NOT NULL DEFAULT 0"),
+        ("injured", "INT NOT NULL DEFAULT 0"),
     ],
 }
 

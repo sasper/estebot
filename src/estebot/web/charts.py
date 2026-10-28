@@ -46,9 +46,11 @@ def line_chart(series, *, width=720, height=260, ylabel="", pad_l=52, pad_b=28,
         y = Y(v)
         out.append(f'<line class="ref" x1="{pad_l}" y1="{y:.1f}" x2="{width-pad_r}" y2="{y:.1f}"/>')
     # x labels: first, middle, last
-    for dt in (x0, dates[len(dates)//2], x1):
-        out.append(f'<text class="tick" x="{X(dt):.1f}" y="{height-8}" text-anchor="middle">'
+    # the last one is right-aligned, or it runs past the edge of the chart
+    for dt, anchor in ((x0, "middle"), (dates[len(dates)//2], "middle"), (x1, "end")):
+        out.append(f'<text class="tick" x="{X(dt):.1f}" y="{height-8}" text-anchor="{anchor}">'
                    f'{dt.strftime("%-d %b")}</text>')
+    ends = []
     for s_ in series:
         p = sorted(s_["points"])
         if not p: continue
@@ -62,8 +64,15 @@ def line_chart(series, *, width=720, height=260, ylabel="", pad_l=52, pad_b=28,
                            f'<title>{dt.strftime("%-d %b")}: {fmt.format(v)}</title></circle>')
         # selective direct label on the final point - never a number on every point
         dt, v = p[-1]
-        out.append(f'<text class="endlabel s{s_["slot"]}" x="{min(X(dt)+8, width-pad_r):.1f}" '
-                   f'y="{Y(v)-8:.1f}" text-anchor="end">{fmt.format(v)}</text>')
+        ends.append([Y(v) - 8, min(X(dt) + 8, width - pad_r), s_["slot"], fmt.format(v)])
+    # Two series that end close together (a weigh-in and its trend) printed one label on top
+    # of the other; stack them a line apart instead.
+    ends.sort()
+    for prev, cur in zip(ends, ends[1:]):
+        cur[0] = max(cur[0], prev[0] + 14)
+    for y, x, slot, text in ends:
+        out.append(f'<text class="endlabel s{slot}" x="{x:.1f}" y="{y:.1f}" '
+                   f'text-anchor="end">{text}</text>')
     # reference labels last, so their halo sits over the data rather than under it
     for v, label in refs:
         out.append(f'<text class="reflabel" x="{pad_l+4}" y="{Y(v)-4:.1f}">{label}</text>')

@@ -213,11 +213,11 @@ def parse_subjective(con):
         lo, hi = energy_cues(text)
         recov = 1 if RECOV_POOR.search(text) else None
         energy, review = None, 0
-        # Being sick is the lowest energy there is. Without this, "stomach bug, sick all day"
-        # left the feel signal empty and the day could still come out as a hard session.
+        # A sick note reads as energy 0 by the same rule as the sick toggle on the page.
+        # Low-energy wording is a cue, not an answer, so it does not lift that to 1.
         sick = bool(core.SICK.search(text))
         if (lo or sick) and hi: review = 1  # conflicting - ask, don't guess
-        elif sick:     energy = 0
+        elif sick:     energy = core.checkin_energy(None, sick=True)
         elif lo:       energy = 1
         elif hi:       energy = 3
         if back is None and energy is None and recov is None and not review:

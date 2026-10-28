@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from estebot import config
+from estebot import config, core
 from estebot.analysis import engine as an, nutrition, predictions
 from estebot.web import db, charts
 
@@ -38,6 +38,7 @@ def _refuse_in_demo():
 
 # The engine's verdicts, in words. "hard" means everything lines up for a big session.
 VERDICT_TEXT = {"hard": "Go all out", "normal": "Normal", "light": "Take it easy", "rest": "Rest day"}
+BACK_LEVELS = ("ok", "tired", "sore", "spasm")      # checkin.back, mildest first
 
 @app.get("/", response_class=HTMLResponse)
 def today(request: Request, day: str | None = None, present: str | None = None):
@@ -100,6 +101,9 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     plan = an.training_plan(con, day, r["verdict"], r["checkin"])
     axial = an.axial_by_day_type(con, day)
     checkin = r["checkin"]               # the row the verdict used: today's, else yesterday's
+    # The tap card prefills from this day's own row, never yesterday's: carrying yesterday's
+    # answers forward would save them as today's with one tap.
+    day_ci = con.execute("SELECT * FROM checkin WHERE date=?", (day,)).fetchone()
 
     # days that still need a subjective answer, so they can be reached from the UI
     review_days = [r["date"] for r in con.execute(
@@ -127,6 +131,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         day=day, r=r, preds=preds, wchart=wchart, load_charts=load_charts,
         multiples=multiples, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=GOALS.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,
         pattern=pattern, plan=plan, axial=axial, checkin=checkin,
+        day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
         review_days=review_days, prev_day=prev_day, next_day=next_day,
         is_today=(day == date.today().isoformat()), demo=demo_mode())
     on = request.cookies.get(PRESENT_COOKIE) == "1" if present is None else present == "1"
@@ -146,18 +151,20 @@ PRESENT_COOKIE = "present"
 def presentable(ctx):
     """A copy of the page context with the private parts taken out. Drops: every note's text
     (check-in, recent context, calendar tooltips), the sick/injured calendar rings, back
-    status wherever it shows, the supplement list and per-nutrient notes, the upper-limit
-    table (it is about supplement doses) and predictions marked private. The template
-    drops the forms on `present` (the check-in form carries the note in a hidden field).
+    status and the sick/injured flags wherever they show, the supplement list and
+    per-nutrient notes, the upper-limit table (it is about supplement doses) and predictions
+    marked private. The template also drops the forms on `present`, and the check-in card's
+    prefill (`day_ci`) goes here, so its note and toggles never reach the HTML.
     Numbers are untouched."""
-    c = dict(ctx, present=True, notes=[], review_days=[], pattern=None)
+    c = dict(ctx, present=True, notes=[], review_days=[], pattern=None, day_ci=None)
     r = c["r"] = dict(ctx["r"], subjective_review=False)
     # Back status is an injury detail: its reasons go and the rest of the signal stays.
     r["signals"] = [dict(x, reasons=[t for t in x["reasons"] if "back" not in t] or
                          ["from the daily check-in"]) if x["area"] == "feel" else x
                     for x in r["signals"]]
     if ctx["checkin"]:
-        c["checkin"] = r["checkin"] = dict(ctx["checkin"], note=None, back_reported=0, needs_review=0)
+        c["checkin"] = r["checkin"] = dict(ctx["checkin"], note=None, back_reported=0, needs_review=0,
+                                           sick=0, injured=0)
     if ctx["plan"]:
         c["plan"] = dict(ctx["plan"], exercises=[
             dict(i, adjust=re.sub(r"^Back \w+: (\w)", lambda m: m[1].upper(), i["adjust"]))
@@ -217,22 +224,35 @@ def set_goal(goal_weight_lb: float = Form(...), day: str = Form("")):
 
 
 @app.post("/checkin")
-def checkin(day: str = Form(...), back: str = Form("ok"),
-            soreness: int = Form(0), energy: int = Form(2),
-            inter_set_recovery: int = Form(2), note: str = Form("")):
+def checkin(day: str = Form(...), back: str | None = Form(None),
+            soreness: int = Form(0), energy: int | None = Form(None),
+            inter_set_recovery: int | None = Form(None), note: str = Form(""),
+            sick: bool = Form(False), injured: bool = Form(False)):
     if refused := _refuse_in_demo():
         return refused
+    try:
+        day = date.fromisoformat(day).isoformat()
+    except ValueError:
+        return PlainTextResponse("Bad date.", status_code=400)
+    # Every field is a tap, and an untapped one is left unanswered rather than given a
+    # default: a back nobody reported must not read as a green "back ok".
+    reported = back in BACK_LEVELS
+    scale = lambda v: v if v in (0, 1, 2, 3) else None
+    energy = core.checkin_energy(scale(energy), sick)
     con = db.connect()
     # A manual save always wins over a derived row and clears the review flag - answering
     # the question is what resolving it means.
     con.execute("""INSERT INTO checkin
-                     (date, back, soreness, energy, inter_set_recovery, note, source, needs_review)
-                   VALUES (?,?,?,?,?,?,'manual',0)
+                     (date, back, back_reported, soreness, energy, inter_set_recovery, note,
+                      sick, injured, source, needs_review)
+                   VALUES (?,?,?,?,?,?,?,?,?,'manual',0)
                    ON CONFLICT(date) DO UPDATE SET
-                     back=excluded.back, soreness=excluded.soreness,
-                     energy=excluded.energy,
+                     back=excluded.back, back_reported=excluded.back_reported,
+                     soreness=excluded.soreness, energy=excluded.energy,
                      inter_set_recovery=excluded.inter_set_recovery,
-                     note=excluded.note, source='manual', needs_review=0""",
-                (day, back, soreness, energy, inter_set_recovery, note.strip() or None))
+                     note=excluded.note, sick=excluded.sick, injured=excluded.injured,
+                     source='manual', needs_review=0""",
+                (day, back if reported else "ok", int(reported), soreness, energy,
+                 scale(inter_set_recovery), note.strip()[:400] or None, int(sick), int(injured)))
     con.commit()
     return RedirectResponse(f"/?day={day}", status_code=303)

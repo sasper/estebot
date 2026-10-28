@@ -325,3 +325,16 @@ def test_a_sick_note_lowers_energy_and_the_verdict(con):
     r = engine.readiness(con, "2026-10-14", GOALS)
     assert next(x for x in r["signals"] if x["area"] == "feel")["level"] == "red"
     assert r["verdict"] != "hard"
+
+
+def test_a_sick_or_injured_check_in_rings_the_calendar_without_a_note(con):
+    # Someone who only taps never writes the note the ring used to need.
+    from estebot.analysis import engine
+    con.executemany("INSERT INTO checkin (date, sick, injured, note) VALUES (?,?,?,?)", [
+        ("2026-10-20", 1, 0, None), ("2026-10-21", 0, 1, "rolled an ankle"), ("2026-10-22", 0, 0, None)])
+    con.execute("INSERT INTO annotation (start_date, type, note, source) VALUES "
+                "('2026-10-21', 'context', 'rolled an ankle, injury', 'b')")
+    out = engine.unwell_days(con, "2026-10-01", "2026-10-31")
+    assert sorted(out) == ["2026-10-20", "2026-10-21"]
+    assert out["2026-10-20"] == {"sick": True, "injured": False, "notes": []}
+    assert out["2026-10-21"]["injured"] and len(out["2026-10-21"]["notes"]) == 2

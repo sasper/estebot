@@ -206,6 +206,19 @@ def pace(rate_per_week: float | None, body_lb: float | None,
 SICK = re.compile(r"\bsick\b|\bill\b|\bflu\b|fever|covid|headache|migraine|stomach bug|vomit", re.I)
 
 
+def checkin_energy(energy: int | None, sick: bool) -> int | None:
+    """Energy (0-3) for a check-in. Being sick is the lowest energy there is, so a sick day
+    with no energy answer reads 0. Without that, "stomach bug, sick all day" left the feel
+    signal empty and the day could still come out as a hard session.
+
+    An energy answer the person gave wins over the sick flag: a cold that leaves you feeling
+    fine is yours to call. A note never carries a number, so a sick note always reads 0.
+    """
+    if energy is None and sick:
+        return 0
+    return energy
+
+
 LEVELS = ("green", "amber", "red")
 
 def combine_signals(levels: dict[str, str | None], forced_rest: bool = False) -> str:

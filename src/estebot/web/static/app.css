@@ -89,16 +89,41 @@ table.gaps td:last-child,table.gaps th:last-child{padding-right:0}
 .daynav form{margin:0}
 .review{background:color-mix(in srgb,var(--series-2) 11%,var(--surface-1));
   border-color:color-mix(in srgb,var(--series-2) 32%,var(--line))}
-.checkin{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-.checkin label{display:flex;flex-direction:column;gap:5px;font-size:11px;
-  text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
-.checkin .grow{flex:1 1 170px}
-.checkin select,.checkin input{font:inherit;font-size:14px;padding:7px 9px;
-  border:1px solid var(--line);border-radius:8px;background:var(--surface-1);
-  color:var(--text-primary);text-transform:none;letter-spacing:0}
-.checkin button{font:inherit;font-size:14px;font-weight:600;padding:8px 18px;
-  border:1px solid var(--line);border-radius:8px;cursor:pointer;
-  background:var(--series-1);color:#fff;border-color:transparent}
+/* The tap check-in: radios and checkboxes drawn as buttons, so it works without JS. */
+.tapcheck summary{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 10px;
+  cursor:pointer;list-style:none}
+.tapcheck summary::-webkit-details-marker{display:none}
+.tapcheck summary h2{margin:0}
+.tapcheck summary h2::before{content:"\25B8";display:inline-block;width:1em;transition:transform .15s}
+.tapcheck[open] summary h2::before{transform:rotate(90deg)}
+.tap{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+.tap fieldset{border:0;margin:0;padding:0;min-width:0}
+.tap legend,.tapnote{font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--text-muted);padding:0;margin-bottom:6px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--line);
+  border-radius:10px;overflow:hidden}
+.seg label + label{border-left:1px solid var(--line)}
+.seg input,.toggles input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.seg span,.toggles span{display:flex;align-items:center;justify-content:center;min-height:44px;
+  padding:0 6px;font-size:15px;font-weight:550;color:var(--text-secondary);cursor:pointer;
+  font-variant-numeric:tabular-nums;user-select:none;-webkit-tap-highlight-color:transparent}
+.seg input:checked + span{background:var(--series-1);color:#fff}
+.seg input:focus-visible + span,.toggles input:focus-visible + span{
+  outline:2px solid var(--text-primary);outline-offset:-3px}
+.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:4px}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.toggles span{border:1px solid var(--line);border-radius:10px}
+.toggles input:checked + span{color:var(--bad);font-weight:650;
+  border-color:color-mix(in srgb,var(--bad) 55%,transparent);
+  background:color-mix(in srgb,var(--bad) 12%,var(--surface-1))}
+.tapnote{display:flex;flex-direction:column;gap:6px;margin:0}
+.tapnote i{font-style:normal;text-transform:none;letter-spacing:0;font-size:12px;margin-left:4px}
+.tapnote textarea{font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);
+  border-radius:10px;background:var(--surface-1);color:var(--text-primary);resize:vertical;
+  text-transform:none;letter-spacing:0}
+.tap button{font:inherit;font-size:16px;font-weight:600;min-height:46px;border-radius:10px;
+  cursor:pointer;background:var(--series-1);color:#fff;border:0}
+.tap p{margin:-6px 0 0}
 .note{font-size:13.5px;color:var(--text-secondary);padding:7px 0;border-top:1px solid var(--line)}
 .note b{color:var(--text-primary);font-weight:600}
 .multiples{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-top:16px;

@@ -9,7 +9,8 @@
   {% set here = "/?day=" ~ day ~ "&" if not is_today else "/?" %}
   <header class="top">
     <h1>EsteBot</h1>
-    {% if present %}<a class="chip on" href="{{ here }}present=0" title="Notes and medical details are hidden. Click to show everything.">Presentation</a>
+    {# the demo person has nothing private to hide, so the demo has no toggle #}
+    {% if demo %}{% elif present %}<a class="chip on" href="{{ here }}present=0" title="Notes and medical details are hidden. Click to show everything.">Presentation</a>
     {% else %}<a class="chip" href="{{ here }}present=1" title="Hide notes and medical details, for showing the page to someone">Present</a>{% endif %}
   </header>
   <p class="sub" style="margin-bottom:10px">{{ "Today" if is_today else "Looking back" }} · {{ day_label }}</p>
@@ -48,6 +49,40 @@
       Answer below to resolve it.</div>{% endif %}
     {% if pattern %}<div class="ramp pattern"><b>{{ "Rest" if pattern[0]=="rest" else pattern[0]|title ~ " day." }}</b> {{ pattern[1] }}</div>{% endif %}
   </div>
+
+  {# The tap check-in: today's, or a past day's that a note left unresolved. Radios and
+     checkboxes styled as buttons, so it needs no JavaScript. Folded once saved. #}
+  {% if (is_today or r.subjective_review) and not present and not demo %}
+  {% set ci = day_ci or {} %}
+  {% set saved = ci.source == "manual" %}
+  {% set when = " today" if is_today else "" %}
+  <details class="card tapcheck" id="checkin"{{ "" if saved else " open" }}>
+    <summary><h2>Check-in{{ "" if is_today else ", " ~ day|shortdate }}</h2>
+      <span class="small muted">{{ "saved, tap to change" if saved else "from your notes, check and save" if ci else "how do you feel" ~ when ~ "?" }}</span></summary>
+    <form method="post" action="/checkin" class="tap">
+      <input type="hidden" name="day" value="{{ day }}">
+      <input type="hidden" name="soreness" value="{{ ci.soreness or 0 }}">
+      <fieldset><legend>Lower back</legend>
+        <div class="seg">{% for v in back_levels %}<label><input type="radio" name="back" value="{{ v }}"{{ " checked" if ci.back_reported and ci.back == v }}><span>{{ v }}</span></label>{% endfor %}</div>
+      </fieldset>
+      {% for name, label, lo, hi in [("energy", "Energy", "wiped", "great"),
+                                     ("inter_set_recovery", "Recovery between sets", "much longer rests", "normal rests")] %}
+      <fieldset><legend>{{ label }}</legend>
+        <div class="seg">{% for v in [0, 1, 2, 3] %}<label><input type="radio" name="{{ name }}" value="{{ v }}"{{ " checked" if ci[name] == v }}><span>{{ v }}</span></label>{% endfor %}</div>
+        <div class="ends"><span>{{ lo }}</span><span>{{ hi }}</span></div>
+      </fieldset>
+      {% endfor %}
+      <div class="toggles">
+        <label><input type="checkbox" name="sick" value="1"{{ " checked" if ci.sick }}><span>Sick{{ when }}</span></label>
+        <label><input type="checkbox" name="injured" value="1"{{ " checked" if ci.injured }}><span>Injured{{ when }}</span></label>
+      </div>
+      <label class="tapnote"><span>Note <i>optional</i></span>
+        <textarea name="note" rows="2" maxlength="400">{{ ci.note or "" }}</textarea></label>
+      <button type="submit">Save</button>
+      <p class="muted small">Sick with no energy picked counts as energy 0.</p>
+    </form>
+  </details>
+  {% endif %}
 
   {% if plan %}
   <div class="card">
@@ -91,23 +126,11 @@
     {% if checkin.back_reported %}{% set _ = parts.append("back " ~ checkin.back) %}{% endif %}
     {% if checkin.energy is not none %}{% set _ = parts.append("energy " ~ checkin.energy ~ "/3") %}{% endif %}
     {% if checkin.inter_set_recovery is not none %}{% set _ = parts.append("recovery between sets " ~ checkin.inter_set_recovery ~ "/3") %}{% endif %}
+    {% if checkin.sick %}{% set _ = parts.append("sick") %}{% endif %}
+    {% if checkin.injured %}{% set _ = parts.append("injured") %}{% endif %}
     {% if parts or checkin.note %}
     <p class="muted" style="font-size:13px;margin:12px 0 0">From your {{ "check-in" if present else "notes" }}{{ " (answered here)" if checkin.source == "manual" }}{{ ", " ~ checkin.date|shortdate if checkin.date != day }}:
       {{ parts|join(", ") }}{% if checkin.note %} — “{{ checkin.note }}”{% endif %}</p>{% endif %}
-    {% endif %}
-    {% if checkin and checkin.needs_review and checkin.date == day and not present and not demo %}
-    <form method="post" action="/checkin" class="checkin" style="margin-top:12px">
-      <input type="hidden" name="day" value="{{ day }}">
-      <label>Lower back
-        <select name="back">{% for v in ["ok","tired","sore","spasm"] %}<option value="{{ v }}" {{ "selected" if checkin.back==v }}>{{ v }}</option>{% endfor %}</select></label>
-      <label>Energy
-        <select name="energy">{% for v in [0,1,2,3] %}<option value="{{ v }}" {{ "selected" if (checkin.energy if checkin.energy is not none else 2)==v }}>{{ v }}</option>{% endfor %}</select></label>
-      <label>Recovery between sets
-        <select name="inter_set_recovery">{% for v in [0,1,2,3] %}<option value="{{ v }}" {{ "selected" if (checkin.inter_set_recovery if checkin.inter_set_recovery is not none else 2)==v }}>{{ v }}</option>{% endfor %}</select></label>
-      <input type="hidden" name="soreness" value="{{ checkin.soreness or 0 }}">
-      <input type="hidden" name="note" value="{{ checkin.note or '' }}">
-      <button type="submit">Save</button>
-    </form>
     {% endif %}
     <div class="multiples">
       {% for title, svg in multiples %}<div><h3>{{ title }}</h3>{{ svg|safe }}</div>{% endfor %}
@@ -123,7 +146,7 @@
       <span><i class="swatch cal-train"></i>Training: lifting 5+ sets, or any workout but a walk</span>
       <span><i class="swatch cal-move"></i>Rest-day movement: a walk, nothing else</span>
       <span><i class="swatch cal-rest"></i>Rest</span>
-      {% if not present %}<span><i class="swatch cal-unwell"></i>Sick or injured, from your notes</span>{% endif %}
+      {% if not present %}<span><i class="swatch cal-unwell"></i>Sick or injured, from your notes or check-in</span>{% endif %}
     </div>
     <div class="cal">
       {% for m in calendar %}
