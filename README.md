@@ -166,9 +166,13 @@ tracked.
 
 ## Status
 
+[HISTORY.md](HISTORY.md) is how it got here: the first three weeks, stage by stage, and what each
+one taught me.
+
 I use it every day, for one person. The personal values (height, goals, file locations)
 are in config, but some assumptions are still mine: imperial units on the page, a
-push/pull/legs rotation in the training plan, and reference intakes for one demographic.
+push/pull/legs rotation as the default training split (`[training]` in config changes it), and
+reference intakes for one demographic.
 The daily sync and the page service assume macOS and launchd.
 
 ## License
