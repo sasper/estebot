@@ -15,6 +15,7 @@ and push it after:
     [sync]
     pull = true
     push = true
+    keep_feed_days = 3          # phone uploads are ~30 MB a day and stay out of git
 
 Apple Health arrives via the phone app's daily files (health_auto_export). The full
 export.xml stays a weekly manual step. Cronometer is pulled from its website (unofficial, so
@@ -70,15 +71,21 @@ def _notify(msg):
                    capture_output=True)
 
 
-def _feed_dirs(cfg):
-    """Folders inside the data repo that phone uploads land in, so they're committed too."""
+def _prune_feed(cfg, keep_days):
+    """Delete phone-upload files older than keep_days. They're about 30 MB a day; what they
+    say is already in the tidy tables, which are committed. Only files inside the data
+    directory are touched (on a Mac the feed is in iCloud and this never runs)."""
+    from datetime import timedelta
+    cutoff = (date.today() - timedelta(days=keep_days)).isoformat()
     src = cfg.sources.get("health_auto_export", {})
-    out = []
     for key in ("metrics_glob", "workouts_glob"):
-        d = Path(os.path.expanduser(src.get(key, ""))).parent
-        if src.get(key) and d.is_relative_to(cfg.data_dir):
-            out.append(str(d.relative_to(cfg.data_dir)))
-    return out
+        folder = Path(os.path.expanduser(src.get(key, ""))).parent
+        if not src.get(key) or not folder.is_relative_to(cfg.data_dir) or not folder.is_dir():
+            continue
+        for f in folder.glob("HealthAutoExport-*.json"):
+            if f.stem.removeprefix("HealthAutoExport-") < cutoff:
+                f.unlink()
+                print(f"-- pruned {f.name}")
 
 
 def run(feed_only=False):
@@ -124,8 +131,9 @@ def _run(cfg, feed_only):
             if required:
                 return r.returncode
 
-    paths = ["tidy", "health-context.txt", *_feed_dirs(cfg)]
-    paths = [p for p in paths if (data / p).exists()]
+    if cfg.sync.get("keep_feed_days"):
+        _prune_feed(cfg, int(cfg.sync["keep_feed_days"]))
+    paths = [p for p in ("tidy", "health-context.txt") if (data / p).exists()]
     subprocess.run(git + ["add", "--", *paths], check=True)
     if subprocess.run(git + ["diff", "--cached", "--quiet", "--", *paths]).returncode == 0:
         print("-- commit: nothing changed")
