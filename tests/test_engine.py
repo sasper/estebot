@@ -237,7 +237,8 @@ def test_a_take_it_easy_day_holds_and_a_sore_back_drops_spinal_lifts(con):
     _session(con, "2026-10-22", "quads|hamstrings|calves", [("Barbell Squat", 315, 1, 9)] * 5)
     _session(con, "2026-10-25", "chest|shoulders|triceps", [("Barbell Bench Press", 225, 4, 8.5)] * 5)
     light = engine.training_plan(con, "2026-10-26", "light")
-    assert all("Take-it-easy" in x["adjust"] for x in light["exercises"])
+    assert "Take it easy" in light["day_adjust"]                 # said once, for the session
+    assert not any(x.get("adjust") for x in light["exercises"])
     con.execute("INSERT INTO checkin (date, back, back_reported) VALUES ('2026-10-26', 'sore', 1)")
     ci = con.execute("SELECT * FROM checkin WHERE date='2026-10-26'").fetchone()
     sore = {x["exercise"]: x.get("adjust") for x in engine.training_plan(con, "2026-10-26", "normal", ci)["exercises"]}

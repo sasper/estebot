@@ -105,6 +105,7 @@
     <div class="verdict"><span class="vbadge">{{ plan.kind|title }} {{ plan.variant }}{% if plan.main %} · {{ plan.main }}{% endif %}</span></div>
     <p class="headline">Next in your push → pull → legs rotation after {{ plan.after.kind }} on {{ plan.after.date|shortdate }}.
       {% if plan.template %}Exercises from your last {{ plan.kind|title }} {{ plan.variant }} ({{ plan.template|shortdate }}); each target comes from the last time you did that exercise.{% endif %}</p>
+    {% if plan.day_adjust %}<div class="ramp">{{ plan.day_adjust }}</div>{% endif %}
     {% if plan.rest %}<div class="ramp"><b>Rest day.</b> The verdict above says rest; this is what the next session looks like when you do train.</div>{% endif %}
     {% if plan.exercises %}
     <table class="plan">

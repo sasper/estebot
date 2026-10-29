@@ -710,11 +710,13 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
             continue
         item = {"exercise": ex, "main": ex in mains, "last_date": when,
                 "last": ", ".join(f"{w:g} × {r}{core.rep_unit(ex)}" if w else f"{r}" for w, r, _ in sets), **p}
-        if verdict == "light":
-            item["adjust"] = "Take-it-easy day: repeat last time's loads, one set fewer, stop by RPE 8."
         if back in ("sore", "tired") and axial_score(ex) >= 3:
             item["adjust"] = ("Back sore: skip it today." if back == "sore"
                               else "Back tired: go light, no top set.")
         items.append(item)
+    # The take-it-easy rule covers the whole session, so it is said once, not on every exercise;
+    # the back rules name single lifts, so they stay on those.
     return {"kind": kind, "variant": variant, "main": next((e for e in order if e in mains), None),
-            "after": last, "template": template["date"], "rest": verdict == "rest", "exercises": items}
+            "after": last, "template": template["date"], "rest": verdict == "rest", "exercises": items,
+            "day_adjust": ("Take it easy: repeat last time's loads with one set fewer, and stop each "
+                           "set by RPE 8." if verdict == "light" else None)}
