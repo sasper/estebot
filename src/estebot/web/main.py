@@ -1,6 +1,7 @@
 """FastAPI app. Thin layer over analysis/engine.py - it formats, it does not compute."""
 import os, re, statistics as st, subprocess, sys
 from collections import Counter
+import logging
 from datetime import date, timedelta
 from pathlib import Path
 from fastapi import FastAPI, Request, Form
@@ -13,6 +14,7 @@ from estebot import config, core
 from estebot.analysis import engine as an, nutrition, predictions
 from estebot.web import auth, db, charts, people
 
+log = logging.getLogger("estebot")
 HERE = os.path.dirname(__file__)
 app = FastAPI(title="health")
 app.mount("/static", StaticFiles(directory=os.path.join(HERE, "static")), name="static")
@@ -333,16 +335,24 @@ async def health_auto_export(request: Request):
     the iCloud files, and the feed part of the sync runs in the background. It isn't parsed
     here: a day's file is 30 MB of JSON and 170 MB once parsed, and the sync parses it anyway."""
     s = auth.settings()
-    path = auth.upload_config(s, request.headers.get("authorization")) if s else None
+    hdr = request.headers.get("authorization") or ""
+    def refuse(status, msg, size=None):
+        # The phone app shows only "export did not complete", so the reason goes in the log:
+        # the shape of the request, never the token and no health values.
+        log.warning("upload refused %s: %s (auth=%s, type=%s, bytes=%s)", status, msg,
+                    hdr.split(" ")[0] or "none", request.headers.get("content-type"), size)
+        return PlainTextResponse(msg, status_code=status)
+    path = auth.upload_config(s, hdr) if s else None
     if path is None:
-        return PlainTextResponse("Unknown upload token.", status_code=401)
+        return refuse(401, "Unknown upload token.")
     body = await request.body()
     if len(body) > MAX_UPLOAD:
-        return PlainTextResponse("Upload too large.", status_code=413)
-    head = body[:200].replace(b" ", b"").replace(b"\n", b"")
+        return refuse(413, "Upload too large.", len(body))
+    head = re.sub(rb"\s", b"", body[:400])
     kind = "workouts" if b'"workouts"' in head else "metrics" if b'"metrics"' in head else None
     if not head.startswith(b'{"data":') or kind is None:
-        return PlainTextResponse("Expected Health Auto Export JSON (Export Version 2).", status_code=400)
+        log.warning("upload starts %r", re.sub(rb'"\d[^"]*"|\d+(\.\d+)?', b"#", head[:80]))
+        return refuse(400, "Expected Health Auto Export JSON (Export Version 2).", len(body))
     p = people.load(path)
     glob_key = f"{kind}_glob"
     pattern = p.cfg.sources.get("health_auto_export", {}).get(glob_key)
@@ -356,7 +366,8 @@ async def health_auto_export(request: Request):
     tmp = folder / f".upload-{day}.tmp"
     tmp.write_bytes(body)
     tmp.replace(folder / f"HealthAutoExport-{day}.json")          # atomic: never half a file
-    log = open(p.cfg.data_dir / ".sync.log", "a")
-    subprocess.Popen([sys.executable, "-m", "estebot.daily", "--feed"], stdout=log, stderr=log,
+    sync_log = open(p.cfg.data_dir / ".sync.log", "a")
+    subprocess.Popen([sys.executable, "-m", "estebot.daily", "--feed"], stdout=sync_log, stderr=sync_log,
                      env={**os.environ, "ESTEBOT_CONFIG": str(p.cfg.path)}, start_new_session=True)
+    log.warning("upload saved: %s for %s, %d bytes", kind, day, len(body))
     return PlainTextResponse(f"Saved {kind} for {day}. Refreshing.", status_code=202)
