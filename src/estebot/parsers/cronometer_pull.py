@@ -10,10 +10,11 @@ merges those files with any manual exports, newest file winning per day.
 Unofficial on purpose (the owner accepted the terms-of-service risk). If Cronometer changes
 its site this fails loudly and the manual export still works.
 
-The login is read from the Keychain, never a file:
+The login is never in a file. A server sets $CRONOMETER_EMAIL and $CRONOMETER_PASSWORD (Fly
+secrets); a Mac without them reads the Keychain:
   security add-generic-password -U -s estebot-cronometer -a <email> -w
 """
-import http.cookiejar, json, re, subprocess, urllib.parse, urllib.request
+import http.cookiejar, json, os, re, subprocess, urllib.parse, urllib.request
 from datetime import date, timedelta
 
 SITE = "https://cronometer.com"
@@ -27,6 +28,8 @@ class PullError(RuntimeError):
 
 # ---------------------------------------------------------------- credentials
 def credentials(cfg):
+    if os.environ.get("CRONOMETER_EMAIL") and os.environ.get("CRONOMETER_PASSWORD"):
+        return os.environ["CRONOMETER_EMAIL"], os.environ["CRONOMETER_PASSWORD"]
     service = cfg.sources.get("cronometer", {}).get("keychain_service", "estebot-cronometer")
     try:
         attrs = subprocess.run(["security", "find-generic-password", "-s", service],

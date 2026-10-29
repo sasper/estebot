@@ -50,6 +50,7 @@ class Config:
     goals: dict = field(default_factory=dict)
     analysis: dict = field(default_factory=dict)
     training: dict = field(default_factory=dict)
+    sync: dict = field(default_factory=dict)
 
     # ---- derived paths. Nothing is ever written inside the code repo. ----
     @property
@@ -103,6 +104,7 @@ def load(path: str | os.PathLike | None = None) -> Config:
         goals=raw.get("goals", {}),
         analysis=raw.get("analysis", {}),
         training=raw.get("training", {}),
+        sync=raw.get("sync", {}),
     )
     cfg.tidy.mkdir(parents=True, exist_ok=True)
     return cfg

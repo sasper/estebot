@@ -2,12 +2,19 @@
 """Daily unattended sync: Hevy, notes, lifting tables, Apple Health feed, web cache, commit.
 
     python -m estebot.daily              run once now
+    python -m estebot.daily --feed       only what a new Health Auto Export upload changes
     python -m estebot.daily --install    schedule it daily via launchd (default 12:00)
                                          and create the runner checkout (below)
     python -m estebot.daily --uninstall
 
-Runs on the Mac, not in the cloud, because it needs the Keychain (Hevy key), iCloud Drive
-(notes) and the data repo. launchd runs a missed job when the machine wakes.
+Runs on the Mac under launchd (which runs a missed job when the machine wakes), or on a
+server. There the secrets come from the environment, the phone uploads instead of writing to
+iCloud, there are no iCloud notes, and [sync] in the config has it pull the data repo first
+and push it after:
+
+    [sync]
+    pull = true
+    push = true
 
 Apple Health arrives via the phone app's daily files (health_auto_export). The full
 export.xml stays a weekly manual step. Cronometer is pulled from its website (unofficial, so
@@ -17,7 +24,7 @@ the rest of the sync still commits). Deliberately NOT here: the ledger and conte
 health-context.txt, both derived or copied, so an authored file being edited is never swept
 into an automatic commit.
 """
-import os, plistlib, subprocess, sys
+import fcntl, os, plistlib, shutil, subprocess, sys
 from datetime import date
 from pathlib import Path
 
@@ -39,6 +46,7 @@ def _main_checkout():
     return Path(out.stdout.strip()).parent
 
 # (name, args, required). A failed optional step notifies and the sync carries on.
+# The notes step only runs where a notes source is configured (not on a server).
 STEPS = [
     ("hevy", ["-m", "estebot.parsers.hevy"], True),
     ("notes", ["-m", "estebot.parsers.notes"], True),
@@ -49,27 +57,64 @@ STEPS = [
     ("nutrition", ["-m", "estebot.parsers.cronometer"], True),
     ("web cache", ["-m", "estebot.web.ingest"], True),
 ]
+# After a phone upload: the feed, the tables that read its weigh-ins, and the page's cache.
+FEED_STEPS = ("apple health feed", "lifting tables", "web cache")
 
 
 def _notify(msg):
     # Only on failure. A success notification every day would train you to ignore it.
+    if not shutil.which("osascript"):
+        return                          # not a Mac: the log is the record
     subprocess.run(["osascript", "-e",
                     f'display notification "{msg}" with title "EsteBot daily sync"'],
                    capture_output=True)
 
 
-def run():
+def _feed_dirs(cfg):
+    """Folders inside the data repo that phone uploads land in, so they're committed too."""
+    src = cfg.sources.get("health_auto_export", {})
+    out = []
+    for key in ("metrics_glob", "workouts_glob"):
+        d = Path(os.path.expanduser(src.get(key, ""))).parent
+        if src.get(key) and d.is_relative_to(cfg.data_dir):
+            out.append(str(d.relative_to(cfg.data_dir)))
+    return out
+
+
+def run(feed_only=False):
     from estebot import config
-    data = config.load().data_dir
+    cfg = config.load()
+    data = cfg.data_dir
+    # One sync at a time per data repo: a phone upload can land mid-way through the noon run,
+    # and two runs rewriting the same CSVs would interleave.
+    with open(data / ".sync.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        return _run(cfg, feed_only)
+
+
+def _run(cfg, feed_only):
+    data = cfg.data_dir
+    git = ["git", "-C", str(data)]
+    if cfg.sync.get("pull"):
+        r = subprocess.run(git + ["pull", "-q", "--rebase", "--autostash"], capture_output=True, text=True)
+        print(f"-- pull: exit {r.returncode} {r.stderr.strip()}")
+        if r.returncode != 0:
+            return r.returncode         # building on a repo that didn't update would diverge
     env = {**os.environ, "PYTHONPATH": str(REPO / "src")}
     head = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],
                           capture_output=True, text=True).stdout.strip()
-    print(f"== {date.today().isoformat()} daily sync, code {head or '?'} from {REPO}")
-    # The checkout was just refreshed to origin/main; restart the page so it serves the
-    # same code. No-op if the web service isn't installed.
-    from estebot.web import service
-    print(f"-- web app: {service.restart(refresh=False)}")
+    kind = "feed upload" if feed_only else "daily sync"
+    print(f"== {date.today().isoformat()} {kind}, code {head or '?'} from {REPO}")
+    if not feed_only:
+        # The checkout was just refreshed to origin/main; restart the page so it serves the
+        # same code. No-op if the web service isn't installed (always, on a server).
+        from estebot.web import service
+        print(f"-- web app: {service.restart(refresh=False)}")
     for name, args, required in STEPS:
+        if feed_only and name not in FEED_STEPS:
+            continue
+        if name == "notes" and "notes" not in cfg.sources:
+            continue
         r = subprocess.run([sys.executable, *args], cwd=REPO, env=env,
                            capture_output=True, text=True)
         print(f"-- {name}: exit {r.returncode}")
@@ -79,19 +124,24 @@ def run():
             if required:
                 return r.returncode
 
-    paths = ["tidy", "health-context.txt"]
-    git = ["git", "-C", str(data)]
+    paths = ["tidy", "health-context.txt", *_feed_dirs(cfg)]
+    paths = [p for p in paths if (data / p).exists()]
     subprocess.run(git + ["add", "--", *paths], check=True)
     if subprocess.run(git + ["diff", "--cached", "--quiet", "--", *paths]).returncode == 0:
         print("-- commit: nothing changed")
-        return 0
-    # Pathspec form commits only these paths, even if something else is staged.
-    r = subprocess.run(git + ["commit", "-q", "-m", f"Daily sync {date.today().isoformat()}",
-                              "--", *paths], capture_output=True, text=True)
-    print(f"-- commit: exit {r.returncode} {r.stderr.strip()}")
-    if r.returncode != 0:
-        _notify("commit failed - see log")
-    return r.returncode
+    else:
+        # Pathspec form commits only these paths, even if something else is staged.
+        r = subprocess.run(git + ["commit", "-q", "-m", f"{kind.capitalize()} {date.today().isoformat()}",
+                                  "--", *paths], capture_output=True, text=True)
+        print(f"-- commit: exit {r.returncode} {r.stderr.strip()}")
+        if r.returncode != 0:
+            _notify("commit failed - see log")
+            return r.returncode
+    if cfg.sync.get("push"):            # also clears anything an earlier run couldn't push
+        r = subprocess.run(git + ["push", "-q", "origin", "HEAD"], capture_output=True, text=True)
+        print(f"-- push: exit {r.returncode} {r.stderr.strip()}")
+        return r.returncode
+    return 0
 
 
 def ensure_runner(main):
@@ -141,4 +191,4 @@ def uninstall():
 if __name__ == "__main__":
     if "--install" in sys.argv: install()
     elif "--uninstall" in sys.argv: uninstall()
-    else: sys.exit(run())
+    else: sys.exit(run(feed_only="--feed" in sys.argv))

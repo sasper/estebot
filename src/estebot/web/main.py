@@ -1,6 +1,7 @@
 """FastAPI app. Thin layer over analysis/engine.py - it formats, it does not compute."""
-import os, re, statistics as st
+import json, os, re, statistics as st, subprocess, sys
 from datetime import date, timedelta
+from pathlib import Path
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse
 from fastapi.responses import HTMLResponse, PlainTextResponse
@@ -309,3 +310,53 @@ def logout(request: Request, csrf: str = Form("")):
     if s is not None and auth.csrf_ok(s, auth.session(request, s), csrf):
         resp.delete_cookie(auth.SESSION_COOKIE)
     return resp
+
+
+# ---------------------------------------------------------------- phone uploads
+
+MAX_UPLOAD = 25 * 1024 * 1024        # a day of minute-level metrics is a few MB
+
+def _feed_day(data):
+    """The latest day an upload covers, from its own timestamps ("2026-10-28 00:04:06 -0400"),
+    so the file is named for the phone's day and not the server's UTC one."""
+    days = [p.get("date", "")[:10] for m in data.get("metrics") or [] for p in m.get("data") or []]
+    days += [w.get("start", "")[:10] for w in data.get("workouts") or []]
+    days = [d for d in days if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d)]
+    return max(days) if days else date.today().isoformat()
+
+@app.post("/api/health-auto-export")
+async def health_auto_export(request: Request):
+    """Health Auto Export's REST automation posts here instead of writing to iCloud Drive.
+    Each upload is saved where the feed parser already looks (the folders of the config's
+    metrics_glob and workouts_glob), one file per day, the same as the iCloud files; then
+    the feed part of the sync runs in the background."""
+    s = auth.settings()
+    path = auth.upload_config(s, request.headers.get("authorization")) if s else None
+    if path is None:
+        return PlainTextResponse("Unknown upload token.", status_code=401)
+    body = await request.body()
+    if len(body) > MAX_UPLOAD:
+        return PlainTextResponse("Upload too large.", status_code=413)
+    try:
+        data = json.loads(body)["data"]
+    except (ValueError, KeyError, TypeError):
+        return PlainTextResponse("Expected Health Auto Export JSON (Export Version 2).", status_code=400)
+    p = people.load(path)
+    src, day, saved = p.cfg.sources.get("health_auto_export", {}), _feed_day(data), []
+    for kind, glob_key in (("metrics", "metrics_glob"), ("workouts", "workouts_glob")):
+        if not data.get(kind) or not src.get(glob_key):
+            continue
+        folder = Path(os.path.expanduser(src[glob_key])).parent
+        if not folder.is_relative_to(p.cfg.data_dir):
+            return PlainTextResponse(f"{glob_key} must be inside the data directory.", status_code=500)
+        folder.mkdir(parents=True, exist_ok=True)
+        tmp = folder / f".upload-{day}.tmp"
+        tmp.write_text(json.dumps({"data": {kind: data[kind]}}))
+        tmp.replace(folder / f"HealthAutoExport-{day}.json")       # atomic: never half a file
+        saved.append(f"{kind} {day}")
+    if not saved:
+        return PlainTextResponse("Nothing in the upload this config reads.", status_code=422)
+    log = open(p.cfg.data_dir / ".sync.log", "a")
+    subprocess.Popen([sys.executable, "-m", "estebot.daily", "--feed"], stdout=log, stderr=log,
+                     env={**os.environ, "ESTEBOT_CONFIG": str(p.cfg.path)}, start_new_session=True)
+    return PlainTextResponse("Saved " + ", ".join(saved) + ". Refreshing.", status_code=202)
