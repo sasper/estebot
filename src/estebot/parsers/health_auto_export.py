@@ -18,7 +18,7 @@ The full export's max-single-device rule undercounts by comparison (about 12% fe
 on a day checked both ways, both cut at the same moment). Averaged columns matched the
 full export exactly on the same check.
 """
-import csv, glob, json, os, subprocess, time
+import csv, glob, hashlib, json, os, subprocess, time
 from collections import defaultdict
 from datetime import datetime
 
@@ -73,7 +73,10 @@ def _check_units(name, got, want):
 def parse_metrics(docs):
     """docs: parsed metric JSON files. -> (days, segments, weights)
     days: day -> (sums, avgs, hr_max). segments: (start, end, stage). weights: day -> [(time, lb, src)].
-    Records are deduplicated across files on their full content."""
+    Records are deduplicated across files on their full content, remembered as a 64-bit
+    hash: a day's file holds a couple of hundred thousand records, and keeping the full text
+    of each one held over a gigabyte for 18 days. Two different records sharing a hash would
+    drop one of them; at a few million records a year that's about one chance in a million."""
     seen = set()
     sums = defaultdict(lambda: defaultdict(float))
     avgs = defaultdict(lambda: defaultdict(lambda: [0.0, 0]))
@@ -83,7 +86,8 @@ def parse_metrics(docs):
         for m in doc.get("data", {}).get("metrics", []):
             name, units = m.get("name"), m.get("units")
             for x in m.get("data", []):
-                key = (name, json.dumps(x, sort_keys=True))
+                key = int.from_bytes(hashlib.blake2b(
+                    f"{name}\0{json.dumps(x, sort_keys=True)}".encode(), digest_size=8).digest())
                 if key in seen: continue
                 seen.add(key)
                 day = x["date"][:10]
@@ -176,13 +180,16 @@ def _ensure_local(p, timeout=60, is_dataless=_is_dataless, download=None, sleep=
                         "Open the folder in Finder to download it, then rerun.")
 
 
-def _load(pattern):
-    docs = []
-    for p in sorted(glob.glob(os.path.expanduser(pattern))):
+def _paths(pattern):
+    return sorted(glob.glob(os.path.expanduser(pattern))) if pattern else []
+
+def _docs(paths):
+    """Each file parsed only when it's reached, so one day's file (about 30 MB of JSON, 170 MB
+    once parsed) is in memory at a time instead of all of them: 1.96 GB for 18 days before."""
+    for p in paths:
         _ensure_local(p)
         with open(p) as f:
-            docs.append(json.load(f))
-    return docs
+            yield json.load(f)
 
 def _rewrite(path, header, keep, new_rows, key=lambda r: r[0]):
     """Keep existing rows where keep(row) is true, add new_rows, sort by key, write."""
@@ -204,10 +211,10 @@ def apply(cfg):
     if not src:
         return
     start = src["from_date"]
-    mdocs, wdocs = _load(src["metrics_glob"]), _load(src.get("workouts_glob", ""))
-    if not mdocs and not wdocs:
+    mpaths, wpaths = _paths(src["metrics_glob"]), _paths(src.get("workouts_glob", ""))
+    if not mpaths and not wpaths:
         print("   health auto export: no files found"); return
-    days, segments, weights = parse_metrics(mdocs)
+    days, segments, weights = parse_metrics(_docs(mpaths))
     tidy = cfg.tidy
 
     dd = {d for d in days if d >= start}
@@ -220,11 +227,11 @@ def apply(cfg):
     b = _rewrite(tidy / "body_mass.csv", ["date", "weight_lb", "source"], lambda r: r[0] not in wd,
                  [[d, f"{round(lb, 3)}", srcname] for d in sorted(wd)
                   for _, lb, srcname in sorted(weights[d])])
-    wk = [(st_, row) for st_, row in parse_workouts(wdocs) if row[0] >= start]
+    wk = [(st_, row) for st_, row in parse_workouts(_docs(wpaths)) if row[0] >= start]
     wkd = {row[0] for _, row in wk}
     k = _rewrite(tidy / "workouts.csv", T.WORKOUT_COLS, lambda r: r[0] not in wkd,
                  [row for _, row in wk], key=lambda r: (r[0], r[1]))
-    print(f"   health auto export: {len(mdocs)}+{len(wdocs)} files from {start}: "
+    print(f"   health auto export: {len(mpaths)}+{len(wpaths)} files from {start}: "
           f"{n} days, {s} nights, {b} weigh-ins, {k} workouts")
 
 
