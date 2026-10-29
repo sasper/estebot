@@ -231,3 +231,33 @@ def ask(person, con, history, today, client=None):
         _ensure_usage(con)
         con.execute("INSERT INTO chat_usage VALUES (?, ?)", (today, spent))
         con.commit()
+
+
+# ---------------------------------------------------------------- the conversation
+
+# Kept in the person's own database, so it survives a reload, a change of day and a change
+# of device. Stored as question-and-answer pairs, so what goes back to Claude always
+# alternates; only answered questions are kept. Shown and sent: the last KEEP pairs, which
+# with the new question stays inside MAX_TURNS.
+KEEP = (MAX_TURNS - 1) // 2
+
+def _ensure_log(con):
+    con.execute("CREATE TABLE IF NOT EXISTS chat_log "
+                "(id INTEGER PRIMARY KEY, at TEXT, question TEXT, answer TEXT)")
+
+def save(con, question, answer, at):
+    _ensure_log(con)
+    con.execute("INSERT INTO chat_log (at, question, answer) VALUES (?, ?, ?)", (at, question, answer))
+    con.commit()
+
+def recent(con, pairs=KEEP):
+    """The last few exchanges as [{role, text}], oldest first: the browser's history format."""
+    _ensure_log(con)
+    rows = con.execute("SELECT question, answer FROM chat_log ORDER BY id DESC LIMIT ?", (pairs,)).fetchall()
+    return [m for q, a in reversed(rows)
+            for m in ({"role": "user", "text": q}, {"role": "assistant", "text": a})]
+
+def clear(con):
+    _ensure_log(con)
+    con.execute("DELETE FROM chat_log")
+    con.commit()

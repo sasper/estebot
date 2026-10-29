@@ -121,3 +121,16 @@ def test_the_scope_rule_and_its_exact_refusal_are_in_every_request(person, con):
     assert text == chat.OFF_TOPIC
     assert chat.OFF_TOPIC in fake.requests[0]["system"] and "Scope:" in fake.requests[0]["system"]
     assert fake.requests[0]["max_tokens"] <= 4000
+
+
+def test_the_saved_conversation_goes_back_as_valid_history(con):
+    # What the page loads is what it sends with the next question, so it has to pass
+    # history_ok with that question added, however long the conversation has run.
+    from estebot.web import chat
+    for i in range(15):
+        chat.save(con, f"q{i}", f"a{i}", DAY)
+    h = chat.recent(con)
+    assert len(h) == 2 * chat.KEEP and h[0]["text"] == f"q{15 - chat.KEEP}" and h[-1]["text"] == "a14"
+    assert chat.history_ok(h + [{"role": "user", "text": "next"}])
+    chat.clear(con)
+    assert chat.recent(con) == []

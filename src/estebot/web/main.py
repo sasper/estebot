@@ -150,6 +150,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         review_days=review_days, prev_day=prev_day, next_day=next_day,
         is_today=(day == date.today().isoformat()), demo=demo_mode() or p.read_only,
         signin=auth.settings() is not None, email=p.email, chat_on=chat_enabled(p),
+        chat_history=chat.recent(con) if chat_enabled(p) else [],
         csrf=auth.csrf_token(auth.settings(), p.session) if p.session else "")
     on = request.cookies.get(PRESENT_COOKIE) == "1" if present is None else present == "1"
     resp = tpl.TemplateResponse(request, "today.html", presentable(ctx) if on else dict(ctx, present=False))
@@ -173,8 +174,9 @@ def presentable(ctx):
     marked private. The template also drops the forms on `present`, and the check-in card's
     prefill (`day_ci`) goes here, so its note and toggles never reach the HTML.
     Numbers are untouched."""
-    # The chat is off too: an answer could quote anything in the data.
-    c = dict(ctx, present=True, notes=[], review_days=[], pattern=None, day_ci=None, chat_on=False)
+    # The chat is off too, and its history left out: an answer could quote anything in the data.
+    c = dict(ctx, present=True, notes=[], review_days=[], pattern=None, day_ci=None, chat_on=False,
+             chat_history=[])
     r = c["r"] = dict(ctx["r"], subjective_review=False)
     # Back status is an injury detail: its reasons go and the rest of the signal stays.
     r["signals"] = [dict(x, reasons=[t for t in x["reasons"] if "back" not in t] or
@@ -387,14 +389,18 @@ def chat_enabled(p):
     run up the bill, and there's nothing of theirs to ask about."""
     return bool(os.environ.get("ANTHROPIC_API_KEY")) and not (demo_mode() or p.read_only)
 
-@app.post("/api/chat")
-async def ask(request: Request):
-    p = people.for_request(request)
+def _chat_refusal(request, p):
     if not chat_enabled(p):
         return JSONResponse({"error": "Chat isn't available here."}, status_code=403)
     s = auth.settings()
     if s is not None and not auth.csrf_ok(s, p.session, request.headers.get("x-csrf-token")):
         return JSONResponse({"error": "This page has expired. Reload it and try again."}, status_code=403)
+
+@app.post("/api/chat")
+async def ask(request: Request):
+    p = people.for_request(request)
+    if (refused := _chat_refusal(request, p)) is not None:
+        return refused
     try:
         history = (await request.json()).get("history")
     except ValueError:
@@ -402,7 +408,10 @@ async def ask(request: Request):
     if not chat.history_ok(history):
         return JSONResponse({"error": "That message couldn't be read."}, status_code=400)
     def run():                       # in a worker thread, so the connection is opened there too
-        return chat.ask(p, p.connect(), history, date.today().isoformat())
+        con, today = p.connect(), date.today().isoformat()
+        answer, spent = chat.ask(p, con, history, today)
+        chat.save(con, history[-1]["text"], answer, today)
+        return answer, spent
     try:
         answer, spent = await run_in_threadpool(run)
     except chat.ChatError as e:
@@ -411,3 +420,11 @@ async def ask(request: Request):
         log.warning("chat failed: %s", type(e).__name__)
         return JSONResponse({"error": "Claude didn't answer. Try again in a minute."}, status_code=502)
     return JSONResponse({"answer": answer, "cost_usd": round(spent, 4)})
+
+@app.post("/api/chat/clear")
+async def clear_chat(request: Request):
+    p = people.for_request(request)
+    if (refused := _chat_refusal(request, p)) is not None:
+        return refused
+    await run_in_threadpool(lambda: chat.clear(p.connect()))
+    return JSONResponse({"cleared": True})

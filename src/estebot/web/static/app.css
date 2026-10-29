@@ -252,13 +252,17 @@ table.plan tr.main td:first-child{font-weight:600}
 /* Ask EsteBot: a sheet behind a floating button on phones, docked on the right on desktop. */
 .chat{display:none;flex-direction:column;gap:10px;background:var(--surface-1);border:1px solid var(--line);padding:16px}
 .chat-head{display:flex;align-items:center;justify-content:space-between}
-.chat-head h2{margin:0}
+.chat-head h2{margin:0;margin-right:auto}
+.chat-head{gap:8px}
+.ask-off{color:var(--text-secondary);margin:0}
 .chat-close{background:none;border:0;font-size:24px;line-height:1;color:var(--text-muted);cursor:pointer;padding:0 4px}
 .chat .ask-log{flex:1;min-height:0;overflow-y:auto;margin:0}
 .chat .ask-form{margin-top:auto}
-.ask-try p.small{color:var(--text-secondary);margin:0 0 12px}
-.ask-try button{display:block;width:100%;text-align:left;font:inherit;font-size:13.5px;margin:0 0 6px;
-  padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:none;color:var(--text-secondary);cursor:pointer}
+/* The example questions stay under the conversation as chips, one tap to ask again. */
+.ask-try{display:flex;flex-wrap:wrap;gap:6px}
+.ask-try .tapnote{width:100%;margin:0}
+.ask-try button{font:inherit;font-size:12.5px;padding:5px 11px;border:1px solid var(--line);
+  border-radius:999px;background:none;color:var(--text-secondary);cursor:pointer;text-align:left}
 .ask-try button:hover:enabled{color:var(--text-primary);border-color:var(--text-muted)}
 .ask-try button:disabled,.ask-form :disabled{opacity:.55;cursor:default}
 .chat-fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;

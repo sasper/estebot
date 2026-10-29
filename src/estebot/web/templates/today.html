@@ -387,11 +387,13 @@
 {% if (chat_on or demo) and not present %}
 <aside class="chat" id="ask" aria-label="Ask EsteBot">
   <div class="chat-head"><h2>Ask EsteBot</h2>
+    {% if chat_on %}<button type="button" class="chip chat-clear"{{ " hidden" if not chat_history }}>Clear</button>{% endif %}
     <button type="button" class="chat-close" aria-label="Close">&times;</button></div>
-  <div class="ask-log" id="ask-log" aria-live="polite"></div>
+  {% if not chat_on %}<p class="small ask-off">On your own page, Claude answers questions about your data here, using only numbers EsteBot has already worked out. It's off in the demo, where anyone could run up the bill.</p>{% endif %}
+  <div class="ask-log" id="ask-log" aria-live="polite">
+    {%- for m in chat_history %}<div class="ask-msg {{ 'me' if m.role == 'user' else 'bot' }}">{{ m.text }}</div>{% endfor -%}
+  </div>
   <div class="ask-try" id="ask-try">
-    {% if not chat_on %}<p class="small">On your own page, Claude answers questions about your data here, using only numbers EsteBot has already worked out. It's off in the demo, where anyone could run up the bill.</p>{% endif %}
-    <p class="tapnote">Try</p>
     {% for q in ["Why is today a take-it-easy day?", "How has my squat moved this month?", "Am I eating enough protein?"] %}
     <button type="button"{{ " disabled" if not chat_on }}>{{ q }}</button>{% endfor %}
   </div>
@@ -413,8 +415,13 @@
   panel.querySelector(".chat-close").addEventListener("click", () => toggle(false));
   {% if chat_on %}
   const form = document.getElementById("ask-form"), log = document.getElementById("ask-log");
-  const tryit = document.getElementById("ask-try");
-  const button = form.querySelector("button"), history = [];
+  const tryit = document.getElementById("ask-try"), clear = panel.querySelector(".chat-clear");
+  const button = form.querySelector("button[type=submit]"), history = {{ chat_history|tojson }};
+  log.scrollTop = log.scrollHeight;
+  clear.addEventListener("click", async () => {
+    const r = await fetch("/api/chat/clear", {method: "POST", headers: {"x-csrf-token": "{{ csrf }}"}});
+    if (r.ok) { history.length = 0; log.replaceChildren(); clear.hidden = true; }
+  });
   const say = (cls, text) => {
     const el = document.createElement("div");
     el.className = "ask-msg " + cls; el.textContent = text;
@@ -428,7 +435,7 @@
     const q = form.q.value.trim();
     if (!q) return;
     if (history.length >= 19) history.splice(0, 2);       // the server takes 20 turns at most
-    form.q.value = ""; button.disabled = true; tryit.hidden = true;
+    form.q.value = ""; button.disabled = true;
     say("me", q); history.push({role: "user", text: q});
     const reply = say("bot pending", "Looking at your data\u2026");
     try {
@@ -438,7 +445,7 @@
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "Something went wrong.");
       reply.textContent = j.answer; reply.className = "ask-msg bot";
-      history.push({role: "assistant", text: j.answer});
+      history.push({role: "assistant", text: j.answer}); clear.hidden = false;
     } catch (err) {
       reply.textContent = err.message.startsWith("Failed") ? "Couldn't reach the server." : err.message;
       reply.className = "ask-msg err"; history.pop();
