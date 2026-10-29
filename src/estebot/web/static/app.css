@@ -29,6 +29,9 @@ body{margin:0;background:var(--bg);color:var(--text-primary);
 .wrap{max-width:860px;margin:0 auto;padding:24px 16px 64px}
 h1{font-size:19px;margin:0 0 2px;letter-spacing:-.01em}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+header.top h1{margin-right:auto}
+form.signout{margin:0}
+button.chip{background:none;font:inherit;font-size:12px;cursor:pointer}
 .chip{font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid var(--line);
   color:var(--text-muted);text-decoration:none;white-space:nowrap}
 .chip:hover{color:var(--text-primary)}

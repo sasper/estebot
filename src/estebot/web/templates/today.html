@@ -12,6 +12,8 @@
     {# the demo person has nothing private to hide, so the demo has no toggle #}
     {% if demo %}{% elif present %}<a class="chip on" href="{{ here }}present=0" title="Notes and medical details are hidden. Click to show everything.">Presentation</a>
     {% else %}<a class="chip" href="{{ here }}present=1" title="Hide notes and medical details, for showing the page to someone">Present</a>{% endif %}
+    {%- if signin %}{% if email %}<form method="post" action="/auth/logout" class="signout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="chip" title="Signed in as {{ email }}">Sign out</button></form>
+    {% else %}<a class="chip" href="/auth/login">Sign in</a>{% endif %}{% endif %}
   </header>
   <p class="sub" style="margin-bottom:10px">{{ "Today" if is_today else "Looking back" }} · {{ day_label }}</p>
   <nav class="daynav">
@@ -59,7 +61,7 @@
   <details class="card tapcheck" id="checkin"{{ "" if saved else " open" }}>
     <summary><h2>Check-in{{ "" if is_today else ", " ~ day|shortdate }}</h2>
       <span class="small muted">{{ "saved, tap to change" if saved else "from your notes, check and save" if ci else "how do you feel" ~ when ~ "?" }}</span></summary>
-    <form method="post" action="/checkin" class="tap">
+    <form method="post" action="/checkin" class="tap">{% if csrf %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endif %}
       <input type="hidden" name="day" value="{{ day }}">
       <input type="hidden" name="soreness" value="{{ ci.soreness or 0 }}">
       <fieldset><legend>Lower back</legend>
@@ -211,7 +213,7 @@
       A single week moves 2–3 lb on water and glycogen alone, so the 4-week line is the one to act on.</p>
     <div class="goal">
       {% if present or demo %}<p>Goal: <b>{{ '%g'|format(ws.goal) }} lb</b></p>
-      {% else %}<form method="post" action="/goal" class="goalform">
+      {% else %}<form method="post" action="/goal" class="goalform">{% if csrf %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endif %}
         <input type="hidden" name="day" value="{{ day if not is_today else '' }}">
         <label>Goal <input type="number" name="goal_weight_lb" step="0.5" min="50" max="600" value="{{ '%g'|format(ws.goal) }}"> lb</label>
         <button type="submit">Set</button>
