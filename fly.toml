@@ -1,6 +1,6 @@
-# The public demo at estebot.app. It serves a made-up person (python -m estebot.demo),
-# regenerated at every start, read-only (ESTEBOT_DEMO=1, set in the Dockerfile). No volume:
-# a machine stopped while idle comes back with fresh data.
+# EsteBot at estebot.app: the public demo for visitors, and with the private-mode secrets
+# set (see deploy/entrypoint.sh), each signed-in person's own page. The volume holds the
+# cloned data repo and each person's app.sqlite; the demo is regenerated at every start.
 # Deploy from a clean `git archive` export, never from a directory that has estebot.toml.
 app = "estebot"
 primary_region = "iad"
@@ -8,12 +8,22 @@ primary_region = "iad"
 [build]
   dockerfile = "Dockerfile"
 
+[env]
+  ESTEBOT_BASE_URL = "https://estebot.app"
+  TZ = "America/New_York"
+  SYNC_AT = "12:00"
+
+[mounts]
+  source = "estebot_data"
+  destination = "/data"
+
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  # The daily sync runs inside the machine, so it stays up.
+  auto_stop_machines = "off"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
   [http_service.concurrency]
     type = "requests"
@@ -21,7 +31,7 @@ primary_region = "iad"
     hard_limit = 40
 
   [[http_service.checks]]
-    grace_period = "10s"
+    grace_period = "30s"
     interval = "60s"
     timeout = "5s"
     method = "GET"
@@ -29,4 +39,4 @@ primary_region = "iad"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "256mb"
+  memory = "512mb"
