@@ -434,7 +434,8 @@ def _write_notes(rng, notes, days, iso, ev, tweak):
                   (iso(tweak + 2), f"{iso(tweak + 2)} | back is tired but moving better, walked instead"),
                   (iso(tweak + 4), f"{iso(tweak + 4)} | back fine again, kept the squats light")]
     busy = {i for i in ev} | ({tweak + k for k in range(5)} if tweak is not None else set())
-    mid = next(i for i in range(int(days * 0.62), days) if i not in busy)
+    # the note that needs an answer: recent, so the page's "needs an answer" points at it
+    mid = next(i for i in range(days - 3, 0, -1) if i not in busy)
     notes.append((iso(mid), f"{iso(mid)} | poor sleep but felt strong on bench"))
     rec = int(days * 0.2)
     notes.append((iso(rec), f"{iso(rec)} | needed extra time between sets on squats"))

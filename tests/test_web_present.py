@@ -183,3 +183,14 @@ def test_presentation_and_demo_modes_leave_the_tap_card_out(main, con, monkeypat
     assert 'action="/checkin"' not in shown and 'id="checkin"' not in shown
     assert save(main, today, "ok", 3, 3, "").status_code == 403
     assert con.execute("SELECT back FROM checkin WHERE date=?", (today,)).fetchone()[0] == "spasm"
+
+
+def test_needs_an_answer_lists_only_the_last_week(main, con):
+    # A conflicting note from two months back stayed in the banner for good, though
+    # answering it could no longer change any call on the page.
+    old = (date.fromisoformat(DAY) - timedelta(days=60)).isoformat()
+    con.execute("""INSERT INTO checkin (date, energy, note, source, needs_review)
+                   VALUES (?, 2, 'poor sleep but felt strong', 'notes', 1)""", (old,))
+    con.commit()
+    banner = page(main)[0].split("Needs an answer")[1].split("</p>")[0]
+    assert f"?day={DAY}" in banner and f"?day={old}" not in banner

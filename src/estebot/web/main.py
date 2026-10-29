@@ -117,10 +117,13 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     # answers forward would save them as today's with one tap.
     day_ci = con.execute("SELECT * FROM checkin WHERE date=?", (day,)).fetchone()
 
-    # days that still need a subjective answer, so they can be reached from the UI
-    review_days = [r["date"] for r in con.execute(
-        "SELECT date FROM checkin WHERE needs_review=1 ORDER BY date DESC LIMIT 5")]
+    # days that still need a subjective answer, so they can be reached from the UI. Only the
+    # last week's: an answer only changes that day's call (and the next, through "how you
+    # feel"), so an old flag stays in the table but stops being asked about.
     dd = date.fromisoformat(day)
+    review_days = [r["date"] for r in con.execute(
+        "SELECT date FROM checkin WHERE needs_review=1 AND date BETWEEN ? AND ? "
+        "ORDER BY date DESC LIMIT 5", ((dd - timedelta(days=7)).isoformat(), day))]
     prev_day, next_day = (dd - timedelta(days=1)).isoformat(), (dd + timedelta(days=1)).isoformat()
 
     calendar = _calendar(con, day)
