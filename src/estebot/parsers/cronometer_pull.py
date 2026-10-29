@@ -15,7 +15,7 @@ secrets); a Mac without them reads the Keychain:
   security add-generic-password -U -s estebot-cronometer -a <email> -w
 """
 import http.cookiejar, json, os, re, subprocess, urllib.parse, urllib.request
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 SITE = "https://cronometer.com"
 WINDOW_DAYS = 14        # re-pull a window so edits and late "Completed" ticks are picked up
@@ -148,7 +148,9 @@ def main():
     opener, jar = session()
     login(opener, *credentials(cfg))
     csv_text = export_daily_summary(opener, jar, start, end)
-    out = cfg.data_file("raw") / "cronometer" / f"dailysummary-{end.isoformat()}.csv"
+    # The export time is in the name: cronometer.py orders files by it, since a git clone
+    # loses modification times.
+    out = cfg.data_file("raw") / "cronometer" / f"dailysummary-{datetime.now():%Y-%m-%dT%H%M%S}.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(csv_text)
     print(f"cronometer: {start} -> {end} -> {out}")
