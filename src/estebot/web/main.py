@@ -1,5 +1,7 @@
 """FastAPI app. Thin layer over analysis/engine.py - it formats, it does not compute."""
-import json, os, re, statistics as st, subprocess, sys
+import os, re, statistics as st, subprocess, sys
+from collections import Counter
+import logging
 from datetime import date, timedelta
 from pathlib import Path
 from fastapi import FastAPI, Request, Form
@@ -12,6 +14,7 @@ from estebot import config, core
 from estebot.analysis import engine as an, nutrition, predictions
 from estebot.web import auth, db, charts, people
 
+log = logging.getLogger("estebot")
 HERE = os.path.dirname(__file__)
 app = FastAPI(title="health")
 app.mount("/static", StaticFiles(directory=os.path.join(HERE, "static")), name="static")
@@ -314,49 +317,57 @@ def logout(request: Request, csrf: str = Form("")):
 
 # ---------------------------------------------------------------- phone uploads
 
-MAX_UPLOAD = 25 * 1024 * 1024        # a day of minute-level metrics is a few MB
+MAX_UPLOAD = 100 * 1024 * 1024       # a day of minute-level metrics is about 30 MB
+_DAY = re.compile(rb'"(?:date|start)"\s*:\s*"(\d{4}-\d{2}-\d{2})')
 
-def _feed_day(data):
-    """The latest day an upload covers, from its own timestamps ("2026-10-28 00:04:06 -0400"),
-    so the file is named for the phone's day and not the server's UTC one."""
-    days = [p.get("date", "")[:10] for m in data.get("metrics") or [] for p in m.get("data") or []]
-    days += [w.get("start", "")[:10] for w in data.get("workouts") or []]
-    days = [d for d in days if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d)]
-    return max(days) if days else date.today().isoformat()
+def _feed_day(body):
+    """The day an upload is for, from its own timestamps ("2026-10-28 00:04:06 -0400"), so
+    the file is named for the phone's day and not the server's UTC one. A day's export can
+    also hold the previous night's sleep, so it's the most common day, not the first."""
+    days = Counter(m.group(1).decode() for m in _DAY.finditer(body))
+    return days.most_common(1)[0][0] if days else date.today().isoformat()
 
 @app.post("/api/health-auto-export")
 async def health_auto_export(request: Request):
     """Health Auto Export's REST automation posts here instead of writing to iCloud Drive.
-    Each upload is saved where the feed parser already looks (the folders of the config's
-    metrics_glob and workouts_glob), one file per day, the same as the iCloud files; then
-    the feed part of the sync runs in the background."""
+    The body is saved byte for byte where the feed parser already looks (the folder of the
+    config's metrics_glob, or workouts_glob for a workouts export), one file per day like
+    the iCloud files, and the feed part of the sync runs in the background. It isn't parsed
+    here: a day's file is 30 MB of JSON and 170 MB once parsed, and the sync parses it anyway."""
     s = auth.settings()
-    path = auth.upload_config(s, request.headers.get("authorization")) if s else None
+    hdr = request.headers.get("authorization") or ""
+    def refuse(status, msg, size=None):
+        # The phone app shows only "export did not complete", so the reason goes in the log:
+        # the shape of the request, never the token and no health values.
+        log.warning("upload refused %s: %s (auth=%s, type=%s, bytes=%s)", status, msg,
+                    hdr.split(" ")[0] or "none", request.headers.get("content-type"), size)
+        return PlainTextResponse(msg, status_code=status)
+    path = auth.upload_config(s, hdr) if s else None
     if path is None:
-        return PlainTextResponse("Unknown upload token.", status_code=401)
+        return refuse(401, "Unknown upload token.")
     body = await request.body()
     if len(body) > MAX_UPLOAD:
-        return PlainTextResponse("Upload too large.", status_code=413)
-    try:
-        data = json.loads(body)["data"]
-    except (ValueError, KeyError, TypeError):
-        return PlainTextResponse("Expected Health Auto Export JSON (Export Version 2).", status_code=400)
+        return refuse(413, "Upload too large.", len(body))
+    head = re.sub(rb"\s", b"", body[:400])
+    kind = "workouts" if b'"workouts"' in head else "metrics" if b'"metrics"' in head else None
+    if not head.startswith(b'{"data":') or kind is None:
+        log.warning("upload starts %r", re.sub(rb'"\d[^"]*"|\d+(\.\d+)?', b"#", head[:80]))
+        return refuse(400, "Expected Health Auto Export JSON (Export Version 2).", len(body))
     p = people.load(path)
-    src, day, saved = p.cfg.sources.get("health_auto_export", {}), _feed_day(data), []
-    for kind, glob_key in (("metrics", "metrics_glob"), ("workouts", "workouts_glob")):
-        if not data.get(kind) or not src.get(glob_key):
-            continue
-        folder = Path(os.path.expanduser(src[glob_key])).parent
-        if not folder.is_relative_to(p.cfg.data_dir):
-            return PlainTextResponse(f"{glob_key} must be inside the data directory.", status_code=500)
-        folder.mkdir(parents=True, exist_ok=True)
-        tmp = folder / f".upload-{day}.tmp"
-        tmp.write_text(json.dumps({"data": {kind: data[kind]}}))
-        tmp.replace(folder / f"HealthAutoExport-{day}.json")       # atomic: never half a file
-        saved.append(f"{kind} {day}")
-    if not saved:
-        return PlainTextResponse("Nothing in the upload this config reads.", status_code=422)
-    log = open(p.cfg.data_dir / ".sync.log", "a")
-    subprocess.Popen([sys.executable, "-m", "estebot.daily", "--feed"], stdout=log, stderr=log,
+    glob_key = f"{kind}_glob"
+    pattern = p.cfg.sources.get("health_auto_export", {}).get(glob_key)
+    if not pattern:
+        return PlainTextResponse(f"This config has no {glob_key}.", status_code=422)
+    folder = Path(os.path.expanduser(pattern)).parent
+    if not folder.is_relative_to(p.cfg.data_dir):
+        return PlainTextResponse(f"{glob_key} must be inside the data directory.", status_code=500)
+    folder.mkdir(parents=True, exist_ok=True)
+    day = _feed_day(body)
+    tmp = folder / f".upload-{day}.tmp"
+    tmp.write_bytes(body)
+    tmp.replace(folder / f"HealthAutoExport-{day}.json")          # atomic: never half a file
+    sync_log = open(p.cfg.data_dir / ".sync.log", "a")
+    subprocess.Popen([sys.executable, "-m", "estebot.daily", "--feed"], stdout=sync_log, stderr=sync_log,
                      env={**os.environ, "ESTEBOT_CONFIG": str(p.cfg.path)}, start_new_session=True)
-    return PlainTextResponse("Saved " + ", ".join(saved) + ". Refreshing.", status_code=202)
+    log.warning("upload saved: %s for %s, %d bytes", kind, day, len(body))
+    return PlainTextResponse(f"Saved {kind} for {day}. Refreshing.", status_code=202)

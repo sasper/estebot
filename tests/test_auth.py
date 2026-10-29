@@ -167,8 +167,9 @@ def test_a_phone_upload_needs_its_token_and_lands_where_the_feed_parser_reads(si
     started = []
     monkeypatch.setattr(main.subprocess, "Popen", lambda args, **kw: started.append((args, kw["env"])))
     payload = {"data": {"metrics": [{"name": "step_count", "units": "count",
-                                     "data": [{"date": "2026-03-09 23:58:00 -0400", "qty": 10},
-                                              {"date": "2026-03-10 00:01:00 -0400", "qty": 5}]}]}}
+                                     "data": [{"date": "2026-03-09 23:58:00 -0400", "qty": 10}] +
+                                              [{"date": f"2026-03-10 0{h}:01:00 -0400", "qty": 5}
+                                               for h in range(3)]}]}}
 
     assert _upload(main, None, payload).status_code == 401
     assert _upload(main, "x" * 40, payload).status_code == 401
@@ -176,8 +177,14 @@ def test_a_phone_upload_needs_its_token_and_lands_where_the_feed_parser_reads(si
 
     resp = _upload(main, token, payload)
     assert resp.status_code == 202
-    saved = feed / "metrics" / "HealthAutoExport-2026-03-10.json"      # the phone's day, not UTC's
+    # The day most of its points are on, in the phone's time: not UTC's, and not the night before.
+    saved = feed / "metrics" / "HealthAutoExport-2026-03-10.json"
     assert _json.loads(saved.read_text())["data"]["metrics"][0]["name"] == "step_count"
     assert not (feed / "workouts").exists()
-    (args, env), = started
+    assert saved.read_bytes() == _json.dumps(payload).encode()        # stored as sent
+    workouts = {"data": {"workouts": [{"id": "w1", "start": "2026-03-10 07:00:00 -0400"}]}}
+    assert _upload(main, token, workouts).status_code == 202
+    assert (feed / "workouts" / "HealthAutoExport-2026-03-10.json").exists()
+    assert _upload(main, token, {"not": "a feed"}).status_code == 400
+    (args, env), _ = started
     assert args[-2:] == ["estebot.daily", "--feed"] and env["ESTEBOT_CONFIG"] == str(cfg)
