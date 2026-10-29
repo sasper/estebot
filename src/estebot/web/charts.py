@@ -126,3 +126,17 @@ def signal_ring(signals, score=None, verdict="", *, size=120, stroke=12, gap_deg
                    f'dominant-baseline="middle">{score}</text>')
     out.append("</svg>")
     return "".join(out)
+
+def sparkline(points, *, width=120, height=34, slot=1):
+    """A word-sized trend for a tile: the line and its last point, no axes."""
+    p = sorted(points)
+    if len(p) < 2: return ""
+    lo, hi = min(v for _, v in p), max(v for _, v in p)
+    span, days = (hi - lo) or 1, max((p[-1][0] - p[0][0]).days, 1)
+    X = lambda dt: 2 + (dt - p[0][0]).days / days * (width - 6)
+    Y = lambda v: 3 + (hi - v) / span * (height - 6)
+    pts = " ".join(f"{X(dt):.1f},{Y(v):.1f}" for dt, v in p)
+    x, y = X(p[-1][0]), Y(p[-1][1])
+    return (f'<svg viewBox="0 0 {width} {height}" class="spark" aria-hidden="true">'
+            f'<polyline class="ln s{slot}" points="{pts}" stroke-width="1.6"/>'
+            f'<circle class="pt s{slot}" cx="{x:.1f}" cy="{y:.1f}" r="2.6" stroke-width="0"/></svg>')
