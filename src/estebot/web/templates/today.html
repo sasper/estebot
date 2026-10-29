@@ -142,6 +142,55 @@
       {% for k, v in axial.items() %}<b>{{ k }}</b> {{ "%.2f"|format(v) }}{{ " · " if not loop.last }}{% endfor %} (0–3).</p>
   </div>
 
+  {% if chat_on %}
+  <div class="card ask" id="ask">
+    <h2>Ask EsteBot</h2>
+    <div class="ask-log" id="ask-log" aria-live="polite"></div>
+    <form class="ask-form" id="ask-form">
+      <textarea name="q" rows="2" maxlength="2000" required
+                placeholder="How has my squat moved this month?"></textarea>
+      <button type="submit">Ask</button>
+    </form>
+    <p class="muted small">Claude answers using only numbers EsteBot has already worked out. The conversation lives in this tab.</p>
+  </div>
+  <script>
+  (() => {
+    const form = document.getElementById("ask-form"), log = document.getElementById("ask-log");
+    const button = form.querySelector("button"), history = [];
+    const say = (cls, text) => {
+      const el = document.createElement("div");
+      el.className = "ask-msg " + cls; el.textContent = text;
+      log.append(el); el.scrollIntoView({block: "nearest"}); return el;
+    };
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const q = form.q.value.trim();
+      if (!q) return;
+      if (history.length >= 19) history.splice(0, 2);       // the server takes 20 turns at most
+      form.q.value = ""; button.disabled = true;
+      say("me", q); history.push({role: "user", text: q});
+      const reply = say("bot pending", "Looking at your data\u2026");
+      try {
+        const r = await fetch("/api/chat", {method: "POST",
+          headers: {"content-type": "application/json", "x-csrf-token": "{{ csrf }}"},
+          body: JSON.stringify({history})});
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || "Something went wrong.");
+        reply.textContent = j.answer; reply.className = "ask-msg bot";
+        history.push({role: "assistant", text: j.answer});
+      } catch (err) {
+        reply.textContent = err.message.startsWith("Failed") ? "Couldn't reach the server." : err.message;
+        reply.className = "ask-msg err"; history.pop();
+      }
+      button.disabled = false; form.q.focus();
+    });
+    form.q.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+  })();
+  </script>
+  {% endif %}
+
   <div class="card">
     <h2>Training calendar</h2>
     <div class="legend">

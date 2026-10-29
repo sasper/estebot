@@ -6,13 +6,16 @@ from datetime import date, timedelta
 from pathlib import Path
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from estebot import config, core
 from estebot.analysis import engine as an, nutrition, predictions
-from estebot.web import auth, db, charts, people
+import anthropic
+from starlette.concurrency import run_in_threadpool
+
+from estebot.web import auth, chat, db, charts, people
 
 log = logging.getLogger("estebot")
 HERE = os.path.dirname(__file__)
@@ -143,7 +146,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
         review_days=review_days, prev_day=prev_day, next_day=next_day,
         is_today=(day == date.today().isoformat()), demo=demo_mode() or p.read_only,
-        signin=auth.settings() is not None, email=p.email,
+        signin=auth.settings() is not None, email=p.email, chat_on=chat_enabled(p),
         csrf=auth.csrf_token(auth.settings(), p.session) if p.session else "")
     on = request.cookies.get(PRESENT_COOKIE) == "1" if present is None else present == "1"
     resp = tpl.TemplateResponse(request, "today.html", presentable(ctx) if on else dict(ctx, present=False))
@@ -167,7 +170,8 @@ def presentable(ctx):
     marked private. The template also drops the forms on `present`, and the check-in card's
     prefill (`day_ci`) goes here, so its note and toggles never reach the HTML.
     Numbers are untouched."""
-    c = dict(ctx, present=True, notes=[], review_days=[], pattern=None, day_ci=None)
+    # The chat is off too: an answer could quote anything in the data.
+    c = dict(ctx, present=True, notes=[], review_days=[], pattern=None, day_ci=None, chat_on=False)
     r = c["r"] = dict(ctx["r"], subjective_review=False)
     # Back status is an injury detail: its reasons go and the rest of the signal stays.
     r["signals"] = [dict(x, reasons=[t for t in x["reasons"] if "back" not in t] or
@@ -371,3 +375,36 @@ async def health_auto_export(request: Request):
                      env={**os.environ, "ESTEBOT_CONFIG": str(p.cfg.path)}, start_new_session=True)
     log.warning("upload saved: %s for %s, %d bytes", kind, day, len(body))
     return PlainTextResponse(f"Saved {kind} for {day}. Refreshing.", status_code=202)
+
+
+# ---------------------------------------------------------------- Ask EsteBot (web/chat.py)
+
+def chat_enabled(p):
+    """On for a person's own page when there's an API key. Never for the demo: anyone could
+    run up the bill, and there's nothing of theirs to ask about."""
+    return bool(os.environ.get("ANTHROPIC_API_KEY")) and not (demo_mode() or p.read_only)
+
+@app.post("/api/chat")
+async def ask(request: Request):
+    p = people.for_request(request)
+    if not chat_enabled(p):
+        return JSONResponse({"error": "Chat isn't available here."}, status_code=403)
+    s = auth.settings()
+    if s is not None and not auth.csrf_ok(s, p.session, request.headers.get("x-csrf-token")):
+        return JSONResponse({"error": "This page has expired. Reload it and try again."}, status_code=403)
+    try:
+        history = (await request.json()).get("history")
+    except ValueError:
+        history = None
+    if not chat.history_ok(history):
+        return JSONResponse({"error": "That message couldn't be read."}, status_code=400)
+    def run():                       # in a worker thread, so the connection is opened there too
+        return chat.ask(p, p.connect(), history, date.today().isoformat())
+    try:
+        answer, spent = await run_in_threadpool(run)
+    except chat.ChatError as e:
+        return JSONResponse({"error": str(e)}, status_code=429)
+    except anthropic.APIError as e:
+        log.warning("chat failed: %s", type(e).__name__)
+        return JSONResponse({"error": "Claude didn't answer. Try again in a minute."}, status_code=502)
+    return JSONResponse({"answer": answer, "cost_usd": round(spent, 4)})
