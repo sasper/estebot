@@ -194,3 +194,16 @@ def test_needs_an_answer_lists_only_the_last_week(main, con):
     con.commit()
     banner = page(main)[0].split("Needs an answer")[1].split("</p>")[0]
     assert f"?day={DAY}" in banner and f"?day={old}" not in banner
+
+
+def test_the_chat_comes_back_after_a_reload_and_stays_out_of_presentation_mode(main, con, monkeypatch):
+    # The conversation lived in the tab, so a reload or a change of day lost an answer and
+    # the question had to be asked again. Saved answers can quote anything in the data, so
+    # presentation mode must not render them.
+    from estebot.web import chat
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    chat.save(con, "How did my squat go?", "Up 10 lb on the zorbotide week.", DAY)
+    normal, _ = page(main)
+    assert "How did my squat go?" in normal and "Up 10 lb" in normal
+    shown, _ = page(main, "present=1")
+    assert "How did my squat go?" not in shown and "zorbotide" not in shown
