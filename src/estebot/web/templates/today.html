@@ -28,23 +28,31 @@
   </p>
   {% endif %}
 
-  <div class="card">
+  {% set AREA = {"load": "Training load", "effort": "Effort (RPE)", "sleep": "Sleep", "recovery": "HRV & resting HR",
+                 "feel": "How you feel", "nutrition": "Nutrition", "pace": "Weight-loss pace"} %}
+  {% set LEVEL = {"green": "good", "amber": "watch", "red": "strain", None: "no data"} %}
+  {% set flagged = r.signals|selectattr("level", "in", ["red", "amber"])|list %}
+  <div class="card readiness">
     <h2>How should you train today?</h2>
-    <div class="verdict">
-      <span class="vbadge v-{{ r.verdict }}">{{ verdict_text }}</span>
+    <div class="rhero">
+      {{ ring|safe }}
+      <div>
+        <div class="vbadge v-{{ r.verdict }}">{{ verdict_text }}</div>
+        <p class="why">{% if flagged %}Held back by
+          {% for x in flagged %}<b class="lv-{{ x.level }}">{{ AREA[x.area]|lower }}</b>{{ " and " if loop.revindex == 2 else (", " if not loop.last) }}{% endfor %}.
+          {% else %}Nothing is holding you back.{% endif %}</p>
+      </div>
     </div>
-    <p class="headline">From training load, effort, sleep, HRV and resting heart rate, how you feel, nutrition and weight-loss pace.</p>
-    {% set AREA = {"load": "Training load", "effort": "Effort (RPE)", "sleep": "Sleep", "recovery": "HRV & resting HR",
-                   "feel": "How you feel", "nutrition": "Nutrition", "pace": "Weight-loss pace"} %}
-    {% set LEVEL = {"green": ("good", "pill-ok"), "amber": ("watch", "pill-warn"), "red": ("strain", "pill-bad")} %}
-    <table class="signals">
+    <div class="contrib">
       {% for x in r.signals %}
-      <tr><td class="nowrap">{{ AREA[x.area] }}</td>
-        <td>{% if x.level %}<span class="pill {{ LEVEL[x.level][1] }}">{{ LEVEL[x.level][0] }}</span>{% else %}<span class="pill pill-none">no data</span>{% endif %}</td>
-        <td class="small muted">{{ x.reasons|join("; ") }}</td></tr>
+      <details class="lv-{{ x.level or 'none' }}"{{ " open" if x.level == "red" }}>
+        <summary><span class="dot"></span><span class="area">{{ AREA[x.area] }}</span><span class="state">{{ LEVEL[x.level] }}</span></summary>
+        <p>{{ x.reasons|join("; ") }}</p>
+      </details>
       {% endfor %}
-    </table>
-    <p class="muted small" style="margin:8px 0 0">The call counts these: rest when two or more areas show strain, take it easy with one strain or two to watch, go all out only when everything is good. No single signal decides the day.</p>
+    </div>
+    <p class="muted small rule">The call counts these: rest when two or more areas show strain, take it easy with one strain or two to watch, go all out only when everything is good. No single signal decides the day.
+      The score sits inside the call's band (rest 0–24, take it easy 25–49, normal 50–74, all out 75–100), higher the more areas are clear.</p>
     {% if r.ramp %}<div class="ramp"><b>Ramp cap.</b> {{ r.ramp }}</div>{% endif %}
     {% if r.subjective_review %}<div class="ramp review"><b>Check this.</b>
       Your note for today carries conflicting signals, so nothing was inferred from it.
