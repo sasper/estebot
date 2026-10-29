@@ -88,8 +88,8 @@ def test_the_public_demo_is_read_only(main, con, monkeypatch):
     assert "Needs an answer" not in shown and "Goal:" in shown
     assert "present=1" not in shown          # nothing private on the demo, so no toggle
 
-    assert main.set_goal(150.0, "").status_code == 403
-    assert main.checkin(DAY, "ok", 0, 3, 3, "").status_code == 403
+    assert main.set_goal(None, 150.0, "").status_code == 403
+    assert main.checkin(None, DAY, "ok", 0, 3, 3, "").status_code == 403
     assert con.execute("SELECT COUNT(*) FROM setting").fetchone()[0] == 0
     assert con.execute("SELECT source FROM checkin WHERE date=?", (DAY,)).fetchone()[0] == "notes"
 
@@ -99,7 +99,7 @@ TAP_NOTE = "Slept badly, legs heavy"     # invented
 
 def save(main, day, back=None, energy=None, recovery=None, note="", sick=False, injured=False):
     # Called directly, a route's unset parameters are Form() objects, so pass every one.
-    return main.checkin(day, back, 0, energy, recovery, note, sick, injured)
+    return main.checkin(None, day, back, 0, energy, recovery, note, sick, injured)
 
 
 def today_page(main, query=""):
