@@ -6,6 +6,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png?v={{ icon_v }}">
 <link rel="apple-touch-icon" href="/static/icon-180.png?v={{ icon_v }}">
 <div class="wrap">
+<div class="main">
   {% set here = "/?day=" ~ day ~ "&" if not is_today else "/?" %}
   <header class="top">
     <h1>EsteBot</h1>
@@ -28,6 +29,10 @@
   </p>
   {% endif %}
 
+  {# Wide screens: what to do today on the left, the trends behind it on the right.
+     Phones stack the two in this order. #}
+  <div class="dash">
+  <div class="col-today">
   {% set AREA = {"load": "Training load", "effort": "Effort (RPE)", "sleep": "Sleep", "recovery": "HRV & resting HR",
                  "feel": "How you feel", "nutrition": "Nutrition", "pace": "Weight-loss pace"} %}
   {% set LEVEL = {"green": "good", "amber": "watch", "red": "strain", None: "no data"} %}
@@ -95,7 +100,7 @@
   {% endif %}
 
   {% if plan %}
-  <div class="card">
+  <div class="card session">
     <h2>Today's session{% if plan.rest %}, if you train{% endif %}</h2>
     <div class="verdict"><span class="vbadge">{{ plan.kind|title }} {{ plan.variant }}{% if plan.main %} · {{ plan.main }}{% endif %}</span></div>
     <p class="headline">Next in your push → pull → legs rotation after {{ plan.after.kind }} on {{ plan.after.date|shortdate }}.
@@ -117,7 +122,9 @@
     <p class="muted small" style="margin:10px 0 0">One rule for every exercise, applied to its last session. Strength work (top set of 5 or fewer): RPE 8 or under adds load, 8.5–9 adds a rep. Accessories: add a rep up to 12 (15 for calves, laterals, shrugs, face pulls, leg extensions, flyes), then add load and drop to the bottom of the range. Bodyweight: beat the last total reps by 1–2. Any top set at RPE 9.5+: hold the load and make it cleaner. No RPE logged: repeat it. A take-it-easy verdict holds every load; a sore back drops the spine-loading lifts.</p>
   </div>
   {% endif %}
+  </div>
 
+  <div class="col-trends">
   <div class="card">
     <h2>Recovery</h2>
     <div class="metrics">
@@ -149,55 +156,6 @@
       Spinal load by day type, from your own sessions:
       {% for k, v in axial.items() %}<b>{{ k }}</b> {{ "%.2f"|format(v) }}{{ " · " if not loop.last }}{% endfor %} (0–3).</p>
   </div>
-
-  {% if chat_on %}
-  <div class="card ask" id="ask">
-    <h2>Ask EsteBot</h2>
-    <div class="ask-log" id="ask-log" aria-live="polite"></div>
-    <form class="ask-form" id="ask-form">
-      <textarea name="q" rows="2" maxlength="2000" required
-                placeholder="How has my squat moved this month?"></textarea>
-      <button type="submit">Ask</button>
-    </form>
-    <p class="muted small">Claude answers using only numbers EsteBot has already worked out. The conversation lives in this tab.</p>
-  </div>
-  <script>
-  (() => {
-    const form = document.getElementById("ask-form"), log = document.getElementById("ask-log");
-    const button = form.querySelector("button"), history = [];
-    const say = (cls, text) => {
-      const el = document.createElement("div");
-      el.className = "ask-msg " + cls; el.textContent = text;
-      log.append(el); el.scrollIntoView({block: "nearest"}); return el;
-    };
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const q = form.q.value.trim();
-      if (!q) return;
-      if (history.length >= 19) history.splice(0, 2);       // the server takes 20 turns at most
-      form.q.value = ""; button.disabled = true;
-      say("me", q); history.push({role: "user", text: q});
-      const reply = say("bot pending", "Looking at your data\u2026");
-      try {
-        const r = await fetch("/api/chat", {method: "POST",
-          headers: {"content-type": "application/json", "x-csrf-token": "{{ csrf }}"},
-          body: JSON.stringify({history})});
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error || "Something went wrong.");
-        reply.textContent = j.answer; reply.className = "ask-msg bot";
-        history.push({role: "assistant", text: j.answer});
-      } catch (err) {
-        reply.textContent = err.message.startsWith("Failed") ? "Couldn't reach the server." : err.message;
-        reply.className = "ask-msg err"; history.pop();
-      }
-      button.disabled = false; form.q.focus();
-    });
-    form.q.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
-    });
-  })();
-  </script>
-  {% endif %}
 
   <div class="card">
     <h2>Training calendar</h2>
@@ -420,4 +378,79 @@
     {% endfor %}
   </div>
   {% endif %}
+  </div>
+  </div>
+</div>
+
+{# Ask EsteBot: docked beside the page on wide screens, a sheet behind a button on phones,
+   so it can be asked from anywhere on the page. The demo shows it with the chat off. #}
+{% if (chat_on or demo) and not present %}
+<aside class="chat" id="ask" aria-label="Ask EsteBot">
+  <div class="chat-head"><h2>Ask EsteBot</h2>
+    <button type="button" class="chat-close" aria-label="Close">&times;</button></div>
+  <div class="ask-log" id="ask-log" aria-live="polite"></div>
+  <div class="ask-try" id="ask-try">
+    {% if not chat_on %}<p class="small">On your own page, Claude answers questions about your data here, using only numbers EsteBot has already worked out. It's off in the demo, where anyone could run up the bill.</p>{% endif %}
+    <p class="tapnote">Try</p>
+    {% for q in ["Why is today a take-it-easy day?", "How has my squat moved this month?", "Am I eating enough protein?"] %}
+    <button type="button"{{ " disabled" if not chat_on }}>{{ q }}</button>{% endfor %}
+  </div>
+  <form class="ask-form" id="ask-form">
+    <textarea name="q" rows="2" maxlength="2000" required{{ " disabled" if not chat_on }}
+              placeholder="{{ 'Ask about your training, weight, sleep…' if chat_on else 'Sign in to ask about your own data' }}"></textarea>
+    <button type="submit"{{ " disabled" if not chat_on }}>Ask</button>
+  </form>
+  {% if chat_on %}<p class="muted small">Claude answers using only numbers EsteBot has already worked out. The conversation lives in this tab.</p>{% endif %}
+</aside>
+<button type="button" class="chat-fab" aria-controls="ask">Ask</button>
+<script>
+(() => {
+  const panel = document.getElementById("ask");
+  const toggle = (open) => document.body.classList.toggle("chat-open", open);
+  document.querySelector(".chat-fab").addEventListener("click", () => {
+    toggle(true); panel.querySelector("textarea").focus();
+  });
+  panel.querySelector(".chat-close").addEventListener("click", () => toggle(false));
+  {% if chat_on %}
+  const form = document.getElementById("ask-form"), log = document.getElementById("ask-log");
+  const tryit = document.getElementById("ask-try");
+  const button = form.querySelector("button"), history = [];
+  const say = (cls, text) => {
+    const el = document.createElement("div");
+    el.className = "ask-msg " + cls; el.textContent = text;
+    log.append(el); log.scrollTop = log.scrollHeight; return el;
+  };
+  tryit.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+    form.q.value = b.textContent; form.requestSubmit();
+  }));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const q = form.q.value.trim();
+    if (!q) return;
+    if (history.length >= 19) history.splice(0, 2);       // the server takes 20 turns at most
+    form.q.value = ""; button.disabled = true; tryit.hidden = true;
+    say("me", q); history.push({role: "user", text: q});
+    const reply = say("bot pending", "Looking at your data\u2026");
+    try {
+      const r = await fetch("/api/chat", {method: "POST",
+        headers: {"content-type": "application/json", "x-csrf-token": "{{ csrf }}"},
+        body: JSON.stringify({history})});
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || "Something went wrong.");
+      reply.textContent = j.answer; reply.className = "ask-msg bot";
+      history.push({role: "assistant", text: j.answer});
+    } catch (err) {
+      reply.textContent = err.message.startsWith("Failed") ? "Couldn't reach the server." : err.message;
+      reply.className = "ask-msg err"; history.pop();
+    }
+    log.scrollTop = log.scrollHeight;
+    button.disabled = false; form.q.focus();
+  });
+  form.q.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  {% endif %}
+})();
+</script>
+{% endif %}
 </div>
