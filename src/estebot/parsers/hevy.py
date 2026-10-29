@@ -138,8 +138,14 @@ def hevy_sets(workouts, names, tz=None):
     return rows, unmapped, dict(minutes)
 
 def load_snapshot(cfg):
+    """The pulled workouts. With Hevy configured and no snapshot yet, this stops instead of
+    returning nothing: the lifting tables would otherwise be rebuilt from Jefit alone and
+    lose every session since the switch. It happened once, on a new server whose first sync
+    was a phone upload, before any Hevy pull; the truncated tables were committed and pushed."""
     p = snapshot_path(cfg)
     if not p.exists():
+        if "hevy" in cfg.sources:
+            raise SystemExit(f"No Hevy snapshot at {p}: run `python -m estebot.parsers.hevy` first.")
         return []
     return json.loads(p.read_text())["workouts"]
 

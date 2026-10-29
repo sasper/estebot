@@ -68,3 +68,19 @@ def test_a_carry_edited_on_the_phone_keeps_its_distance_too():
              "duration_seconds": 0, "type": "normal"}]}]}
     rows, _, _ = hevy_sets([w], {})
     assert rows[0]["reps"] == 45
+
+
+def test_lifting_stops_rather_than_drop_hevy_when_its_snapshot_is_missing(tmp_path):
+    # A new server's first sync was a phone upload, before any Hevy pull. The lifting tables
+    # were rebuilt from Jefit alone, so every session since the switch vanished, and that
+    # was committed and pushed.
+    import pytest
+    from estebot.parsers import hevy
+    from estebot import config
+    (tmp_path / "d").mkdir()
+    with_hevy, without = tmp_path / "a.toml", tmp_path / "b.toml"
+    with_hevy.write_text(f'data_dir = "{tmp_path / "d"}"\n[sources.hevy]\n')
+    without.write_text(f'data_dir = "{tmp_path / "d"}"\n')
+    with pytest.raises(SystemExit, match="No Hevy snapshot"):
+        hevy.load_snapshot(config.load(with_hevy))
+    assert hevy.load_snapshot(config.load(without)) == []
