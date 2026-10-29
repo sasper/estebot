@@ -54,7 +54,7 @@ def test_the_answer_is_built_from_tool_results_and_its_cost_is_metered(person, c
     assert result == [{"date": "2026-03-05", "best_e1rm_lb": 300.0, "best_set_weight_lb": 255.0, "best_set_reps": 5}]
     assert fake.requests[0]["system"] == fake.requests[1]["system"] == chat.SYSTEM
     assert "(Today is 2026-03-10.)" in fake.requests[0]["messages"][0]["content"]
-    assert spent == pytest.approx(2 * (1000 * 4 + 200 * 20) / 1e6)
+    assert spent == pytest.approx(2 * (1000 * chat.PRICE["input"] + 200 * chat.PRICE["output"]) / 1e6)
     assert chat.spent_today(con, DAY) == pytest.approx(spent)
 
 
@@ -110,3 +110,14 @@ def test_the_demo_never_offers_or_answers_the_chat(person, monkeypatch):
         return {"type": "http.request", "body": b'{"history": [{"role": "user", "text": "hi"}]}'}
     req = Request({"type": "http", "method": "POST", "path": "/api/chat", "query_string": b"", "headers": []}, receive)
     assert asyncio.run(main.ask(req)).status_code == 403
+
+
+def test_the_scope_rule_and_its_exact_refusal_are_in_every_request(person, con):
+    # Questions are limited to the person's own training data. The refusal line is fixed,
+    # so it reads the same every time and can be checked.
+    from estebot.web import chat
+    fake = FakeClaude(answer(chat.OFF_TOPIC))
+    text, _ = chat.ask(person, con, [{"role": "user", "text": "Write me a poem about cats"}], DAY, client=fake)
+    assert text == chat.OFF_TOPIC
+    assert chat.OFF_TOPIC in fake.requests[0]["system"] and "Scope:" in fake.requests[0]["system"]
+    assert fake.requests[0]["max_tokens"] <= 4000
