@@ -5,17 +5,28 @@ Merges EVERY file matching [sources.cronometer] export_glob (oldest file first, 
 wins per date), so a narrow re-export - e.g. re-pulling one week after ticking Completed -
 updates those days without destroying history. Pass explicit paths as args to override the glob.
 """
-import csv, glob, os, sys
+import csv, glob, os, re, sys
+from datetime import datetime
 
 from estebot import config
+
+_STAMP = re.compile(r"dailysummary-(\d{4}-\d{2}-\d{2}T\d{6})")
+
+def export_time(path):
+    """When a file was exported, as a sortable string. From its name when the name carries
+    it (dailysummary-2026-10-29T120004.csv), because a git clone gives every file the same
+    modification time and "newest wins" would then pick at random. Otherwise, as for a fresh
+    manual download (dailysummary(3).csv), from the file's modification time."""
+    m = _STAMP.search(os.path.basename(path))
+    return m.group(1) if m else datetime.fromtimestamp(os.path.getmtime(path)).strftime("%Y-%m-%dT%H%M%S")
 
 _cfg = config.load()
 
 ARGS = sys.argv[1:]
-# Manual exports plus the automatic pulls (cronometer_pull.py), oldest file first.
+# Manual exports plus the automatic pulls (cronometer_pull.py), oldest export first.
 _PULLED = (_cfg.data_file("raw") / "cronometer").glob("dailysummary-*.csv")
 SRCS = ARGS or [str(p) for p in sorted([*_cfg.all_exports("cronometer"), *_PULLED],
-                                       key=os.path.getmtime)]
+                                       key=export_time)]
 OUT = str(_cfg.tidy_file("nutrition.csv"))
 WANT = [("Energy (kcal)","kcal"),("Protein (g)","protein_g"),("Carbs (g)","carbs_g"),
         ("Fat (g)","fat_g"),("Fiber (g)","fiber_g"),("Sugars (g)","sugar_g"),
