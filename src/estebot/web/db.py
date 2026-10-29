@@ -80,8 +80,9 @@ CREATE TABLE IF NOT EXISTS checkin (
 CREATE INDEX IF NOT EXISTS idx_ann_start ON annotation(start_date);
 """
 
-def connect():
-    con = sqlite3.connect(DB)
+def connect(path=None):
+    """A connection to one person's database; None means this process's config."""
+    con = sqlite3.connect(path or DB)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys=ON")
     return con
@@ -113,8 +114,8 @@ def _migrate(con):
             if name not in have:
                 con.execute(f"ALTER TABLE {table} ADD COLUMN {name} {decl}")
 
-def init():
-    con = connect()
+def init(path=None):
+    con = connect(path)
     con.executescript(SCHEMA)
     _migrate(con)
     con.commit()

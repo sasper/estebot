@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 
 from estebot import config, core
 from estebot.analysis import engine as an, nutrition, predictions
-from estebot.web import db, charts
+from estebot.web import db, charts, people
 
 HERE = os.path.dirname(__file__)
 app = FastAPI(title="health")
@@ -24,8 +24,6 @@ def _static_v(name):
 tpl.env.globals["css_v"] = _static_v("app.css")
 tpl.env.globals["icon_v"] = _static_v("icon.svg")       # same reason: a cached old icon
 tpl.env.filters["shortdate"] = lambda iso: date.fromisoformat(iso).strftime("%a %-d %b")
-GOALS = config.load().goals            # starting values; the page can override the goal
-db.init().close()                      # authored tables (setting) exist before the first GET
 
 # The public demo (ESTEBOT_DEMO=1) is one page shared by every visitor, so nobody gets to
 # change it: the forms are not rendered and the POST routes refuse.
@@ -42,11 +40,12 @@ BACK_LEVELS = ("ok", "tired", "sore", "spasm")      # checkin.back, mildest firs
 
 @app.get("/", response_class=HTMLResponse)
 def today(request: Request, day: str | None = None, present: str | None = None):
-    con = db.connect()
+    p = people.for_request(request)
+    cfg, goals = p.cfg, p.goals         # goals are starting values; the page can set its own goal
+    con = p.connect()
     day = day or an.default_day(con, date.today().isoformat())
-    r = an.readiness(con, day, GOALS)
+    r = an.readiness(con, day, goals)
 
-    cfg = config.load()
     ledger = cfg.data_file("ledger.md")
     preds = predictions.panel(con, an, ledger.read_text() if ledger.exists() else "",
                               predictions.load_specs(cfg.data_file("predictions.toml")), day)
@@ -59,9 +58,9 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         [{"name": "14-day trend", "points": roll, "slot": 1},
          {"name": "morning weigh-in", "points": w, "slot": 2, "dashed": True}],
         ylabel="body weight (lb)", fmt="{:.0f}")
-    goal = float(db.get_setting(con, "goal_weight_lb", GOALS.get("target_weight_lb", 0)) or 0)
-    ws = an.weight_status(con, day, goal, GOALS.get("max_loss_pct_per_week"))
-    pace_range = (GOALS.get("min_loss_pct_per_week", 0.5), GOALS.get("max_loss_pct_per_week", 1.0))
+    goal = float(db.get_setting(con, "goal_weight_lb", goals.get("target_weight_lb", 0)) or 0)
+    ws = an.weight_status(con, day, goal, goals.get("max_loss_pct_per_week"))
+    pace_range = (goals.get("min_loss_pct_per_week", 0.5), goals.get("max_loss_pct_per_week", 1.0))
     wc = an.weight_changes(con, day, *pace_range)
     strength = an.strength_standards(con, day, ws["current"], goal or None)
 
@@ -97,9 +96,9 @@ def today(request: Request, day: str | None = None, present: str | None = None):
             refs=[(0.8, "0.8"), (1.5, "1.5 injury risk")])),
     ]
 
-    pattern = an.recommend_pattern(con, day, r["checkin"])
-    plan = an.training_plan(con, day, r["verdict"], r["checkin"])
-    axial = an.axial_by_day_type(con, day)
+    pattern = an.recommend_pattern(con, day, r["checkin"], training=p.training)
+    plan = an.training_plan(con, day, r["verdict"], r["checkin"], training=p.training)
+    axial = an.axial_by_day_type(con, day, training=p.training)
     checkin = r["checkin"]               # the row the verdict used: today's, else yesterday's
     # The tap card prefills from this day's own row, never yesterday's: carrying yesterday's
     # answers forward would save them as today's with one tap.
@@ -119,8 +118,8 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     # Nutrition: complete days only (nutrition.py), deficits from two labelled sources.
     nut = {"energy": nutrition.energy_balance(con, day, ws["rate"]),
            "protein": nutrition.protein(con, day, ws["current"]),
-           "protein_target_g": nutrition.protein_target(GOALS, ws["current"]),
-           "protein_per_lb": GOALS.get("protein_g_per_lb_target")}
+           "protein_target_g": nutrition.protein_target(goals, ws["current"]),
+           "protein_per_lb": goals.get("protein_g_per_lb_target")}
     products, supp_notes = nutrition.load_supplements(cfg.data_file("supplements.toml"))
     nut["supplements"] = [p["name"] for p in products if nutrition.active(p, day)]
     nut["gaps"], nut["near_limit"], nut["unmeasured"] = nutrition.micronutrients(
@@ -129,7 +128,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     ctx = dict(verdict_text=verdict_text,
         day_label=date.fromisoformat(day).strftime("%a %-d %b %Y"),
         day=day, r=r, preds=preds, wchart=wchart, load_charts=load_charts,
-        multiples=multiples, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=GOALS.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,
+        multiples=multiples, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=goals.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,
         pattern=pattern, plan=plan, axial=axial, checkin=checkin,
         day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
         review_days=review_days, prev_day=prev_day, next_day=next_day,
@@ -215,16 +214,16 @@ def _calendar(con, day, months=3):
 
 
 @app.post("/goal")
-def set_goal(goal_weight_lb: float = Form(...), day: str = Form("")):
+def set_goal(request: Request, goal_weight_lb: float = Form(...), day: str = Form("")):
     if refused := _refuse_in_demo():
         return refused
-    con = db.connect()
+    con = people.for_request(request).connect()
     db.set_setting(con, "goal_weight_lb", round(goal_weight_lb, 1))
     return RedirectResponse(f"/?day={day}" if day else "/", status_code=303)
 
 
 @app.post("/checkin")
-def checkin(day: str = Form(...), back: str | None = Form(None),
+def checkin(request: Request, day: str = Form(...), back: str | None = Form(None),
             soreness: int = Form(0), energy: int | None = Form(None),
             inter_set_recovery: int | None = Form(None), note: str = Form(""),
             sick: bool = Form(False), injured: bool = Form(False)):
@@ -239,7 +238,7 @@ def checkin(day: str = Form(...), back: str | None = Form(None),
     reported = back in BACK_LEVELS
     scale = lambda v: v if v in (0, 1, 2, 3) else None
     energy = core.checkin_energy(scale(energy), sick)
-    con = db.connect()
+    con = people.for_request(request).connect()
     # A manual save always wins over a derived row and clears the review flag - answering
     # the question is what resolving it means.
     con.execute("""INSERT INTO checkin

@@ -1,6 +1,19 @@
 import importlib
+import sys
 
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def _fresh_people():
+    # web.people caches one Person per config path; each test writes its own config.
+    # Importing it here would read a config before the test has written one.
+    def clear():
+        if (people := sys.modules.get("estebot.web.people")) is not None:
+            people.load.cache_clear()
+    clear()
+    yield
+    clear()
 
 
 @pytest.fixture

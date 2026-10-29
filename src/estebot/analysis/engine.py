@@ -521,16 +521,16 @@ DAY_TYPES = {
     "pull": ("back", "biceps", "carry", "olympic"),
     "legs": ("quads", "hamstrings", "calves"),
 }
-def day_type(groups):
+def day_type(groups, training=None):
     if not groups: return None
     g = set(groups.split("|"))
     best, score = None, 0
-    for name, members in TRAINING.day_types.items():
+    for name, members in (training or TRAINING).day_types.items():
         hit = len(g & set(members))
         if hit > score: best, score = name, hit
     return best
 
-def axial_by_day_type(con, day, days=150):
+def axial_by_day_type(con, day, days=150, training=None):
     """Mean axial load per day type, from the sessions logged in the `days` up to `day`.
     About five months: several of each day type, and recent enough to reflect the
     exercises in use now. Trailing rather than a fixed start date, so any history that
@@ -539,7 +539,7 @@ def axial_by_day_type(con, day, days=150):
     for r in con.execute(
         "SELECT date, muscle_groups FROM lift_session WHERE date BETWEEN ? AND ?",
         (s(d(day) - timedelta(days=days - 1)), day)):
-        t = day_type(r["muscle_groups"])
+        t = day_type(r["muscle_groups"], training)
         a = session_axial(con, r["date"])
         if t and a is not None: acc.setdefault(t, []).append(a)
     return {k: st.mean(v) for k, v in sorted(acc.items(), key=lambda kv: st.mean(kv[1]))}
@@ -548,7 +548,7 @@ def latest_checkin(con, day):
     return con.execute(
         "SELECT * FROM checkin WHERE date <= ? ORDER BY date DESC LIMIT 1", (day,)).fetchone()
 
-def recommend_pattern(con, day, checkin):
+def recommend_pattern(con, day, checkin, training=None):
     """Given back status, which day type is safe today. Returns (pattern, why) or None.
     `checkin` is the row readiness() used, so the suggestion and the verdict cite the same
     note."""
@@ -557,7 +557,7 @@ def recommend_pattern(con, day, checkin):
     if back == "ok": return None
     if back == "spasm":       # needs no ranking of day types, so it comes first
         return ("rest", "Back is spasming. No session — this is the rule you already use.")
-    ranked = axial_by_day_type(con, day)
+    ranked = axial_by_day_type(con, day, training=training)
     if not ranked: return None
     safest = next(iter(ranked))
     if back == "sore":
@@ -643,8 +643,8 @@ def _session_exercises(con, day):
     return [r["exercise"] for r in con.execute(
         "SELECT exercise FROM lift_set WHERE date=? GROUP BY exercise ORDER BY MIN(rowid)", (day,))]
 
-def _variant(kind, exercises):
-    for name, mains in TRAINING.variants.get(kind, ()):
+def _variant(kind, exercises, training):
+    for name, mains in training.variants.get(kind, ()):
         hit = [e for e in exercises if e in mains]
         if hit:
             return name, hit[0]
@@ -660,7 +660,7 @@ def _last_sets(con, exercise, before):
                           ORDER BY set_idx""", (exercise, r["d"])).fetchall()
     return r["d"], [(x["weight_lb"], x["reps"], x["rpe"]) for x in rows]
 
-def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS):
+def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS, training=None):
     """Which session is next and a target for each exercise. Morning decision: only sessions
     before `day` count, the same as readiness.
 
@@ -669,37 +669,38 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
     version (so a swap like reverse lunges carries forward), and each target is
     core.progression on the last time that exercise was done, whichever day it was on.
     A 'light' verdict holds every load; a sore or tired back flags the spine-loading lifts
-    (axial_score 3)."""
+    (axial_score 3). `training` is the person's split; None means this config's."""
+    training = training or TRAINING
     sessions = []
     for r in con.execute("""SELECT date, muscle_groups FROM lift_session
                             WHERE date < ? AND n_sets >= ? ORDER BY date DESC LIMIT 30""",
                          (day, min_sets)):
-        kind = day_type(r["muscle_groups"])
-        if kind in TRAINING.rotation:
+        kind = day_type(r["muscle_groups"], training)
+        if kind in training.rotation:
             exs = _session_exercises(con, r["date"])
             sessions.append({"date": r["date"], "kind": kind, "exercises": exs,
-                             "variant": _variant(kind, exs)[0]})
+                             "variant": _variant(kind, exs, training)[0]})
     if not sessions:
         return None
     last = sessions[0]
-    rotation = TRAINING.rotation
+    rotation = training.rotation
     kind = rotation[(rotation.index(last["kind"]) + 1) % len(rotation)]
     same = [x for x in sessions if x["kind"] == kind]
-    names = [n for n, _ in TRAINING.variants[kind]]
+    names = [n for n, _ in training.variants[kind]]
     prev_variant = same[0]["variant"] if same else None
     variant = names[(names.index(prev_variant) + 1) % len(names)] if prev_variant in names else names[0]
     template = next((x for x in same if x["variant"] == variant), same[0] if same else None)
     if template is None:
         return {"kind": kind, "variant": variant, "after": last, "template": None, "exercises": []}
 
-    mains = dict(TRAINING.variants[kind])[variant]
+    mains = dict(training.variants[kind])[variant]
     order = sorted(template["exercises"],
                    key=lambda e: (e not in mains, -axial_score(e), template["exercises"].index(e)))
     back = (checkin["back"] if checkin and checkin["back_reported"] else None) or "ok"
     items = []
     for ex in order:
         when, sets = _last_sets(con, ex, day)
-        p = core.progression(ex, sets, TRAINING.high_rep, TRAINING.rep_range, TRAINING.high_rep_range)
+        p = core.progression(ex, sets, training.high_rep, training.rep_range, training.high_rep_range)
         if p is None:
             continue
         item = {"exercise": ex, "main": ex in mains, "last_date": when,
