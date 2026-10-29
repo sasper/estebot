@@ -268,7 +268,12 @@ def default_day(con, today):
     return latest
 
 def _signal(area, level, reasons):
-    return {"area": area, "level": level, "reasons": [r for r in reasons if r]}
+    """reasons: plain strings, or (level, text) for a part with its own level; those are
+    put worst first, so the part that set the signal's level is the one read first.
+    Reasons say what was measured against what, in words; thresholds stay in the code."""
+    rank = lambda r: -core.LEVELS.index(r[0]) if isinstance(r, tuple) and r[0] else 0
+    rs = sorted((r for r in reasons if r and (not isinstance(r, tuple) or r[1])), key=rank)
+    return {"area": area, "level": level, "reasons": [r[1] if isinstance(r, tuple) else r for r in rs]}
 
 def _load_signal(con, prior):
     r = acwr(con, prior)
@@ -277,10 +282,13 @@ def _load_signal(con, prior):
     # an injury the next day.
     lv_r = None if r is None else ("red" if r > 1.5 else "amber" if (r > 1.3 or r < 0.8) else "green")
     lv_m = None if mono is None else ("red" if mono > 2.5 else "amber" if mono > 2.0 else "green")
+    jump = "" if r is None else " (a jump)" if r > 1.3 else " (a light stretch)" if r < 0.8 else ""
+    alike = (None if mono is None else "every day the same this week" if mono == float("inf")
+             else f"days too alike this week, no lighter one (monotony {mono:.1f})" if lv_m != "green"
+             else f"days varied enough (monotony {mono:.1f})")
     return _signal("load", core.worst(lv_r, lv_m), [
-        r is not None and f"load ratio {r:.2f} (7-day vs 28-day; amber under 0.8 or over 1.3, red over 1.5)",
-        mono is not None and (f"monotony {'max: every day identical' if mono == float('inf') else f'{mono:.1f}'}"
-                              f" over the last 7 days (how alike the days were; amber over 2.0, red over 2.5)")]), r
+        (lv_r, r is not None and f"this week's load is {r:.2f}× your 4-week average{jump}"),
+        (lv_m, alike)]), r
 
 def _effort_signal(con, prior):
     """Session RPE lately vs the month before: the same work feeling harder is fatigue."""
@@ -290,12 +298,10 @@ def _effort_signal(con, prior):
     recent = rpe(s(d(prior) - timedelta(days=6)), prior)
     base = rpe(s(d(prior) - timedelta(days=34)), s(d(prior) - timedelta(days=7)))
     if len(recent) < 2 or len(base) < 4:
-        return _signal("effort", None, [f"not enough RPE history yet ({len(recent)} recent, "
-                                        f"{len(base)} earlier sessions with RPE)"])
+        return _signal("effort", None, ["not enough sessions with RPE yet"])
     m, bm = st.mean(recent), st.mean(base)
     lv = "red" if m - bm >= 1.5 else "amber" if (m - bm >= 0.75 or m >= 9.0) else "green"
-    return _signal("effort", lv, [f"session RPE {m:.1f} over the last 7 days vs {bm:.1f} before "
-                                  f"(amber +0.75 or a 9+ average, red +1.5)"])
+    return _signal("effort", lv, [f"sessions felt RPE {m:.1f} this week vs {bm:.1f} before"])
 
 def _sleep_signal(con, day):
     nights = lambda a, b: [x["asleep_hr"] for x in con.execute(
@@ -312,9 +318,8 @@ def _sleep_signal(con, day):
         gap = st.mean(base) - st.mean(three)
         lv_3 = "red" if gap > 1.5 else "amber" if gap > 0.75 else "green"
     return _signal("sleep", core.worst(lv_l, lv_3), [
-        last is not None and f"{last:.1f} h asleep last night (amber under 6, red under 5)",
-        lv_3 and f"{st.mean(three):.1f} h average over the last {len(three)} nights vs "
-                 f"{st.mean(base):.1f} h usual (amber 45 min short, red 90)"]), last
+        (lv_l, last is not None and f"{last:.1f} h last night"),
+        (lv_3, lv_3 and f"{st.mean(three):.1f} h a night lately vs {st.mean(base):.1f} h usual")]), last
 
 def _recovery_signal(con, day):
     hrv7 = _recent_mean(con, day, "hrv_sdnn", 7)
@@ -327,8 +332,8 @@ def _recovery_signal(con, day):
     if rhr7 and rmu:
         lv_r = "red" if rhr7 > rmu + 5 else "amber" if rhr7 > rmu + 3 else "green"
     sig = _signal("recovery", core.worst(lv_h, lv_r), [
-        z is not None and f"7-day HRV {hrv7:.0f} vs 30-day {mu:.0f} ({z:+.1f} SD; amber at -1.0, red at -1.5)",
-        lv_r and f"7-day resting HR {rhr7:.0f} vs {rmu:.0f} (amber +3, red +5)"])
+        (lv_h, z is not None and f"HRV {hrv7:.0f} this week vs {mu:.0f} usual"),
+        (lv_r, lv_r and f"resting HR {rhr7:.0f} this week vs {rmu:.0f} usual")])
     return sig, dict(hrv7=hrv7, hrv_baseline=mu, hrv_z=z, rhr7=rhr7, rhr_baseline=rmu)
 
 def _feel_signal(con, day):
@@ -366,19 +371,17 @@ def _nutrition_signal(con, day, goals, body_lb, rate, days=4):
     kc, n = nutrition.intake(con, prior, days)
     pr = nutrition.protein(con, prior, body_lb, days)
     if n < 2:
-        return _signal("nutrition", None, [f"fewer than 2 complete days logged in the last {days}"])
+        return _signal("nutrition", None, [f"under 2 complete days logged in the last {days}"])
     maint = nutrition.maintenance(con, prior, rate)
     target = nutrition.protein_target(goals, body_lb)
     levels, reasons = [], []
     if maint:
         gap = maint - kc
         levels.append("red" if gap > 1500 else "amber" if gap > 1000 else "green")
-        reasons.append(f"{kc:,.0f} kcal/day over the last {n} complete days vs ~{maint:,.0f} "
-                       f"maintenance from your weight trend (amber 1,000 short, red 1,500)")
+        reasons.append((levels[-1], f"eating {kc:,.0f} kcal a day vs ~{maint:,.0f} to maintain"))
     if target and pr["mean"] is not None:
         levels.append("red" if pr["mean"] < 0.6 * target else "amber" if pr["mean"] < 0.8 * target else "green")
-        reasons.append(f"protein {pr['mean']:.0f} g/day vs {target:.0f} g target "
-                       f"(amber under 80%, red under 60%)")
+        reasons.append((levels[-1], f"protein {pr['mean']:.0f} g a day vs {target:.0f} g target"))
     return _signal("nutrition", core.worst(*levels), reasons)
 
 def _pace_signal(con, day, goals):
@@ -387,8 +390,8 @@ def _pace_signal(con, day, goals):
     if m.get("pct") is None:
         return _signal("pace", None, ["not enough weigh-ins for a 4-week comparison"])
     lv = "red" if m["pct"] > 1.5 * hi else "amber" if m["pct"] > hi else "green"
-    return _signal("pace", lv, [f"losing {m['pct']:.2f}% of body weight a week over 4 weeks "
-                                f"(amber over {hi:g}%, red over {1.5 * hi:g}%: recovery under strain)"])
+    return _signal("pace", lv, [f"losing {m['pct']:.2f}% of body weight a week"
+                                + (", fast enough to cost recovery" if lv != "green" else "")])
 
 def readiness(con, day, goals):
     """Signal-counting, explainable: seven areas, each green/amber/red/no-data with its
