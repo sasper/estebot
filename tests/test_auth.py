@@ -138,3 +138,46 @@ def test_removing_someone_from_the_users_file_signs_them_out(site, tmp_path):
     users.write_text(users.read_text().split("[users]")[0] + "[users]\n")
     os.utime(users, ns=(time.time_ns(), time.time_ns() + 10**9))   # no restart, no cache clear
     assert "Sign in" in main.today(req("/", {auth.SESSION_COOKIE: session}), DAY, None).body.decode()
+
+
+def _upload(main, token, payload):
+    import asyncio, json as _json
+    body = _json.dumps(payload).encode()
+    async def receive():
+        return {"type": "http.request", "body": body, "more_body": False}
+    hdr = [(b"authorization", f"Bearer {token}".encode())] if token else []
+    r = Request({"type": "http", "method": "POST", "path": "/api/health-auto-export",
+                 "query_string": b"", "headers": hdr}, receive)
+    return asyncio.run(main.health_auto_export(r))
+
+
+def test_a_phone_upload_needs_its_token_and_lands_where_the_feed_parser_reads(site, tmp_path, monkeypatch):
+    # Health Auto Export posts its JSON here instead of writing to iCloud. The token is the
+    # only credential, so the users file keeps just its hash.
+    import hashlib, json as _json
+    main, auth, _ = site
+    token = "t" * 40
+    cfg = tmp_path / "me.toml"
+    feed = tmp_path / "me" / "raw" / "hae"
+    cfg.write_text(cfg.read_text() + f'[sources.health_auto_export]\nfrom_date = "2026-01-01"\n'
+                   f'metrics_glob = "{feed}/metrics/*.json"\nworkouts_glob = "{feed}/workouts/*.json"\n')
+    users = tmp_path / "users.toml"
+    users.write_text(users.read_text() + f'[uploads]\n"{hashlib.sha256(token.encode()).hexdigest()}" = "{cfg}"\n')
+    auth._settings.cache_clear()
+    started = []
+    monkeypatch.setattr(main.subprocess, "Popen", lambda args, **kw: started.append((args, kw["env"])))
+    payload = {"data": {"metrics": [{"name": "step_count", "units": "count",
+                                     "data": [{"date": "2026-03-09 23:58:00 -0400", "qty": 10},
+                                              {"date": "2026-03-10 00:01:00 -0400", "qty": 5}]}]}}
+
+    assert _upload(main, None, payload).status_code == 401
+    assert _upload(main, "x" * 40, payload).status_code == 401
+    assert started == []
+
+    resp = _upload(main, token, payload)
+    assert resp.status_code == 202
+    saved = feed / "metrics" / "HealthAutoExport-2026-03-10.json"      # the phone's day, not UTC's
+    assert _json.loads(saved.read_text())["data"]["metrics"][0]["name"] == "step_count"
+    assert not (feed / "workouts").exists()
+    (args, env), = started
+    assert args[-2:] == ["estebot.daily", "--feed"] and env["ESTEBOT_CONFIG"] == str(cfg)

@@ -7,6 +7,8 @@ allowed email to that person's config, and names the config anonymous visitors s
     demo_config = "/data/demo/estebot.toml"
     [users]
     "someone@example.com" = "/data/someone/estebot.toml"
+    [uploads]       # sha256 of each person's upload token -> their config (web/main.py)
+    "9f86d0...0a08" = "/data/someone/estebot.toml"
 
 The flow is OAuth 2.0 authorization code with PKCE, plus OpenID Connect's state and nonce.
 The ID token comes straight from Google's token endpoint over TLS in exchange for the code
@@ -37,6 +39,7 @@ class Settings:
     base_url: str                  # what Google redirects back to; must match the console
     demo_config: str | None
     users: dict                    # lower-cased email -> config path
+    uploads: dict = None           # sha256(upload token) hex -> config path
 
     @property
     def secure(self):
@@ -65,7 +68,8 @@ def _settings(path, _mtime):
                     session_key=key.encode(),
                     base_url=os.environ.get("ESTEBOT_BASE_URL", "http://127.0.0.1:8742"),
                     demo_config=raw.get("demo_config"),
-                    users={e.lower(): p for e, p in raw.get("users", {}).items()})
+                    users={e.lower(): p for e, p in raw.get("users", {}).items()},
+                    uploads={h.lower(): p for h, p in raw.get("uploads", {}).items()})
 
 
 # ---------------------------------------------------------------- signed values
@@ -157,3 +161,12 @@ def finish(s, flow_cookie, state, code):
 def session_cookie(s, email):
     return sign(s.session_key, "session", {"email": email, "sid": secrets.token_urlsafe(16)},
                 SESSION_DAYS * 86400)
+
+
+def upload_config(s, authorization):
+    """The config an upload token belongs to, from an "Authorization: Bearer <token>" header,
+    or None. Tokens are looked up by their hash, so the users file never holds one."""
+    scheme, _, token = (authorization or "").partition(" ")
+    if scheme.lower() != "bearer" or len(token) < 32:
+        return None
+    return (s.uploads or {}).get(hashlib.sha256(token.encode()).hexdigest())
