@@ -45,5 +45,12 @@ def test_a_server_sync_pulls_runs_the_feed_steps_and_pushes(tmp_path, monkeypatc
     assert "HealthAutoExport" not in pushed                       # never committed
     assert new.exists() and not old.exists()                      # older than 3 days: pruned
 
-    assert daily.run() == 0            # full sync: hevy runs now, notes still doesn't (no source)
+    # A full sync runs hevy too, still not notes (no source), and commits the Cronometer pull
+    # the nutrition table was rebuilt from, so a clone rebuilds the same table.
+    (data / "raw" / "cronometer").mkdir(parents=True)
+    (data / "raw" / "cronometer" / "dailysummary-2026-03-10T120000.csv").write_text("x")
+    assert daily.run() == 0
     assert (data / "tidy" / "hevy.csv").exists() and not (data / "tidy" / "notes.csv").exists()
+    pushed = subprocess.run(["git", "--git-dir", str(remote), "show", "--stat", "--format=%s", "main"],
+                            capture_output=True, text=True).stdout
+    assert "raw/cronometer/dailysummary-2026-03-10T120000.csv" in pushed
