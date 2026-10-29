@@ -283,3 +283,22 @@ body.chat-open .chat-fab{display:none}
 @media (min-width:1360px){
   .dash{display:grid;grid-template-columns:minmax(360px,420px) minmax(0,1fr);gap:0 16px;align-items:start}
 }
+/* Trend tiles: a title, one headline line and a sparkline; the full card opens on tap.
+   Two to a row when the trends column is wide; an open tile takes the whole row. */
+.tile summary{display:flex;align-items:center;gap:14px;cursor:pointer;list-style:none;
+  -webkit-tap-highlight-color:transparent}
+.tile summary::-webkit-details-marker{display:none}
+.tile summary::after{content:"\203A";color:var(--text-muted);font-size:19px;transition:transform .15s}
+.tile[open] summary::after{transform:rotate(90deg)}
+.tile[open] summary{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.thead{flex:1;min-width:0}
+.thead h2{margin:0 0 4px}
+.tline{font-size:14px;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.tline b{color:var(--text-primary);font-size:17px;font-weight:650}
+.spark{width:110px;height:34px;flex:none;overflow:visible}
+.col-trends{container-type:inline-size}
+@container (min-width:640px){
+  .trends{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;align-items:start}
+  .trends > *{grid-column:1/-1}
+  .trends > .tile:not([open]){grid-column:auto}
+}

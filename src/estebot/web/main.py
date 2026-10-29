@@ -109,6 +109,10 @@ def today(request: Request, day: str | None = None, present: str | None = None):
             refs=[(0.8, "0.8"), (1.5, "1.5 injury risk")])),
     ]
 
+    # word-sized trends for the tiles, from the same series as the full charts
+    sparks = {"weight": charts.sparkline(roll), "hrv": charts.sparkline(rs["hrv"]),
+              "load": charts.sparkline(rs["acwr"])}
+
     pattern = an.recommend_pattern(con, day, r["checkin"], training=p.training)
     plan = an.training_plan(con, day, r["verdict"], r["checkin"], training=p.training)
     axial = an.axial_by_day_type(con, day, training=p.training)
@@ -144,7 +148,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     ctx = dict(verdict_text=verdict_text, ring=charts.signal_ring(r["signals"], r["score"], r["verdict"]),
         day_label=date.fromisoformat(day).strftime("%a %-d %b %Y"),
         day=day, r=r, preds=preds, wchart=wchart, load_charts=load_charts,
-        multiples=multiples, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=goals.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,
+        multiples=multiples, sparks=sparks, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=goals.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,
         pattern=pattern, plan=plan, axial=axial, checkin=checkin,
         day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
         review_days=review_days, prev_day=prev_day, next_day=next_day,
