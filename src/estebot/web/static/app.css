@@ -199,7 +199,9 @@ table.plan td{padding:8px 14px 8px 0;vertical-align:top}
 table.plan td:last-child{padding-right:0}
 table.plan tr.main td:first-child{font-weight:600}
 .adjust{margin-top:3px;color:var(--warn);font-weight:600}
-@media(max-width:560px){ table.plan td:last-child{display:none} table.plan th:last-child{display:none} }
+/* Sized by the card: narrow on a phone and in the desktop's left column alike. */
+.session{container-type:inline-size}
+@container (max-width:520px){ table.plan td:last-child,table.plan th:last-child{display:none} }
 
 /* Ask EsteBot */
 .ask-log{display:flex;flex-direction:column;gap:8px;margin:4px 0 10px}
@@ -238,9 +240,46 @@ table.plan tr.main td:first-child{font-weight:600}
 .contrib details[open] summary::after{transform:rotate(90deg)}
 .contrib details p{margin:-4px 0 12px 19px;font-size:13px;color:var(--text-secondary)}
 .readiness .rule{margin:4px 0 0;padding-top:10px;border-top:1px solid var(--line)}
-@media (min-width:720px){
+/* Sized by the card, not the window: the card is narrower in the desktop's left column
+   than on a tablet showing one column. */
+.readiness{container-type:inline-size}
+@container (min-width:600px){
   .ring{width:120px;height:120px}
   .readiness .vbadge{font-size:32px}
   .contrib{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}
   .contrib details p{margin-right:6px}
+}
+/* Ask EsteBot: a sheet behind a floating button on phones, docked on the right on desktop. */
+.chat{display:none;flex-direction:column;gap:10px;background:var(--surface-1);border:1px solid var(--line);padding:16px}
+.chat-head{display:flex;align-items:center;justify-content:space-between}
+.chat-head h2{margin:0}
+.chat-close{background:none;border:0;font-size:24px;line-height:1;color:var(--text-muted);cursor:pointer;padding:0 4px}
+.chat .ask-log{flex:1;min-height:0;overflow-y:auto;margin:0}
+.chat .ask-form{margin-top:auto}
+.ask-try p.small{color:var(--text-secondary);margin:0 0 12px}
+.ask-try button{display:block;width:100%;text-align:left;font:inherit;font-size:13.5px;margin:0 0 6px;
+  padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:none;color:var(--text-secondary);cursor:pointer}
+.ask-try button:hover:enabled{color:var(--text-primary);border-color:var(--text-muted)}
+.ask-try button:disabled,.ask-form :disabled{opacity:.55;cursor:default}
+.chat-fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;
+  font:inherit;font-weight:600;padding:12px 20px;border-radius:999px;border:0;cursor:pointer;
+  background:var(--series-1);color:#fff;box-shadow:0 4px 16px rgb(0 0 0 / .25)}
+body.chat-open .chat{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;height:min(82vh,680px);
+  border-radius:16px 16px 0 0;padding-bottom:calc(16px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgb(0 0 0 / .3)}
+body.chat-open .chat-fab{display:none}
+.wrap:has(> .chat-fab) .main{padding-bottom:56px}
+/* Desktop: the page beside the docked chat; today and trends side by side when there is room. */
+@media (min-width:1100px){
+  .wrap{max-width:1360px;padding:28px 32px 64px}
+  .wrap:has(> .chat){max-width:1720px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:0 20px;align-items:start}
+  .chat,body.chat-open .chat{display:flex;position:sticky;top:16px;height:calc(100vh - 32px);
+    border-radius:var(--radius);box-shadow:none;padding:16px}
+  .chat-fab,.chat-close{display:none}
+  .wrap:has(> .chat-fab) .main{padding-bottom:0}
+}
+@media (min-width:1100px){
+  .wrap:not(:has(> .chat)) .dash{display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);gap:0 16px;align-items:start}
+}
+@media (min-width:1360px){
+  .dash{display:grid;grid-template-columns:minmax(360px,420px) minmax(0,1fr);gap:0 16px;align-items:start}
 }
