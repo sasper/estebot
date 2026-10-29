@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:                 # re-run a deploy by hand from the Actions tab
 
 jobs:
   test:
@@ -42,7 +43,7 @@ jobs:
   deploy:
     # Merging to main is the deploy, so the live site always matches main. It waits for the
     # tests and the personal-data check, and never runs for a pull request.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: [test, no-personal-data]
     runs-on: ubuntu-latest
     concurrency:
@@ -52,7 +53,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be  # 1.5
       - name: Deploy to Fly
-        # Fly's own builder: the Depot one returned 503s on the first runs (29 Oct 2026)
-        run: flyctl deploy --remote-only --ha=false --depot=false
+        # Build on the runner's Docker. Fly's remote builders sit at the organisation level,
+        # and an app-scoped deploy token can't reach them (Fly answers 503); it can push an
+        # image and update this one app, which is all a deploy needs.
+        run: flyctl deploy --local-only --ha=false
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
