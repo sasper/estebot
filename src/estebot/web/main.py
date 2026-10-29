@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 
 from estebot import config, core
 from estebot.analysis import engine as an, nutrition, predictions
-from estebot.web import db, charts, people
+from estebot.web import auth, db, charts, people
 
 HERE = os.path.dirname(__file__)
 app = FastAPI(title="health")
@@ -30,9 +30,15 @@ tpl.env.filters["shortdate"] = lambda iso: date.fromisoformat(iso).strftime("%a 
 def demo_mode():
     return os.environ.get("ESTEBOT_DEMO") == "1"
 
-def _refuse_in_demo():
-    if demo_mode():
+def _refuse(p, csrf):
+    """None if this person may change their page, else the response refusing it. The demo is
+    read-only; a signed-in person's forms must carry their session's CSRF token."""
+    if demo_mode() or p.read_only:
         return PlainTextResponse("This is a read-only demo.", status_code=403)
+    s = auth.settings()
+    if s is not None and not auth.csrf_ok(s, p.session, csrf):
+        return PlainTextResponse("This form has expired. Reload the page and try again.",
+                                 status_code=403)
 
 # The engine's verdicts, in words. "hard" means everything lines up for a big session.
 VERDICT_TEXT = {"hard": "Go all out", "normal": "Normal", "light": "Take it easy", "rest": "Rest day"}
@@ -132,7 +138,9 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         pattern=pattern, plan=plan, axial=axial, checkin=checkin,
         day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
         review_days=review_days, prev_day=prev_day, next_day=next_day,
-        is_today=(day == date.today().isoformat()), demo=demo_mode())
+        is_today=(day == date.today().isoformat()), demo=demo_mode() or p.read_only,
+        signin=auth.settings() is not None, email=p.email,
+        csrf=auth.csrf_token(auth.settings(), p.session) if p.session else "")
     on = request.cookies.get(PRESENT_COOKIE) == "1" if present is None else present == "1"
     resp = tpl.TemplateResponse(request, "today.html", presentable(ctx) if on else dict(ctx, present=False))
     if present is not None:
@@ -214,10 +222,12 @@ def _calendar(con, day, months=3):
 
 
 @app.post("/goal")
-def set_goal(request: Request, goal_weight_lb: float = Form(...), day: str = Form("")):
-    if refused := _refuse_in_demo():
+def set_goal(request: Request, goal_weight_lb: float = Form(...), day: str = Form(""),
+             csrf: str = Form("")):
+    p = people.for_request(request)
+    if refused := _refuse(p, csrf):
         return refused
-    con = people.for_request(request).connect()
+    con = p.connect()
     db.set_setting(con, "goal_weight_lb", round(goal_weight_lb, 1))
     return RedirectResponse(f"/?day={day}" if day else "/", status_code=303)
 
@@ -226,8 +236,9 @@ def set_goal(request: Request, goal_weight_lb: float = Form(...), day: str = For
 def checkin(request: Request, day: str = Form(...), back: str | None = Form(None),
             soreness: int = Form(0), energy: int | None = Form(None),
             inter_set_recovery: int | None = Form(None), note: str = Form(""),
-            sick: bool = Form(False), injured: bool = Form(False)):
-    if refused := _refuse_in_demo():
+            sick: bool = Form(False), injured: bool = Form(False), csrf: str = Form("")):
+    p = people.for_request(request)
+    if refused := _refuse(p, csrf):
         return refused
     try:
         day = date.fromisoformat(day).isoformat()
@@ -238,7 +249,7 @@ def checkin(request: Request, day: str = Form(...), back: str | None = Form(None
     reported = back in BACK_LEVELS
     scale = lambda v: v if v in (0, 1, 2, 3) else None
     energy = core.checkin_energy(scale(energy), sick)
-    con = people.for_request(request).connect()
+    con = p.connect()
     # A manual save always wins over a derived row and clears the review flag - answering
     # the question is what resolving it means.
     con.execute("""INSERT INTO checkin
@@ -255,3 +266,46 @@ def checkin(request: Request, day: str = Form(...), back: str | None = Form(None
                  scale(inter_set_recovery), note.strip()[:400] or None, int(sick), int(injured)))
     con.commit()
     return RedirectResponse(f"/?day={day}", status_code=303)
+
+
+# ---------------------------------------------------------------- sign-in (web/auth.py)
+
+def _set(resp, name, value, seconds, s):
+    resp.set_cookie(name, value, max_age=seconds, httponly=True, samesite="lax", secure=s.secure)
+
+@app.get("/auth/login")
+def login():
+    s = auth.settings()
+    if s is None:
+        return RedirectResponse("/", status_code=303)
+    url, flow = auth.start(s)
+    resp = RedirectResponse(url, status_code=303)
+    _set(resp, auth.FLOW_COOKIE, flow, auth.FLOW_SECONDS, s)
+    return resp
+
+@app.get("/auth/callback")
+def callback(request: Request, code: str = "", state: str = "", error: str = ""):
+    s = auth.settings()
+    if s is None:
+        return RedirectResponse("/", status_code=303)
+    if error or not code:
+        return PlainTextResponse("Sign-in was cancelled.", status_code=400)
+    try:
+        email = auth.finish(s, request.cookies.get(auth.FLOW_COOKIE), state, code)
+    except auth.SignInError as e:
+        return PlainTextResponse(str(e), status_code=400)
+    if email not in s.users:
+        # Same answer for every unknown address: the page doesn't say who has an account.
+        return PlainTextResponse("This Google account doesn't have an EsteBot page.", status_code=403)
+    resp = RedirectResponse("/", status_code=303)
+    resp.delete_cookie(auth.FLOW_COOKIE)
+    _set(resp, auth.SESSION_COOKIE, auth.session_cookie(s, email), auth.SESSION_DAYS * 86400, s)
+    return resp
+
+@app.post("/auth/logout")
+def logout(request: Request, csrf: str = Form("")):
+    s = auth.settings()
+    resp = RedirectResponse("/", status_code=303)
+    if s is not None and auth.csrf_ok(s, auth.session(request, s), csrf):
+        resp.delete_cookie(auth.SESSION_COOKIE)
+    return resp
