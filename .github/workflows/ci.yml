@@ -38,3 +38,20 @@ jobs:
             exit 1
           fi
           echo "Clean: no personal-data paths tracked."
+
+  deploy:
+    # Merging to main is the deploy, so the live site always matches main. It waits for the
+    # tests and the personal-data check, and never runs for a pull request.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, no-personal-data]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy
+      cancel-in-progress: false      # let a running deploy finish; the next one queues
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be  # 1.5
+      - name: Deploy to Fly
+        run: flyctl deploy --remote-only --ha=false
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

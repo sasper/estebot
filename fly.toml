@@ -1,7 +1,8 @@
 # EsteBot at estebot.app: the public demo for visitors, and with the private-mode secrets
 # set (see deploy/entrypoint.sh), each signed-in person's own page. The volume holds the
 # cloned data repo and each person's app.sqlite; the demo is regenerated at every start.
-# Deploy from a clean `git archive` export, never from a directory that has estebot.toml.
+# Merging to main deploys it (the deploy job in .github/workflows/ci.yml, after the tests).
+# By hand: deploy from a clean `git archive` export, never from a directory with estebot.toml.
 app = "estebot"
 primary_region = "iad"
 
