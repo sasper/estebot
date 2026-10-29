@@ -248,6 +248,21 @@ def combine_signals(levels: dict[str, str | None], forced_rest: bool = False) ->
     return "normal"
 
 
+# Each verdict owns a band of the 0-100 readiness score, so the number can never contradict
+# the call next to it (six good areas and one strained must not read 86 beside "take it easy").
+SCORE_BANDS = {"rest": (0, 24), "light": (25, 49), "normal": (50, 74), "hard": (75, 100)}
+
+def readiness_score(levels: dict[str, str | None], verdict: str) -> int:
+    """0-100: the verdict's band, placed within it by how clear the areas are.
+
+    Green counts 1, amber 1/2, red and no data 0, over every area, so a day with missing
+    data scores lower than the same day fully measured. The verdict decides; the score
+    only says how close to the next band up the day sits."""
+    lo, hi = SCORE_BANDS[verdict]
+    clear = sum({"green": 1, "amber": 0.5}.get(v, 0) for v in levels.values())
+    return lo + round(clear / max(len(levels), 1) * (hi - lo))
+
+
 def worst(*levels: str | None) -> str | None:
     """The most severe of several levels; None only if all are None."""
     known = [l for l in levels if l]

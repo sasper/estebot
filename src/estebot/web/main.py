@@ -138,7 +138,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     nut["gaps"], nut["near_limit"], nut["unmeasured"] = nutrition.micronutrients(
         con, day, nutrition.supplement_amounts(products, day), supp_notes)
     verdict_text = VERDICT_TEXT[r["verdict"]]
-    ctx = dict(verdict_text=verdict_text,
+    ctx = dict(verdict_text=verdict_text, ring=charts.signal_ring(r["signals"], r["score"], r["verdict"]),
         day_label=date.fromisoformat(day).strftime("%a %-d %b %Y"),
         day=day, r=r, preds=preds, wchart=wchart, load_charts=load_charts,
         multiples=multiples, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=goals.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,

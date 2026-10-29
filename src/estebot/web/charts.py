@@ -106,3 +106,23 @@ def bar_chart(points, *, width=720, height=170, pad_l=52, pad_b=28, pad_t=12, pa
                    f'{dt.strftime("%-d %b")}</text>')
     out.append("</svg>")
     return "\n".join(out)
+
+def signal_ring(signals, score=None, verdict="", *, size=120, stroke=12, gap_deg=5):
+    """The readiness signals as one ring, an arc per area in its level's colour, clockwise
+    from the top in engine order, with the engine's score in the middle."""
+    import math
+    n = len(signals)
+    if not n: return ""
+    r, c = (size - stroke) / 2, size / 2
+    pt = lambda deg: (c + r * math.sin(math.radians(deg)), c - r * math.cos(math.radians(deg)))
+    out = [f'<svg viewBox="0 0 {size} {size}" class="ring" role="img" aria-label="readiness {score}">']
+    for i, x in enumerate(signals):
+        a0, a1 = i * 360 / n + gap_deg / 2, (i + 1) * 360 / n - gap_deg / 2
+        (x0, y0), (x1, y1) = pt(a0), pt(a1)
+        out.append(f'<path class="arc lv-{x["level"] or "none"}" d="M{x0:.2f},{y0:.2f} '
+                   f'A{r:.2f},{r:.2f} 0 0 1 {x1:.2f},{y1:.2f}" stroke-width="{stroke}"/>')
+    if score is not None:
+        out.append(f'<text class="rscore v-{verdict}" x="{c}" y="{c + 3}" text-anchor="middle" '
+                   f'dominant-baseline="middle">{score}</text>')
+    out.append("</svg>")
+    return "".join(out)

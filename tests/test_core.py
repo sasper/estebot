@@ -239,6 +239,20 @@ class TestCombineSignals:
         from estebot.core import combine_signals
         assert combine_signals({"load": "green", "sleep": None, "recovery": "green"}) == "normal"
 
+    def test_the_score_never_contradicts_the_verdict(self):
+        # An average of the levels put six good areas and one strained at 86 beside "take it
+        # easy". Every combination of seven areas has to land inside its verdict's band.
+        from itertools import product
+        from estebot.core import combine_signals, readiness_score, SCORE_BANDS
+        areas = ("load", "effort", "sleep", "recovery", "feel", "nutrition", "pace")
+        for combo in product(("green", "amber", "red", None), repeat=len(areas)):
+            levels = dict(zip(areas, combo))
+            v = combine_signals(levels)
+            lo, hi = SCORE_BANDS[v]
+            assert lo <= readiness_score(levels, v) <= hi
+        today = dict.fromkeys(areas, "green") | {"load": "red"}
+        assert readiness_score(today, "light") == 46               # top of "take it easy"
+
 
 class TestMonotony:
     def test_a_week_of_alike_days_is_monotonous_and_a_light_day_breaks_it(self):

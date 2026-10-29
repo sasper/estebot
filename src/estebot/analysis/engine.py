@@ -410,7 +410,8 @@ def readiness(con, day, goals):
     spasm = bool(ci and ci["back_reported"] and ci["back"] == "spasm")
     if spasm:
         feel["reasons"].append("a back spasm means rest, whatever else says (your rule)")
-    verdict = core.combine_signals({x["area"]: x["level"] for x in signals}, forced_rest=spasm)
+    levels = {x["area"]: x["level"] for x in signals}
+    verdict = core.combine_signals(levels, forced_rest=spasm)
 
     ramp = None
     recent5 = st.mean(_load_series(con, prior, 5))
@@ -420,7 +421,8 @@ def readiness(con, day, goals):
         ramp = (f"Coming off a low-load stretch ({recent5:.0f} vs {chronic:.0f} min/day norm). "
                 f"Cap today near {cap} min rather than making up the deficit at once.")
     return {
-        "date": day, "verdict": verdict, "signals": signals, "ramp": ramp, "checkin": ci,
+        "date": day, "verdict": verdict, "score": core.readiness_score(levels, verdict),
+        "signals": signals, "ramp": ramp, "checkin": ci,
         "subjective_review": bool(ci["needs_review"]) if ci and ci["date"] == day else False,
         "poor_recovery_days": poor, "acwr": r_acwr, **rec,
         "streak": days_since_rest(con, prior), "streak_now": days_since_rest(con, day),
@@ -487,7 +489,7 @@ if __name__ == "__main__":
     # Spot-check: python -m estebot.analysis.engine YYYY-MM-DD [...] (default: today).
     for day in sys.argv[1:] or [date.today().isoformat()]:
         r = readiness(con, day, goals)
-        print(f"\n{day}: {r['verdict'].upper()}"
+        print(f"\n{day}: {r['verdict'].upper()} {r['score']}"
               + (f"   ACWR {r['acwr']:.2f}" if r["acwr"] else ""))
         for x in r["signals"]: print(f"   [{x['level'] or '-'}] {x['area']}: {'; '.join(x['reasons'])}")
         if r["ramp"]: print(f"   RAMP: {r['ramp']}")
