@@ -120,7 +120,15 @@
   {% set when = " today" if is_today else "" %}
   <details class="card tapcheck" id="checkin"{{ "" if saved else " open" }}>
     <summary><h2>Check-in{{ "" if is_today else ", " ~ day|shortdate }}</h2>
-      <span class="small muted">{{ "saved, tap to change" if saved else "from your notes, check and save" if ci else "how do you feel" ~ when ~ "?" }}</span></summary>
+      <span class="small muted">{{ "saved, tap to change" if saved else "read from what you wrote, check and save" if ci.source == "draft" else "from your notes, check and save" if ci else "how do you feel" ~ when ~ "?" }}</span></summary>
+    {% if chat_on %}
+    <form method="post" action="/checkin/text" class="tapsay">{% if csrf %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endif %}
+      <input type="hidden" name="day" value="{{ day }}">
+      <input name="text" maxlength="400" placeholder="Or say it: slept badly, back tight, busy day" aria-label="Say how you feel">
+      <button type="submit">Read it</button>
+    </form>
+    {% if said == "failed" %}<p class="small muted">Couldn't read that one. Tap instead.</p>{% endif %}
+    {% endif %}
     <form method="post" action="/checkin" class="tap">{% if csrf %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endif %}
       <input type="hidden" name="day" value="{{ day }}">
       <input type="hidden" name="soreness" value="{{ ci.soreness or 0 }}">

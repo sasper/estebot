@@ -238,3 +238,23 @@ def test_the_example_call_reads_right_when_nothing_is_flagged():
     a = examples._call({"verdict": "normal", "score": 60, "voting": [],
                         "signals": [sig("load", "red", "too alike")] + green[1:]})["a"]
     assert "holding you back" not in a and "Flagged but not counted: training load" in a
+
+
+def test_a_check_in_said_in_a_sentence_is_only_a_draft_until_saved(main, con, monkeypatch):
+    # The model's reading prefills the tap card; nothing reaches the checkin table, and so
+    # the verdict, until the card is saved, which clears the draft.
+    from estebot.web import checkin_text
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    monkeypatch.setattr(checkin_text, "read", lambda con, text, today: {
+        "back": "sore", "energy": 1, "inter_set_recovery": None, "sick": False, "injured": False})
+    today = date.today().isoformat()
+    req = Request({"type": "http", "method": "POST", "path": "/checkin/text", "headers": []})
+    assert main.checkin_from_text(req, today, TAP_NOTE, "").status_code == 303
+    assert con.execute("SELECT 1 FROM checkin WHERE date=?", (today,)).fetchone() is None
+    html = today_page(main)
+    tap = html.split('action="/checkin" class="tap"')[1].split("</form>")[0]
+    assert "read from what you wrote" in html and 'action="/checkin/text"' in html
+    assert 'value="sore" checked' in tap and 'name="energy" value="1" checked' in tap and TAP_NOTE in tap
+    save(main, today, "sore", 1, None, TAP_NOTE)
+    assert con.execute("SELECT 1 FROM checkin_draft WHERE date=?", (today,)).fetchone() is None
+    assert con.execute("SELECT source FROM checkin WHERE date=?", (today,)).fetchone()["source"] == "manual"

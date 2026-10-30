@@ -77,6 +77,15 @@ CREATE TABLE IF NOT EXISTS checkin (
   sick INT NOT NULL DEFAULT 0,
   injured INT NOT NULL DEFAULT 0);
 
+-- A check-in said in a sentence and read onto the tap card (web/checkin_text.py). Only a
+-- draft: it prefills the card, and nothing counts until Save writes the checkin row.
+CREATE TABLE IF NOT EXISTS checkin_draft (
+  date TEXT PRIMARY KEY,
+  back TEXT, energy INT, inter_set_recovery INT,
+  sick INT NOT NULL DEFAULT 0, injured INT NOT NULL DEFAULT 0,
+  note TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+
 CREATE INDEX IF NOT EXISTS idx_ann_start ON annotation(start_date);
 """
 
