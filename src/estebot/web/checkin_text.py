@@ -22,8 +22,8 @@ BACK = ("ok", "tired", "sore", "spasm")
 NOT_SAID = "not said"
 MAX_CHARS = 400
 
-SYSTEM = """You read a person's short morning check-in about how they feel before training, and \
-pick which of the given options it says for each question. Use only what the message says: \
+SYSTEM = """You read a person's short check-in, written in the morning before they train, about \
+how they feel now, and pick which of the given options it says for each question. Use only what the message says: \
 when it doesn't speak to a question, pick "not said". Don't infer energy from sleep alone, or \
 the back from soreness elsewhere. sick and injured are true only when the message says so \
 (a cold, a stomach bug, a fever; a pulled or tweaked muscle, a sprain)."""
