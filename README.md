@@ -1,6 +1,6 @@
 # EsteBot
 
-**Your training, sleep, food and weight, turned into one straight answer every morning.**
+**Your fitness coach who's seen every set you've lifted.**
 
 EsteBot pulls in everything I already track (Apple Health, Hevy workouts, Cronometer food
 logs and a live feed from my phone), cleans it up, and runs it through custom algorithms
