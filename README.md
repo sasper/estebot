@@ -31,7 +31,7 @@ wakes up.
 - **Ask EsteBot.** Claude answers questions about your data from EsteBot's own numbers. The
   algorithms decide; the AI explains.
 
-<img src="docs/screenshots/verdict.png" alt="Today's call: a readiness score of 46 in a ring of seven signals, held back by training load" width="720">
+<img src="docs/screenshots/verdict.png" alt="Today's call: a 0–100 readiness score in a ring of seven signals, each good, watch or strain" width="720">
 
 <img src="docs/screenshots/session.png" alt="Today's session with a target for every exercise" width="720">
 
