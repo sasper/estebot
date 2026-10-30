@@ -306,3 +306,22 @@ body.chat-open .chat-fab{display:none}
   .trends > *{grid-column:1/-1}
   .trends > .tile:not([open]){grid-column:auto}
 }
+/* Compact check-in: words on the buttons, flags and the note on one line with Save.
+   Each question sits beside its buttons when the card has room for it. */
+.tapcheck{container-type:inline-size}
+.tapcheck .tap{gap:12px}
+.tapcheck .seg span{min-height:42px;font-size:14px}
+.tapfoot{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.flag input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.flag span{display:flex;align-items:center;height:42px;padding:0 14px;border:1px solid var(--line);
+  border-radius:999px;font-size:14px;font-weight:550;color:var(--text-secondary);cursor:pointer;user-select:none}
+.flag input:checked + span{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 55%,transparent);
+  background:color-mix(in srgb,var(--bad) 12%,var(--surface-1))}
+.flag input:focus-visible + span{outline:2px solid var(--text-primary);outline-offset:2px}
+.tapnote-in{flex:1 1 160px;min-width:0;height:42px;font:inherit;font-size:16px;padding:0 12px;
+  border:1px solid var(--line);border-radius:10px;background:var(--surface-1);color:var(--text-primary)}
+.tapcheck .tapfoot button{min-height:42px;padding:0 22px}
+@container (min-width:520px){
+  .tapcheck .tap legend{float:left;width:34%;margin:0;line-height:42px}
+  .tapcheck .seg{overflow:hidden}
+}
