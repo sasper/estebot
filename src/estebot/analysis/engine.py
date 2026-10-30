@@ -132,9 +132,12 @@ def acwr(con, day):
     >1.5 is the injury-risk zone; <0.8 means detrained relative to recent norm.
     This is the metric that would have flagged a big session straight off a near-idle
     week, the setup for an injury the next day."""
-    acute = st.mean(_load_series(con, day, 7))
-    chronic = st.mean(_load_series(con, day, 28))
+    acute, chronic = _acwr_parts(con, day)
     return (acute / chronic) if chronic > 0 else None
+
+def _acwr_parts(con, day):
+    """The two means acwr() divides: exercise minutes a day over 7 days and over 28."""
+    return st.mean(_load_series(con, day, 7)), st.mean(_load_series(con, day, 28))
 
 def _metric_baseline(con, day, col, days=30):
     start = s(d(day) - timedelta(days=days))
@@ -282,13 +285,18 @@ def _load_signal(con, prior):
     # an injury the next day.
     lv_r = None if r is None else ("red" if r > 1.5 else "amber" if (r > 1.3 or r < 0.8) else "green")
     lv_m = None if mono is None else ("red" if mono > 2.5 else "amber" if mono > 2.0 else "green")
-    jump = "" if r is None else " (a jump)" if r > 1.3 else " (a light stretch)" if r < 0.8 else ""
-    alike = (None if mono is None else "every day the same this week" if mono == float("inf")
-             else f"days too alike this week, no lighter one (monotony {mono:.1f})" if lv_m != "green"
-             else f"days varied enough (monotony {mono:.1f})")
-    return _signal("load", core.worst(lv_r, lv_m), [
-        (lv_r, r is not None and f"this week's load is {r:.2f}× your 4-week average{jump}"),
-        (lv_m, alike)]), r
+    acute, chronic = _acwr_parts(con, prior)
+    meaning = ("" if r is None else ": a big jump, keep today moderate" if r > 1.3
+               else ": a light week, build back up rather than going all out" if r < 0.8
+               else ": within the normal range")
+    ratio = r is not None and (f"last 7 days averaged {acute:.0f} exercise min a day vs {chronic:.0f} "
+                               f"over the last 4 weeks ({r:.2f}×){meaning}")
+    alike = (None if mono is None else "no easy day in the last 7, the same exercise minutes every day"
+             if mono == float("inf")
+             else f"no easy day in the last 7, every day about as long as the next (monotony {mono:.1f})"
+             if lv_m != "green"
+             else f"a mix of harder and easier days in the last 7 (monotony {mono:.1f})")
+    return _signal("load", core.worst(lv_r, lv_m), [(lv_r, ratio), (lv_m, alike)]), r
 
 def _effort_signal(con, prior):
     """Session RPE lately vs the month before: the same work feeling harder is fatigue."""
