@@ -16,11 +16,13 @@ wakes up.
 
 ## What it does
 
-- **One call a day.** Seven signals (training load, effort, sleep, HRV and resting heart
-  rate, how you feel, food, weight-loss pace) each get a vote. Out comes a 0–100 readiness
-  score and a verdict from *rest* to *go all out*. One bad night never decides your day.
+- **One call a day, and it grades itself.** Seven signals are tracked (training load, effort,
+  sleep, HRV and resting heart rate, how you feel, food, weight-loss pace), but a signal only
+  gets a vote once your own sessions show that its flagged days went worse. Every session is
+  graded against its targets, and the page shows how sessions went after each call: *go hard*,
+  *go as planned*, *take it easy* or *rest*. Nothing flagged is never on its own a reason to go hard.
 - **Your next session, already planned.** It knows where you are in the rotation and sets a
-  target for every exercise from the last time you did it, dialled back on a take-it-easy day.
+  target for every exercise from the last time you did it, held back on a take-it-easy day.
 - **A weight trend that sees through the noise.** A 14-day average and a fitted weekly rate
   that ignore water swings, checked against your planned pace, with a projected goal date.
 - **Strength that's fair to your size.** Estimated one-rep maxes, scaled to body weight,

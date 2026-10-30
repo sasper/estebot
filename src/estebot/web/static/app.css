@@ -226,6 +226,12 @@ table.plan tr.main td:first-child{font-weight:600}
 .rhero{display:flex;align-items:center;gap:18px;margin:4px 0 16px}
 .ring{width:96px;height:96px;flex:none}
 .ring .arc{fill:none;stroke:var(--lv)}
+.ring .arc.ctx{stroke-opacity:.3}
+.contrib .ctx .dot{opacity:.4}
+.contrib .vote{font-size:11px;padding:1px 7px;border-radius:9px;border:1px solid var(--line);color:var(--text-muted)}
+.contrib .vote.on{border-color:var(--accent);color:var(--accent)}
+table.evidence td,table.evidence th{padding:6px 12px 6px 0;text-align:left;vertical-align:top}
+table.evidence tr.on td:last-child{color:var(--accent);font-weight:600}
 .rscore{font-size:38px;font-weight:700;letter-spacing:-.03em;fill:currentColor;font-variant-numeric:tabular-nums}
 .readiness .vbadge{line-height:1.15}
 .why{margin:6px 0 0;font-size:14px;color:var(--text-secondary)}

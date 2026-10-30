@@ -12,7 +12,7 @@ from estebot import config
 from estebot.analysis import engine
 from estebot.web import db
 
-VERDICT = {"hard": "go all out", "normal": "normal", "light": "take it easy", "rest": "rest"}
+VERDICT = {"hard": "go hard", "normal": "go as planned", "light": "take it easy", "rest": "rest"}
 
 
 def pts(x):
@@ -31,11 +31,17 @@ def main(argv):
         diff = "" if e["diff"] is None else pts(e["diff"])
         print(f"{area:10} {e['n_flagged']:7} {e['n_clear']:6}   {diff:>16}   {band:>15}   "
               f"{e['status']}{' -> votes' if e['votes'] else ''}")
+    print("\nreasons to go hard (they count only once days with them went better):")
+    for name, e in ev["hard_reasons"].items():
+        band = "" if e["diff"] is None else f"{pts(e['diff'])} ({pts(e['lo'])} to {pts(e['hi'])})"
+        print(f"  {name:36} {e['n_flagged']:4} vs {e['n_clear']:4}   {band}   {e['status']}"
+              f"{' -> earns going hard' if e['supports'] else ''}")
     print("\ncandidates, tracked but not voting until new sessions confirm them:")
     for name, e in ev["candidates"].items():
         band = "" if e["diff"] is None else f"{pts(e['diff'])} ({pts(e['lo'])} to {pts(e['hi'])})"
         print(f"  {name:36} {e['n_flagged']:4} vs {e['n_clear']:4}   {band}   {e['status']}")
-    print(f"\n{'call':13} {'sessions':>8}   {'targets met':>11}   {'vs its phase':>12}")
+    print("\nthe call each session would get under these votes (in-sample, so it flatters the rule):")
+    print(f"{'call':13} {'sessions':>8}   {'targets met':>11}   {'vs its phase':>12}")
     for v, g in ev["verdicts"].items():
         print(f"{VERDICT[v]:13} {g['n']:8}   {g['hit']:11.0%}   {pts(g['vs_phase']):>12}")
     return 0

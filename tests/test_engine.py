@@ -373,3 +373,22 @@ def test_the_evidence_pairs_each_session_with_the_one_before(con):
     assert ev["sessions"] == 5                       # the first has nothing to be graded against
     c = ev["candidates"]["missed most targets last session"]
     assert (c["n_flagged"], c["n_clear"]) == (4, 0) and c["status"] == "not enough data"
+
+
+def test_a_good_check_in_earns_going_hard_only_once_it_has_a_record(con):
+    # "Go all out" came too easily: on a day with nothing flagged it was the default. A good
+    # check-in is a reason to go hard only when days with one have gone better, and with no
+    # history behind it the call stays as planned.
+    from estebot.analysis import engine
+    con.execute("INSERT INTO checkin (date, back, energy, source, back_reported) "
+                "VALUES ('2026-10-14', 'ok', 3, 'manual', 1)")
+    r = engine.readiness(con, "2026-10-14", GOALS)
+    assert r["hard_reasons"]["check-in"][0] and r["positive"] is None
+    assert r["verdict"] == "normal"
+
+
+def test_a_voting_area_holds_the_day_and_a_non_voting_one_does_not(con):
+    from estebot.analysis import engine
+    con.execute("INSERT INTO sleep (night, asleep_hr) VALUES ('2026-10-13', 4.5)")   # red
+    assert engine.readiness(con, "2026-10-14", GOALS, voting=()).get("verdict") == "normal"
+    assert engine.readiness(con, "2026-10-14", GOALS, voting=("sleep",))["verdict"] == "light"
