@@ -7,9 +7,12 @@ parsers' exact layouts, health-context.txt notes, supplements.toml, a short ledg
 predictions.toml, and an estebot.toml pointing data_dir at DIR. The app then runs on it
 unchanged with ESTEBOT_CONFIG=DIR/estebot.toml.
 
-The person: about six months into a moderate cut, push/pull/legs in A and B versions, RPE
+The person: about a year into a moderate cut, push/pull/legs in A and B versions, RPE
 logged, incline walks on some rest days, two short illnesses, a work trip, two deload weeks
-and one tweaked lower back. Every value comes from one random.Random(seed), so the same seed
+and one tweaked lower back. One effect is planted on purpose: a run of short nights (a busy
+stretch every few weeks) costs about 3% of strength, so the evidence table has something
+real to find and the page can show it finding it. A year, because over six months the
+effect is too faint to tell from noise. Every value comes from one random.Random(seed), so the same seed
 and end date give byte-identical files. The default end date is fixed for the same reason;
 the hosted demo passes --end to roll forward.
 """
@@ -222,7 +225,7 @@ def _events(n):
     return ev
 
 
-def generate(out, seed=7, end=DEFAULT_END, days=180):
+def generate(out, seed=7, end=DEFAULT_END, days=365):
     rng = random.Random(seed)
     out = Path(out).resolve()
     start = end - timedelta(days=days - 1)
@@ -235,6 +238,7 @@ def generate(out, seed=7, end=DEFAULT_END, days=180):
     nutrition, nutrients, notes = [], [], []
     trend, water, prev_intake, prev_sodium = START_LB, 0.0, None, 3000.0
     sleep_prev, heavy_prev, kind_i = 7.0, False, 0
+    nights, busy_until = [7.0, 7.0, 7.0], -1
     variant = {k: "B" for k in ROTATION}           # so each kind opens on A
     tweak, back_days = None, {}
 
@@ -256,7 +260,11 @@ def generate(out, seed=7, end=DEFAULT_END, days=180):
             weights.append((iso(i), round(trend + water, 1)))
 
         # ---- training
-        factor = (0.96 if sleep_prev < 6 else 1.0) * (0.97 if back_days.get(i) else 1.0)
+        # The planted signal the evidence table should find: a run of short nights costs
+        # strength, one bad night barely does (as in the sleep-restriction studies).
+        run3 = sum(nights[-3:]) / 3
+        factor = ((0.97 if run3 < 6.2 else 0.98 if sleep_prev < 6 else 1.0)
+                  * (0.97 if back_days.get(i) else 1.0))
         session = None
         lift_day = (dow not in (3, 6) and rng.random() > 0.07 and not sick
                     and what != "travel" and back_days.get(i) not in ("sore", "tired") and not last)
@@ -324,7 +332,7 @@ def generate(out, seed=7, end=DEFAULT_END, days=180):
 
         # ---- food. Intake sits a planned deficit under burn; the trend follows what was eaten.
         tdee = (basal + active) / 0.9                     # the watch leaves out digesting food
-        pct = 0.78 - 0.26 * i / days                      # %/week, easing off as the cut goes on
+        pct = 0.62 - 0.42 * i / days                      # %/week, easing off as the cut goes on
         target = tdee - trend * pct / 100 * 3500 / 7
         intake = target + rng.gauss(0, 170) + (420 if dow == 5 else -60)
         if what == "travel": intake += 450
@@ -366,10 +374,15 @@ def generate(out, seed=7, end=DEFAULT_END, days=180):
                 hours = rng.uniform(4.4, 5.8)
             if sick: hours = rng.gauss(5.7, 0.5)
             if what == "travel": hours = rng.gauss(6.3, 0.4)
+            # Busy stretches: three to five short nights in a row, every few weeks.
+            if busy_until < i and rng.random() < 0.05:
+                busy_until = i + rng.randint(2, 4)
+            if i <= busy_until: hours = rng.gauss(5.5, 0.35)
             bed = datetime(day.year, day.month, day.day, 22, 15) + timedelta(
                 minutes=rng.randrange(0, 75) + (50 if dow in (4, 5) else 0))
             segments.extend(_night(rng, bed, hours))
             sleep_prev = hours
+            nights.append(hours)
         heavy_prev = heavy
 
     _write_notes(rng, notes, days, iso, ev, tweak)
@@ -594,7 +607,7 @@ def main(argv=None):
     p.add_argument("--out", required=True, help="directory to write (created if missing)")
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--end", default=DEFAULT_END.isoformat(), help="last day, YYYY-MM-DD or 'today'")
-    p.add_argument("--days", type=int, default=180)
+    p.add_argument("--days", type=int, default=365)
     a = p.parse_args(argv)
     end = date.today() if a.end == "today" else date.fromisoformat(a.end)
     if a.days < 60:

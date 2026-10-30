@@ -101,7 +101,7 @@ python -m venv .venv && ./.venv/bin/pip install -e ".[dev,web]"
 ./.venv/bin/python -m estebot.demo --out /tmp/estebot-demo
 ```
 
-That writes six months of a made-up person's weigh-ins, lifting, sleep, food and notes, plus
+That writes a year of a made-up person's weigh-ins, lifting, sleep, food and notes, plus
 an `estebot.toml` pointing at them. Load it into the app's database and start the page:
 
 ```bash
@@ -111,7 +111,7 @@ export ESTEBOT_CONFIG=/tmp/estebot-demo/estebot.toml
 ```
 
 The same seed always gives the same data. `--seed` picks another person, and `--end today`
-moves the six months up to today.
+moves the year up to today.
 
 ## Running it on your own exports
 
