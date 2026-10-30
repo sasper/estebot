@@ -207,3 +207,16 @@ def test_the_chat_comes_back_after_a_reload_and_stays_out_of_presentation_mode(m
     assert "How did my squat go?" in normal and "Up 10 lb" in normal
     shown, _ = page(main, "present=1")
     assert "How did my squat go?" not in shown and "zorbotide" not in shown
+
+
+def test_the_demo_shows_example_answers_built_from_the_days_numbers(main, monkeypatch):
+    # The chat is off in the demo, so its panel shows examples instead. The demo person is
+    # regenerated daily, so the answers are filled from the engine: the score in the
+    # example is the one on the card beside it.
+    monkeypatch.setenv("ESTEBOT_DEMO", "1")
+    html, _ = page(main)
+    assert "behind today" in html
+    score = html.split('class="rscore')[1].split(">")[1].split("<")[0]
+    assert f"readiness {score}." in html
+    monkeypatch.delenv("ESTEBOT_DEMO")
+    assert "behind today" not in page(main)[0]
