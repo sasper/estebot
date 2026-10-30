@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#2a78d6"/>
+  <rect width="64" height="64" rx="14" fill="#22d3ee"/>
   <!-- the data half: a rising trend in the upper half -->
-  <polyline points="12,27 23,20 32,23 47,12" fill="none" stroke="#bcdcff" stroke-width="4"
+  <polyline points="12,27 23,20 32,23 47,12" fill="none" stroke="#0b5160" stroke-width="4"
             stroke-linecap="round" stroke-linejoin="round"/>
-  <polyline points="40,11 48,11.5 47.5,19.5" fill="none" stroke="#bcdcff" stroke-width="4"
+  <polyline points="40,11 48,11.5 47.5,19.5" fill="none" stroke="#0b5160" stroke-width="4"
             stroke-linecap="round" stroke-linejoin="round"/>
   <!-- the training half: a barbell in the lower half -->
-  <rect x="7" y="41.5" width="50" height="5" rx="2.5" fill="#ffffff"/>
-  <rect x="12" y="32" width="7" height="24" rx="2.5" fill="#ffffff"/>
-  <rect x="20.5" y="36" width="5" height="16" rx="2" fill="#ffffff"/>
-  <rect x="45" y="32" width="7" height="24" rx="2.5" fill="#ffffff"/>
-  <rect x="38.5" y="36" width="5" height="16" rx="2" fill="#ffffff"/>
+  <rect x="7" y="41.5" width="50" height="5" rx="2.5" fill="#03181c"/>
+  <rect x="12" y="32" width="7" height="24" rx="2.5" fill="#03181c"/>
+  <rect x="20.5" y="36" width="5" height="16" rx="2" fill="#03181c"/>
+  <rect x="45" y="32" width="7" height="24" rx="2.5" fill="#03181c"/>
+  <rect x="38.5" y="36" width="5" height="16" rx="2" fill="#03181c"/>
 </svg>
