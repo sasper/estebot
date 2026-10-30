@@ -97,7 +97,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     multiples = [
         ("Overnight HRV (ms)", charts.line_chart(
             [{"name": "HRV", "points": rs["hrv"], "slot": 1}], **small,
-            refs=[(r["hrv_baseline"], "30-day baseline")] if r["hrv_baseline"] else [])),
+            refs=[(r["hrv_baseline"], "usual (30 days before this week)")] if r["hrv_baseline"] else [])),
         ("Resting heart rate (bpm)", charts.line_chart(
             [{"name": "Resting HR", "points": rs["rhr"], "slot": 1}], **small,
             refs=[(r["rhr_baseline"] + 3, "baseline + 3")] if r["rhr_baseline"] else [])),

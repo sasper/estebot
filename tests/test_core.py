@@ -269,6 +269,22 @@ class TestMonotony:
         assert monotony([0] * 7) is None                   # no training: no monotony
 
 
+class TestWeeklyShift:
+    def test_a_week_of_low_nights_registers_against_a_noisy_baseline(self):
+        from estebot.core import weekly_shift_z
+        base = [52, 61, 45, 58, 49, 63, 50, 56, 47, 60, 54, 44, 59, 51, 57]   # sd ~5.6
+        week = [49, 50, 47, 51, 48, 50, 49]          # every night ~5 ms under the mean
+        # -0.8 against single-night spread, never amber; as a week's mean it is -2.1
+        assert weekly_shift_z(week, base) < -1.5
+        assert abs(weekly_shift_z([55, 53, 56, 54], base)) < 1   # an ordinary week
+
+    def test_too_few_readings_is_no_data(self):
+        from estebot.core import weekly_shift_z
+        assert weekly_shift_z([50, 51], [50] * 10) is None
+        assert weekly_shift_z([50, 51, 52], [50, 51, 52, 53]) is None
+        assert weekly_shift_z([50, 51, 52], [50] * 10) is None    # flat baseline
+
+
 class TestStrengthStandards:
     def test_a_heavy_lifter_is_not_underrated_by_a_plain_ratio(self):
         # A 470 lb squat at 260 lb is 1.8x, which plain ratio bands call intermediate
