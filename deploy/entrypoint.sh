@@ -45,10 +45,6 @@ else
     python -m estebot.web.ingest
 fi
 
-# The demo person has no mornings to record calls in, so its last 90 are made from the data
-# before each day; in the background, because it takes a while and the page doesn't need it.
-python -m estebot.analysis.calls --backfill 90 >/dev/null 2>&1 &
-
 # No access log: the sign-in callback's URL carries a one-time code.
 exec uvicorn estebot.web.main:app --host 0.0.0.0 --port "$PORT" \
     --proxy-headers --forwarded-allow-ips '*' --no-server-header --no-access-log

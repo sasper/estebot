@@ -450,7 +450,7 @@
         <td>{% if v in ev.verdicts %}{{ "%.0f"|format(ev.verdicts[v].hit * 100) }}% <span class="muted">({{ ev.verdicts[v].n }})</span>{% else %}–{% endif %}</td></tr>
       {% endfor %}
     </table></div>
-    {% call info() %}<p>The call is graded against what happened after it. <b>Recorded calls</b> are the calls as they were made each morning; they are the real test, and they start empty.{% if demo %} The made-up athlete has no mornings, so theirs are backfilled: each day's call made from only the data before it.{% endif %} <b>Under today's rules</b> replays every past session through the current votes; it was fitted on the same sessions, so it flatters the rule. If go-hard and take-it-easy days don't end up apart, the call isn't earning its place.</p>{% endcall %}
+    {% call info() %}<p>The call is graded against what happened after it. <b>Recorded calls</b> are the calls as they were made each morning; they are the real test, and they start empty.{% if demo and recorded %} The made-up athlete has no mornings, so theirs are backfilled: each day's call made from only the data before it.{% endif %} <b>Under today's rules</b> replays every past session through the current votes; it was fitted on the same sessions, so it flatters the rule. If go-hard and take-it-easy days don't end up apart, the call isn't earning its place.</p>{% endcall %}
   </details>
 
   <details class="card tile" data-tile="load">
