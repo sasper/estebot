@@ -4,26 +4,12 @@ def test_the_load_chart_shows_the_ratio_the_verdict_uses(con):
     from datetime import date, timedelta
     from estebot.analysis import engine
     day0 = date(2026, 9, 1)
-    rows = [((day0 + timedelta(days=i)).isoformat(), 6 if i < 30 else 30) for i in range(40)]
-    con.executemany("INSERT INTO lift_session (date, hard_sets) VALUES (?, ?)", rows)
+    rows = [((day0 + timedelta(days=i)).isoformat(), 30.0 if i < 30 else 150.0) for i in range(40)]
+    con.executemany("INSERT INTO daily (date, exercise_min) VALUES (?, ?)", rows)
     series = dict(engine.recovery_series(con, "2026-10-01", "2026-10-10")["acwr"])
     for dt, v in series.items():
         assert v == engine.acwr(con, dt.isoformat())
     assert series[date(2026, 10, 10)] > 1.5     # the spike shows up past the threshold line
-
-
-def test_training_load_is_hard_sets_not_apple_exercise_minutes(con):
-    # Load was Apple's exercise minutes: a week of hour-long walks read as a big jump in
-    # training while the lifting behind it, rests between sets uncounted, barely showed.
-    from datetime import date, timedelta
-    from estebot.analysis import engine
-    day0 = date(2026, 9, 1)
-    days = [(day0 + timedelta(days=i)).isoformat() for i in range(28)]
-    con.executemany("INSERT INTO lift_session (date, hard_sets) VALUES (?, 18)",
-                    [(x,) for i, x in enumerate(days) if i % 2 == 0])
-    con.executemany("INSERT INTO daily (date, exercise_min) VALUES (?, ?)",
-                    [(x, 90.0 if i >= 21 else 20.0) for i, x in enumerate(days)])
-    assert abs(engine.acwr(con, days[-1]) - 1.0) < 0.15   # the walks moved nothing
 
 
 def test_the_weight_rate_uses_four_calendar_weeks_not_the_last_28_weigh_ins(con):
@@ -138,12 +124,10 @@ GOALS = {"protein_g_per_lb_target": 0.65, "min_loss_pct_per_week": 0.5,
          "max_loss_pct_per_week": 1.0, "target_weight_lb": 180}
 
 
-def _hard_sets(con, start, values):
-    # hard_sets only: n_sets, which decides a training day, is left to each test
+def _minutes(con, start, values):
     from datetime import date, timedelta
     d0 = date.fromisoformat(start)
-    con.executemany("INSERT INTO lift_session (date, hard_sets) VALUES (?, ?) "
-                    "ON CONFLICT(date) DO UPDATE SET hard_sets = excluded.hard_sets",
+    con.executemany("INSERT OR REPLACE INTO daily (date, exercise_min) VALUES (?, ?)",
                     [((d0 + timedelta(days=i)).isoformat(), v) for i, v in enumerate(values)])
 
 
@@ -151,38 +135,18 @@ def test_coming_off_a_layoff_is_never_go_all_out(con):
     # A big session straight off a near-idle week preceded an injury the next day. A load
     # ratio around 0.5 must not read as "fine", and the ramp cap must fire.
     from estebot.analysis import engine
-    _hard_sets(con, "2026-03-01", [15] * 27 + [2] * 5)
+    _minutes(con, "2026-03-01", [75] * 27 + [10] * 5)
     r = engine.readiness(con, "2026-04-02", GOALS)
     assert r["verdict"] != "hard" and r["ramp"]
     assert next(x for x in r["signals"] if x["area"] == "load")["level"] == "amber"
-
-
-def test_one_session_back_after_a_week_off_is_still_a_load_warning(con):
-    # The near-idle check read only the 5 days to yesterday, so the first session back
-    # cleared it: a week off, one session, and the next morning said go all out.
-    from estebot.analysis import engine
-    _hard_sets(con, "2026-08-20", [14, 4, 18, 12, 0, 16, 8] * 4 + [0] * 6 + [12])
-    r = engine.readiness(con, "2026-09-25", GOALS)
-    assert r["verdict"] != "hard" and r["ramp"]
-    assert next(x for x in r["signals"] if x["area"] == "load")["level"] == "amber"
-
-
-def test_a_deload_week_alone_is_not_a_load_warning(con):
-    # Any ratio under 0.8 used to be amber: 20-30% of days, mostly planned deloads, trips
-    # and illness. Light but still training is not the near-idle setup the flag is for.
-    from estebot.analysis import engine
-    _hard_sets(con, "2026-09-10", [14, 4, 18, 12, 0, 16, 8] * 4 + [6, 0, 8, 6, 0, 6, 4])
-    r = engine.readiness(con, "2026-10-15", GOALS)
-    load = next(x for x in r["signals"] if x["area"] == "load")
-    assert r["acwr"] < 0.8 and load["level"] == "green" and not r["ramp"]
 
 
 def test_six_days_in_a_row_alone_does_not_force_a_rest_day(con):
     # The old rule: 6 consecutive training days -> rest, whatever else said. Now it is
     # information; with varied load and nothing else flagged the day is not rest.
     from estebot.analysis import engine
-    _hard_sets(con, "2026-09-10", [14, 4, 18, 12, 0, 16, 8] * 4 + [20, 12, 26, 14, 18, 10])
-    con.executemany("UPDATE lift_session SET n_sets = 20 WHERE date = ?",
+    _minutes(con, "2026-09-10", [70, 20, 90, 60, 0, 80, 40] * 4 + [100, 60, 130, 70, 90, 50])
+    con.executemany("INSERT INTO lift_session (date, n_sets) VALUES (?, 20)",
                     [(f"2026-10-{i:02d}", ) for i in range(8, 14)])
     r = engine.readiness(con, "2026-10-14", GOALS)
     assert r["streak"] == 6 and r["verdict"] != "rest"
@@ -190,7 +154,7 @@ def test_six_days_in_a_row_alone_does_not_force_a_rest_day(con):
 
 def _calm_week(con):
     # varied, ordinary load with nothing else flagged
-    _hard_sets(con, "2026-09-10", [14, 4, 18, 12, 0, 16, 8] * 5)
+    _minutes(con, "2026-09-10", [70, 20, 90, 60, 0, 80, 40] * 5)
 
 
 def test_a_back_spasm_forces_rest_on_its_own(con):

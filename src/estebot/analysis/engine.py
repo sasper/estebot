@@ -116,14 +116,12 @@ def weight_changes(con, day, min_pct, max_pct, min_weighins=4):
     return out
 
 # ---------------------------------------------------------------- readiness
-# Training load is hard sets a day (core.is_hard_set), 0 on a day with no lifting. It used
-# to be Apple's exercise minutes, which count time with the heart rate up, not effort: an
-# hour's walk scored like an hour of squats, and the rests in a heavy 5x5 barely registered.
-# Walks and cardio are left out of load on purpose; they still show on the calendar.
+# Training load uses Apple's exercise_min: it is the only daily-complete load signal
+# and it captures cardio and incidental activity, not just logged lifting.
 def _load_series(con, end, days):
     start = s(d(end) - timedelta(days=days-1))
-    got = {r["date"]: (r["hard_sets"] or 0.0) for r in con.execute(
-        "SELECT date, hard_sets FROM lift_session WHERE date BETWEEN ? AND ?", (start, end))}
+    got = {r["date"]: (r["exercise_min"] or 0.0) for r in con.execute(
+        "SELECT date, exercise_min FROM daily WHERE date BETWEEN ? AND ?", (start, end))}
     return [got.get(s(x), 0.0) for x in daterange(start, end)]
 
 def acwr(con, day):
@@ -131,28 +129,15 @@ def acwr(con, day):
 
     `day` must be the last COMPLETED day. Readiness is a morning decision, so today's
     training has not happened yet and must not be an input - see readiness().
-    >1.5 is the injury-risk zone. A low ratio alone is not flagged: it fired on 20-30% of
-    days, mostly deloads, trips and illness. The low-side danger, a big session straight
-    off a near-idle week (the setup for an injury the next day), is _coming_off_idle()."""
+    >1.5 is the injury-risk zone; <0.8 means detrained relative to recent norm.
+    This is the metric that would have flagged a big session straight off a near-idle
+    week, the setup for an injury the next day."""
     acute, chronic = _acwr_parts(con, day)
     return (acute / chronic) if chronic > 0 else None
 
 def _acwr_parts(con, day):
-    """The two means acwr() divides: hard sets a day over 7 days and over 28."""
+    """The two means acwr() divides: exercise minutes a day over 7 days and over 28."""
     return st.mean(_load_series(con, day, 7)), st.mean(_load_series(con, day, 28))
-
-def _coming_off_idle(con, day):
-    """(5-day mean, 28-day norm) in hard sets a day when a 5-day stretch ending in the last
-    3 days fell under a quarter of its norm, else None. Ending up to 2 days back keeps the
-    flag on through the first sessions after a break, when one of them would otherwise
-    clear it. Drives both the load signal and the ramp cap."""
-    for k in range(3):
-        end = s(d(day) - timedelta(days=k))
-        recent5 = st.mean(_load_series(con, end, 5))
-        chronic = st.mean(_load_series(con, end, 28))
-        if chronic > 0 and recent5 < 0.25 * chronic:
-            return recent5, chronic
-    return None
 
 def _metric_values(con, day, col, days, skip=0):
     """Non-null readings of `col` over `days` days ending `skip` days before `day`."""
@@ -166,9 +151,8 @@ NOT_TRAINING = ("Walking",)  # a logged walk alone does not make a training day
 
 def is_light_movement(activity):
     """A walk: exercise, but light. It shows on the calendar and counts in Apple's exercise
-    minutes, but never makes a training day and adds nothing to training load. The incline
-    treadmill walks are cardio, not rest, and the calendar used to file a walk-only day as
-    plain rest."""
+    minutes (so in training load), but never makes a training day. The incline treadmill
+    walks are cardio, not rest, and the calendar used to file a walk-only day as plain rest."""
     return activity in NOT_TRAINING
 
 def is_training_day(con, day, min_sets=LIFT_STREAK_MIN_SETS):
@@ -289,21 +273,19 @@ def _signal(area, level, reasons):
 def _load_signal(con, prior):
     r = acwr(con, prior)
     mono = core.monotony(_load_series(con, prior, 7))
-    # Coming off near-idle days is amber too: a big session straight off a layoff week is
-    # the setup that once preceded an injury the next day. A merely light week is not.
-    idle = _coming_off_idle(con, prior)
-    lv_r = None if r is None else ("red" if r > 1.5 else "amber" if (r > 1.3 or idle) else "green")
+    # Low is amber too: a spike straight off a layoff week is the setup that once preceded
+    # an injury the next day.
+    lv_r = None if r is None else ("red" if r > 1.5 else "amber" if (r > 1.3 or r < 0.8) else "green")
     lv_m = None if mono is None else ("red" if mono > 2.5 else "amber" if mono > 2.0 else "green")
     acute, chronic = _acwr_parts(con, prior)
     meaning = ("" if r is None else ": a big jump, keep today moderate" if r > 1.3
-               else ": coming off a near-idle stretch, ease back in" if idle
-               else ": a lighter week than usual" if r < 0.8
+               else ": a light week, build back up rather than going all out" if r < 0.8
                else ": within the normal range")
-    ratio = r is not None and (f"{acute * 7:.0f} hard sets in the last 7 days vs {chronic * 7:.0f} "
-                               f"a week over the last 4 ({r:.2f}×){meaning}")
-    alike = (None if mono is None else "no easy day in the last 7, the same hard sets every day"
+    ratio = r is not None and (f"last 7 days averaged {acute:.0f} exercise min a day vs {chronic:.0f} "
+                               f"over the last 4 weeks ({r:.2f}×){meaning}")
+    alike = (None if mono is None else "no easy day in the last 7, the same exercise minutes every day"
              if mono == float("inf")
-             else f"no easy day in the last 7, every day about as hard as the next (monotony {mono:.1f})"
+             else f"no easy day in the last 7, every day about as long as the next (monotony {mono:.1f})"
              if lv_m != "green"
              else f"a mix of harder and easier days in the last 7 (monotony {mono:.1f})")
     return _signal("load", core.worst(lv_r, lv_m), [(lv_r, ratio), (lv_m, alike)]), r
@@ -439,15 +421,12 @@ def readiness(con, day, goals):
     verdict = core.combine_signals(levels, forced_rest=spasm)
 
     ramp = None
-    if idle := _coming_off_idle(con, prior):
-        recent5, chronic = idle
-        # Capped at a usual session, not 1.3x the daily mean: the mean counts rest days,
-        # so it is far below what one session holds.
-        sessions = [x for x in _load_series(con, prior, 28) if x > 0]
-        cap = round(st.mean(sessions))
-        ramp = (f"Coming off a near-idle stretch ({recent5 * 5:.0f} hard sets in 5 days, "
-                f"about {chronic * 5:.0f} usually). Keep today to a normal session, about {cap} "
-                f"hard sets, rather than making up the missed work at once.")
+    recent5 = st.mean(_load_series(con, prior, 5))
+    chronic = st.mean(_load_series(con, prior, 28))
+    if chronic > 0 and recent5 < 0.25 * chronic:
+        cap = round(chronic * 1.3)
+        ramp = (f"Coming off a low-load stretch ({recent5:.0f} vs {chronic:.0f} min/day norm). "
+                f"Cap today near {cap} min rather than making up the deficit at once.")
     return {
         "date": day, "verdict": verdict, "score": core.readiness_score(levels, verdict),
         "signals": signals, "ramp": ramp, "checkin": ci,

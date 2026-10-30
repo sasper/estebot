@@ -91,9 +91,8 @@ TOOLS = [
      "input_schema": _obj({"start": DAY, "end": DAY}, ["start", "end"])},
     {"name": "recovery", "strict": True,
      "description": "Nightly HRV, resting heart rate, hours asleep and the training load ratio "
-                    "(hard sets over the last 7 days against the last 28) for each day between "
-                    "two dates (90 days at most). Each day's load ratio includes that day's own "
-                    "training, so it differs from the verdict's.",
+                    "for each day between two dates (90 days at most). Each day's load ratio "
+                    "includes that day's own training, so it differs from the verdict's.",
      "input_schema": _obj({"start": DAY, "end": DAY}, ["start", "end"])},
     {"name": "nutrition", "strict": True,
      "description": "Calories eaten against what the weight trend says was burned, protein "
