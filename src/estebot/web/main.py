@@ -169,8 +169,10 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         review_days=review_days, prev_day=prev_day, next_day=next_day,
         is_today=(day == date.today().isoformat()), demo=demo,
         signin=auth.settings() is not None, email=p.email, chat_on=chat_on, chat_resting=resting,
-        chat_history=(([] if demo else chat.recent(con)) if chat_on else
-                      examples.conversation(con, day, goals, r, ws, strength) if demo else []),
+        # The demo opens on the canned conversation, live or not; live, it's the history a
+        # visitor's follow-up is asked in.
+        chat_history=(examples.conversation(con, day, goals, r, ws, strength) if demo else
+                      chat.recent(con) if chat_on else []),
         csrf=auth.csrf_token(auth.settings(), p.session) if p.session else "")
     on = request.cookies.get(PRESENT_COOKIE) == "1" if present is None else present == "1"
     resp = tpl.TemplateResponse(request, "today.html", presentable(ctx) if on else dict(ctx, present=False))

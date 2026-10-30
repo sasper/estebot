@@ -503,12 +503,15 @@
     {% if chat_on %}<button type="button" class="chip chat-clear"{{ " hidden" if not chat_history }}>Clear</button>{% endif %}
     <button type="button" class="chat-close" aria-label="Close">&times;</button></div>
   {% if not chat_on %}<p class="small ask-off">{{ chat_resting or "Off in the demo." }}{{ " Here's the kind of thing it answers:" if chat_history }}</p>{% call info() %}<p>Claude answers questions here using only numbers from EsteBot's own algorithms. {{ "The demo's chat has a small daily budget shared by every visitor, and five questions an hour each." if chat_resting else "It's off in the demo, where anyone could run up the bill." }}</p>{% endcall %}
-  {% elif demo %}<p class="small ask-off">Live: ask about this made-up athlete's data. Five questions an hour.</p>{% endif %}
+  {% elif demo %}<p class="small ask-off">Live: ask a follow-up about this made-up athlete. Five questions an hour.</p>{% endif %}
   <div class="ask-log" id="ask-log" aria-live="polite">
     {%- for m in chat_history %}<div class="ask-msg {{ 'me' if m.role == 'user' else 'bot' }}">{{ m.text }}</div>{% endfor -%}
   </div>
   <div class="ask-try" id="ask-try">
-    {% for q in ["Why this call today?", "How has my squat moved this month?", "Am I eating enough protein?"] %}
+    {# The demo's conversation already covers the call, the squat and the scale, so its
+       buttons ask what comes next: the session, recovery, food. #}
+    {% for q in (["What should I lift today?", "How has my sleep been this week?", "Am I eating enough protein?"] if demo
+                 else ["Why this call today?", "How has my squat moved this month?", "Am I eating enough protein?"]) %}
     <button type="button"{{ " disabled" if not chat_on }}>{{ q }}</button>{% endfor %}
   </div>
   <form class="ask-form" id="ask-form">

@@ -141,7 +141,10 @@ Q = {"history": [{"role": "user", "text": "How is the squat going?"}]}
 def test_the_demo_chat_is_live_with_a_key_and_off_with_a_zero_cap(demo, person, monkeypatch):
     assert demo.chat_enabled(person) is True
     html = _page(demo)
-    assert "Live: ask about this made-up athlete" in html and "demo is resting" not in html
+    assert "Live: ask a follow-up" in html and "demo is resting" not in html
+    # Live, the demo still opens on the canned conversation, and the buttons follow on from it.
+    assert "behind today" in html and "What should I lift today?" in html
+    assert "Why this call today?" not in html and 'disabled' not in html.split('id="ask-try"')[1].split("</div>")[0]
     monkeypatch.setenv("ESTEBOT_DEMO_CHAT_DAILY_USD", "0")
     assert demo.chat_enabled(person) is False
     assert _post(demo, "/api/chat", Q)[0] == 403
