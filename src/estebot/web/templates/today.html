@@ -36,7 +36,7 @@
   {% if demo %}
   <section class="intro">
     <p class="intro-pitch">Your training, sleep, food and weight. One straight answer every morning.</p>
-    <p class="intro-note">A live demo on a made-up athlete, rebuilt every day. Every number is calculated, never guessed by AI.</p>
+    <p class="intro-note">A live demo on a made-up athlete, rebuilt every day. Every number comes from EsteBot's own algorithms, never an AI guess.</p>
     <div class="intro-links">
       <a class="intro-btn" href="https://github.com/sasper/estebot">See the code</a>
       <a class="intro-more" href="#readiness">Jump to today &darr;</a>
@@ -340,7 +340,7 @@
       Food counts only complete days where at least 80% of the day's calories came from foods that report the nutrient.
       {% if present %}{% elif nut.supplements %}Supplements: {{ nut.supplements|join(", ") }}, every day, from supplements.toml.{% else %}No supplements.toml, so this is food only.{% endif %}
       {% if nut.unmeasured %}Not enough food data to judge: {{ nut.unmeasured|join(", ") }}.{% endif %}
-      Food-log and label arithmetic, not a blood test.</p>{% endcall %}
+      Estimated from food logs and labels, not a blood test.</p>{% endcall %}
     {% macro amt(g, v) %}{{ ("{:,.1f}" if g.reference < 20 else "{:,.0f}").format(v) }}{% endmacro %}
     <h3 class="charttitle" style="margin-top:16px">Running low · last 28 days</h3>
     {% if nut.gaps %}
@@ -438,7 +438,7 @@
   <div class="chat-head"><h2>Ask EsteBot</h2>
     {% if chat_on %}<button type="button" class="chip chat-clear"{{ " hidden" if not chat_history }}>Clear</button>{% endif %}
     <button type="button" class="chat-close" aria-label="Close">&times;</button></div>
-  {% if not chat_on %}<p class="small ask-off">Off in the demo.</p>{% call info() %}<p>On your own page, Claude answers questions about your data here, using only numbers EsteBot has already worked out. It's off in the demo, where anyone could run up the bill.</p>{% endcall %}{% endif %}
+  {% if not chat_on %}<p class="small ask-off">Off in the demo.</p>{% call info() %}<p>On your own page, Claude answers questions about your data here, using only numbers from EsteBot's own algorithms. It's off in the demo, where anyone could run up the bill.</p>{% endcall %}{% endif %}
   <div class="ask-log" id="ask-log" aria-live="polite">
     {%- for m in chat_history %}<div class="ask-msg {{ 'me' if m.role == 'user' else 'bot' }}">{{ m.text }}</div>{% endfor -%}
   </div>
@@ -451,7 +451,7 @@
               placeholder="{{ 'Ask about your training, weight, sleep…' if chat_on else 'Sign in to ask about your own data' }}"></textarea>
     <button type="submit"{{ " disabled" if not chat_on }}>Ask</button>
   </form>
-  {% if chat_on %}{% call info() %}<p>Claude answers using only numbers EsteBot has already worked out. Your last few questions are kept until you clear them.</p>{% endcall %}{% endif %}
+  {% if chat_on %}{% call info() %}<p>Claude answers using only numbers from EsteBot's own algorithms. Your last few questions are kept until you clear them.</p>{% endcall %}{% endif %}
 </aside>
 <button type="button" class="chat-fab" aria-controls="ask">Ask</button>
 <script>

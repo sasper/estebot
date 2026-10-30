@@ -1,25 +1,35 @@
 # EsteBot
 
-I built this to answer questions about my own training and body weight from the data I
-already collect: Apple Health, a lifting log (Jefit, then Hevy), and a food log
-(Cronometer). It turns several GB of exports into a small set of tidy tables, then runs
-plain arithmetic over them to produce a daily page: a readiness verdict, the weight trend,
-strength numbers, a training plan for the next session and a nutrition check.
+**Your training, sleep, food and weight, turned into one straight answer every morning.**
 
-It is an n-of-1 tool. "Your deep sleep is 10%, below the typical 13-23%" is noise. "Your
-deep sleep has been 10% every year for five years" is something you can use. Thresholds
-come from the person's own history wherever that is possible.
+EsteBot pulls in everything I already track (Apple Health, Hevy workouts, Cronometer food
+logs and a live feed from my phone), cleans it up, and runs it through custom algorithms
+built for one athlete. Every morning it tells me how hard to train, what to lift, whether
+the weight is really moving and what I'm short on. And I can ask it anything in plain
+English.
 
-**Live demo: [estebot.app](https://estebot.app)**, running on a made-up person whose data is
-regenerated up to today every time the server starts. It's read-only, and the first load
-after a quiet spell takes a few seconds while the machine wakes up.
+**▶ Live demo: [estebot.app](https://estebot.app)** — a made-up athlete, regenerated every
+day. Read-only; the first load after a quiet spell takes a few seconds while the server
+wakes up.
 
-The daily verdict counts seven signals, and each one shows its reasons and thresholds:
+## What it does
+
+- **One call a day.** Seven signals (training load, effort, sleep, HRV and resting heart
+  rate, how you feel, food, weight-loss pace) each get a vote. Out comes a 0–100 readiness
+  score and a verdict from *rest* to *go all out*. One bad night never decides your day.
+- **Your next session, already planned.** It knows where you are in the rotation and sets a
+  target for every exercise from the last time you did it, dialled back on a take-it-easy day.
+- **A weight trend that sees through the noise.** A 14-day average and a fitted weekly rate
+  that ignore water swings, checked against your planned pace, with a projected goal date.
+- **Strength that's fair to your size.** Estimated one-rep maxes, scaled to body weight,
+  with DOTS for the big three.
+- **Nutrition down to the micronutrients.** Calories against what the scale says you burn,
+  protein against target, and vitamins and minerals against reference intakes, food
+  and supplements together.
+- **Ask EsteBot.** Claude answers questions about your data from EsteBot's own numbers. The
+  algorithms decide; the AI explains.
 
 <img src="docs/screenshots/verdict.png" alt="Readiness verdict with seven signals" width="720">
-
-The next session in the rotation, with a target for each exercise worked out from the last
-time it was done:
 
 <img src="docs/screenshots/session.png" alt="Today's session with per-exercise targets" width="720">
 
@@ -33,25 +43,47 @@ time it was done:
 
 </details>
 
-## Three rules
+## From four messy apps to one clean day
 
-1. **No personal data in this repository.** The data lives in a separate private repo and
-   the code reaches it through a config file. `.gitignore` blocks the personal filenames,
-   and CI fails the build if one is ever tracked.
-2. **Every number is computed in plain arithmetic.** A readiness verdict or a weight trend
-   gets acted on. If a language model produced it, I would have no way to tell a real
-   signal from a confident guess. A model may explain a computed output; it never
-   generates one.
-3. **No metric gets two implementations.** If the page and the text report could disagree
-   about a number, nothing either of them says can be trusted. Shared math lives in one
-   place, `core.py`.
+Health data is messy. Every app has its own format, its own quirks and its own blind
+spots. EsteBot's pipeline streams a multi-gigabyte Apple Health export at constant memory,
+pulls Hevy and Cronometer every day, takes a live feed from the phone, and lines it all up
+into one tidy record per day that the algorithms can trust. Fixes are dated rules applied
+at import, never hand edits, so years of history rebuild exactly, every time.
 
-One more habit sits on top of those. Claims about what will happen are written down before
-the data arrives, with a resolution date, a named estimator and a minimum amount of data.
-They are allowed to resolve as inconclusive. Early analyses of this dataset produced two
-confident headlines that turned out to be wrong, and a written record is the only thing I
-found that stops anyone, me or a model, from quietly deciding afterwards that they were
-right all along.
+A few of the traps it handles:
+
+- Apple emits overlapping sleep records per device and per stage, so summing them
+  double-counts. Intervals are unioned first.
+- A night spans midnight, so filing sleep by calendar date splits it in two. Segments are
+  shifted back 12 hours, which also sends an afternoon nap forward to the coming night.
+- Watch and iPhone both count steps over the same intervals. The full export keeps the
+  largest single-device total for the day rather than the sum.
+- The lifting app changed its dumbbell entry from per-hand to combined weight partway
+  through the history. Dated correction rules fix it at import; the source data is never
+  edited.
+- An exercise substitution is not a strength change. A trap bar carry is not a dumbbell
+  carry. Renames are dated and keep the series apart, so a swap can't manufacture a gain.
+- Pull-ups are logged at 0 lb. Their load is body weight, taken from the 14-day weight
+  trend, so on a cut the same reps correctly show up as less strength.
+- Epley's 1RM estimate drifts badly above about 10 reps, so those sets return `None`. Not
+  `0.0`: a zero is a number and quietly drags down any median taken over the column.
+
+## Built to be trusted
+
+1. **Custom algorithms, not AI guesses.** Every figure you might act on comes from
+   EsteBot's own algorithms. A language model explains the results; it never invents one.
+   Otherwise there'd be no telling a real signal from a confident guess.
+2. **One source of truth.** Every metric has exactly one implementation, shared by the
+   page, the text report and the chat, so they can never disagree.
+3. **Private data stays private.** Personal data lives in a separate private repo. This
+   repo holds only code, and CI plus git hooks stop anything personal from ever landing
+   here.
+
+Predictions are written down before the data arrives, with a resolution date and a
+minimum amount of data, and they're allowed to come back inconclusive. Early analyses of
+this dataset produced two confident headlines that turned out to be wrong; a written
+record is what stops anyone, me or a model, from deciding afterwards they were right.
 
 ## Try it on demo data
 
@@ -126,33 +158,9 @@ more depth, how I verify refactors, and the known problems.
 | `web/` | FastAPI and Jinja templates. It formats numbers the engine computed; it does not compute its own. |
 | `daily.py` | The unattended daily sync, scheduled with launchd on macOS. |
 
-Readiness is seven signals (load, effort, sleep, recovery, how I feel, nutrition, weight
-loss pace), each green, amber, red or no data, with the reason written next to it. The
-verdict counts them, so no single input decides the day on its own.
-
 Derived data is disposable and gets rebuilt from the exports. Authored data (annotations,
 the ledger, dated correction rules) lives apart from it, because only a person can
 produce it.
-
-## Things the exports get wrong
-
-Most of the parser code exists because the raw data is full of traps. A few of them:
-
-- Apple emits overlapping sleep records per device and per stage, so summing them
-  double-counts. Intervals are unioned first.
-- A night spans midnight, so filing sleep by calendar date splits it in two. Segments are
-  shifted back 12 hours, which also sends an afternoon nap forward to the coming night.
-- Watch and iPhone both count steps over the same intervals. The full export keeps the
-  largest single-device total for the day rather than the sum.
-- The lifting app changed its dumbbell entry from per-hand to combined weight partway
-  through the history. Dated correction rules fix it at parse time; the source data is
-  never edited.
-- An exercise substitution is not a strength change. A trap bar carry is not a dumbbell
-  carry. Renames are dated and keep the series apart, so a swap can't manufacture a gain.
-- Pull-ups are logged at 0 lb. Their load is body weight, taken from the 14-day weight
-  trend, so on a cut the same reps correctly show up as less strength.
-- Epley's 1RM estimate drifts badly above about 10 reps, so those sets return `None`. Not
-  `0.0`: a zero is a number and quietly drags down any median taken over the column.
 
 ## Tests
 

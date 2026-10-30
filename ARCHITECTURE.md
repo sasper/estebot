@@ -8,7 +8,7 @@ The README covers what it is and how to run it.
 1. **No personal data in the code repo.** Not in code, tests, comments or commit messages.
    My data lives in a separate private repo and is reached only through `estebot.toml`.
    `.gitignore` blocks the data filenames, and CI fails the build if one is tracked.
-2. **Every number is plain arithmetic.** No model produces a figure that gets acted on. If a
+2. **Every number comes from EsteBot's own algorithms.** No model produces a figure that gets acted on. If a
    language model is ever added, it explains computed outputs and never generates them. If
    I'm about to have a model estimate a value, the design is wrong.
 3. **No metric gets two implementations.** If the text report and the web page can disagree
