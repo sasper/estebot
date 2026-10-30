@@ -393,7 +393,8 @@ def progression(exercise: str, sets: list[tuple[float | None, int, float | None]
                                      12-15, for high_rep work), then add load and drop
                                      to the bottom of it. Work done above its range
                                      on purpose (60 x 20 rows) adds load and keeps the reps.
-    The top sets are those at the heaviest weight. -> {action, target, why} or None."""
+    The top sets are those at the heaviest weight. -> {action, target, why, goal} or None;
+    goal is the target as numbers, {weight_lb, reps} or {total_reps}, for goal_met()."""
     work = [(w or 0.0, r, rpe) for w, r, rpe in sets if r]
     if not work:
         return None
@@ -403,9 +404,10 @@ def progression(exercise: str, sets: list[tuple[float | None, int, float | None]
         rpes = [x for *_, x in work if x is not None]
         why = f"last time {n} sets, {total} reps" + (f", hardest RPE {max(rpes):g}" if rpes else "")
         if rpes and max(rpes) >= HOLD_RPE:
-            return {"action": "hold", "target": f"{n} sets, {total} reps again, cleaner", "why": why}
+            return {"action": "hold", "target": f"{n} sets, {total} reps again, cleaner", "why": why,
+                    "goal": {"total_reps": total}}
         return {"action": "add reps", "target": f"{n} sets, {total + 1}–{total + 2} reps in total",
-                "why": why}
+                "why": why, "goal": {"total_reps": total + 1}}
     top = [(r, rpe) for w, r, rpe in work if w == top_w]
     strength = min(r for r, _ in top) <= STRENGTH_REPS
     reps = max(r for r, _ in top) if strength else min(r for r, _ in top)
@@ -413,19 +415,38 @@ def progression(exercise: str, sets: list[tuple[float | None, int, float | None]
     hardest = max(rpes) if rpes else None
     w, step, u = _fmt(top_w), load_step(exercise), rep_unit(exercise)
     why = f"top set {w} × {reps}{u}" + (f" at RPE {hardest:g}" if hardest is not None else ", no RPE logged")
+    goal = lambda wt, n: {"weight_lb": wt, "reps": n}
     if hardest is None:
-        return {"action": "repeat", "target": f"{w} × {reps}{u}, and log the RPE", "why": why}
+        return {"action": "repeat", "target": f"{w} × {reps}{u}, and log the RPE", "why": why,
+                "goal": goal(top_w, reps)}
     if hardest >= HOLD_RPE:
-        return {"action": "hold", "target": f"{w} × {reps}{u} at RPE 9", "why": why + ": make it cleaner first"}
+        return {"action": "hold", "target": f"{w} × {reps}{u} at RPE 9", "why": why + ": make it cleaner first",
+                "goal": goal(top_w, reps)}
     if strength:
         if hardest <= ADD_LOAD_RPE:
-            return {"action": "add load", "target": f"{_fmt(top_w + step)} × {reps}{u}", "why": why}
-        return {"action": "add a rep", "target": f"{w} × {reps + 1}{u}", "why": why}
+            return {"action": "add load", "target": f"{_fmt(top_w + step)} × {reps}{u}", "why": why,
+                    "goal": goal(top_w + step, reps)}
+        return {"action": "add a rep", "target": f"{w} × {reps + 1}{u}", "why": why,
+                "goal": goal(top_w, reps + 1)}
     floor, ceiling = high_rep_range if any(k in exercise.lower() for k in high_rep) else rep_range
     if reps > ceiling:
         return {"action": "add load", "target": f"{_fmt(top_w + step)} × {reps}{u}",
-                "why": why + f": above the usual {floor}–{ceiling}, so the reps stay"}
+                "why": why + f": above the usual {floor}–{ceiling}, so the reps stay",
+                "goal": goal(top_w + step, reps)}
     if reps == ceiling:
         return {"action": "add load", "target": f"{_fmt(top_w + step)} × {floor}{u}",
-                "why": why + f": the top of the {floor}–{ceiling} range"}
-    return {"action": "add a rep", "target": f"{w} × {reps + 1}{u}", "why": why}
+                "why": why + f": the top of the {floor}–{ceiling} range",
+                "goal": goal(top_w + step, floor)}
+    return {"action": "add a rep", "target": f"{w} × {reps + 1}{u}", "why": why,
+            "goal": goal(top_w, reps + 1)}
+
+
+def goal_met(goal: dict, sets: list[tuple[float | None, int, float | None]]) -> bool:
+    """Whether a session's working sets of one exercise reached its progression goal: one set
+    at or above the goal weight for the goal reps, or the goal total for bodyweight work.
+    Heavier than the goal for the same reps counts too; that beat the plan. The RPE asked
+    for (a hold "at RPE 9") is not part of it: a target is graded on what was lifted."""
+    work = [(w or 0.0, r) for w, r, _ in sets if r]
+    if "total_reps" in goal:
+        return sum(r for _, r in work) >= goal["total_reps"]
+    return any(w >= goal["weight_lb"] - 0.01 and r >= goal["reps"] for w, r in work)

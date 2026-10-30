@@ -57,9 +57,12 @@ STEPS = [
     ("cronometer pull", ["-m", "estebot.parsers.cronometer_pull"], False),
     ("nutrition", ["-m", "estebot.parsers.cronometer"], True),
     ("web cache", ["-m", "estebot.web.ingest"], True),
+    # Last: it reads the cache just refreshed. Optional, since a missed day is only a gap.
+    ("readiness call", ["-m", "estebot.analysis.calls"], False),
 ]
 # After a phone upload: the feed, the tables that read its weigh-ins, and the page's cache.
-FEED_STEPS = ("apple health feed", "lifting tables", "web cache")
+# The call too: the morning's first upload brings the night's sleep, so that is when it's made.
+FEED_STEPS = ("apple health feed", "lifting tables", "web cache", "readiness call")
 
 
 def _notify(msg):
@@ -135,7 +138,7 @@ def _run(cfg, feed_only):
         _prune_feed(cfg, int(cfg.sync["keep_feed_days"]))
     # raw/cronometer too: the tables are rebuilt from it, so a copy that's missing the
     # server's latest pull rebuilds a different day (seen on the first server sync).
-    paths = [p for p in ("tidy", "health-context.txt", "raw/cronometer") if (data / p).exists()]
+    paths = [p for p in ("tidy", "health-context.txt", "raw/cronometer", "calls.csv") if (data / p).exists()]
     subprocess.run(git + ["add", "--", *paths], check=True)
     if subprocess.run(git + ["diff", "--cached", "--quiet", "--", *paths]).returncode == 0:
         print("-- commit: nothing changed")

@@ -339,3 +339,22 @@ def test_a_sick_or_injured_check_in_rings_the_calendar_without_a_note(con):
     assert sorted(out) == ["2026-10-20", "2026-10-21"]
     assert out["2026-10-20"] == {"sick": True, "injured": False, "notes": []}
     assert out["2026-10-21"]["injured"] and len(out["2026-10-21"]["notes"]) == 2
+
+
+def test_a_session_is_graded_against_the_target_its_last_session_set(con):
+    # The outcome the readiness call will be judged by: each exercise against the goal
+    # core.progression set from the time before. Warm-ups are not working sets.
+    from estebot.analysis import engine
+    rows = [("2026-10-01", "Barbell Squat", 1, 315, 5, 8.0, "normal"),
+            ("2026-10-01", "Dumbbell Row", 1, 80, 10, 8.0, "normal"),
+            ("2026-10-05", "Barbell Squat", 1, 335, 5, None, "warmup"),   # would pass if counted
+            ("2026-10-05", "Barbell Squat", 2, 320, 5, 9.0, "normal"),
+            ("2026-10-05", "Dumbbell Row", 1, 80, 11, 8.5, "normal"),
+            ("2026-10-05", "Cable Fly", 1, 40, 12, 8.0, "normal")]      # first time: no target
+    con.executemany("INSERT INTO lift_set (date, exercise, set_idx, weight_lb, reps, rpe, set_type) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)", rows)
+    o = engine.session_outcome(con, "2026-10-05")
+    met = {x["exercise"]: x["met"] for x in o["exercises"]}
+    assert met == {"Barbell Squat": False, "Dumbbell Row": True}   # squat asked 325 x 5; row 80 x 11
+    assert o["hit"] == 0.5
+    assert engine.session_outcome(con, "2026-10-02") is None

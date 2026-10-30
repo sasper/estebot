@@ -13,6 +13,7 @@ supplements.toml
 health-context.txt
 ledger.md
 context-log.md
+calls.csv
 
 # Python
 __pycache__/

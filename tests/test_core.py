@@ -285,6 +285,25 @@ class TestWeeklyShift:
         assert weekly_shift_z([50, 51, 52], [50] * 10) is None    # flat baseline
 
 
+class TestGoalMet:
+    def test_heavier_for_the_same_reps_beats_the_plan(self):
+        # A session is graded on what was lifted against the plan's target; going up in
+        # load for the same reps did more than asked and must not read as a miss.
+        from estebot.core import goal_met, progression
+        goal = progression("Barbell Squat", [(405, 3, 8.5)])["goal"]        # 405 x 4
+        assert goal == {"weight_lb": 405, "reps": 4}
+        assert goal_met(goal, [(225, 5, None), (405, 4, 9)])
+        assert goal_met(goal, [(415, 4, 9.5)])
+        assert not goal_met(goal, [(405, 3, 9), (405, 3, 9)])
+
+    def test_bodyweight_work_is_graded_on_total_reps(self):
+        from estebot.core import goal_met, progression
+        goal = progression("Pull Up", [(0, 8, 8), (0, 7, 8), (0, 6, 9)])["goal"]
+        assert goal == {"total_reps": 22}
+        assert goal_met(goal, [(0, 9, None), (0, 7, None), (0, 6, None)])
+        assert not goal_met(goal, [(0, 8, None), (0, 7, None), (0, 6, None)])
+
+
 class TestStrengthStandards:
     def test_a_heavy_lifter_is_not_underrated_by_a_plain_ratio(self):
         # A 470 lb squat at 260 lb is 1.8x, which plain ratio bands call intermediate
