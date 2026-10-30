@@ -12,10 +12,13 @@ English.
 day. Read-only; the first load after a quiet spell takes a few seconds while the server
 wakes up.
 
-**How this was built.** I wrote the requirements and design docs, set the rules and the
-quality gates (tests, byte-identical parser output, a privacy check on every commit), used
-it every day and iterated on what it got wrong. Claude Code wrote the code from those docs.
-[ARCHITECTURE.md](ARCHITECTURE.md) has the design and [HISTORY.md](HISTORY.md) how it got here.
+## How I built it
+
+I designed and built EsteBot in three weeks. I wrote the requirements and design docs, made
+the product and architecture decisions, set the quality gates (tests tied to real bugs,
+byte-identical parser output on every refactor, the CI privacy check), and used it every day
+to decide what to change next. Claude Code was my implementation tool: it wrote the code
+against those docs and gates, and nothing merged until it passed them.
 
 <img src="docs/screenshots/dashboard.png" alt="The EsteBot dashboard: today's call, session, trends and the Ask EsteBot panel" width="900">
 

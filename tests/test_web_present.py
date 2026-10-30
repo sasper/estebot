@@ -103,6 +103,14 @@ def test_the_how_it_was_built_line_is_on_the_demo_only(main, monkeypatch):
     shown, _ = page(main)
     assert "How it was built" in shown and "ARCHITECTURE.md" in shown and "linkedin.com/in/" in shown
     assert shown.index("How it was built") < shown.index('id="readiness"')
+    assert "Designed and built by Stephen Sper." in shown and "Claude Code" not in shown
+
+
+def test_the_footer_credits_and_links_the_author(main):
+    html, _ = page(main)
+    assert 'href="https://www.linkedin.com/in/stephensper"><b>Stephen Sper</b></a>, engineering leader in Ann Arbor, MI.' in html
+    assert "Director of Engineering" not in html
+    assert 'href="https://github.com/sasper/estebot">GitHub</a>' in html and "mailto:" in html
 
 
 def test_the_read_only_demo_person_gets_it_without_the_demo_flag(main, monkeypatch):
