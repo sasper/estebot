@@ -11,7 +11,7 @@ from estebot.analysis import engine as an, nutrition
 
 AREA = {"load": "training load", "effort": "effort", "sleep": "sleep", "recovery": "HRV and resting heart rate",
         "feel": "how you feel", "nutrition": "nutrition", "pace": "weight-loss pace"}
-VERDICT = {"hard": "Push", "normal": "As planned", "light": "Hold", "rest": "Rest"}
+VERDICT = {"hard": "Go hard", "normal": "Go as planned", "light": "Take it easy", "rest": "Rest"}
 
 
 def _join(items):
@@ -29,7 +29,7 @@ def _call(r):
         a += " What's holding you back:\n" + "\n".join(
             f"- {AREA[x['area']].capitalize()}: {x['reasons'][0]}" for x in counted if x["reasons"])
     if r.get("positive"):
-        a += f" The reason to push: {r['positive']}, and days like that have gone better for you."
+        a += f" The reason to go hard: {r['positive']}, and days like that have gone better for you."
     if voting:
         a += ("\n\nOnly " + _join([AREA[v] for v in voting]) + (" has" if len(voting) == 1 else " have")
               + " earned a vote: days it was flagged, your sessions went worse. The other signals are"

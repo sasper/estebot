@@ -66,10 +66,10 @@ TOOLS = [
     {"name": "day_summary", "strict": True,
      "description": "The readiness verdict for a day with its seven signals and their reasons, "
                     "the day's check-in, and the planned session with a target per exercise. "
-                    "Verdicts in words: hard = push, normal = as planned, light = hold, rest. "
+                    "Verdicts in words: hard = go hard, normal = go as planned, light = take it easy, rest. "
                     "Only the areas in 'voting' decide the call (their flagged days have gone "
                     "worse for this person); the others are context. 'positive' is the reason to "
-                    "push, if one has earned it; 'holds' are safety rules that hold the day. "
+                    "go hard, if one has earned it; 'holds' are safety rules that make it a take-it-easy day. "
                     "It's a morning decision, so it reads data through the day before: its load "
                     "ratio (acwr) is yesterday's, not the day's own.",
      "input_schema": _obj({"day": DAY}, ["day"])},

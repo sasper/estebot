@@ -444,7 +444,7 @@ def readiness(con, day, goals, voting="auto"):
         holds.append("injured today or yesterday")
     if ramp:
         holds.append("back from a near-idle stretch")
-    # Reasons to push, each (present, words); only those whose record earned it count. Only
+    # Reasons to go hard, each (present, words); only those whose record earned it count. Only
     # this morning's check-in: yesterday's says how yesterday went, not today.
     reasons = {}
     if ci and ci["date"] == day and ci["energy"] is not None:
@@ -457,15 +457,15 @@ def readiness(con, day, goals, voting="auto"):
                                    f"your last session met {met} of {len(last['exercises'])} targets")
     if voting == "auto":
         got = earned(con, day, goals)
-        voting, pushers = got["voting"], got["push"]
+        voting, hard_ok = got["voting"], got["hard"]
     else:
-        voting, pushers = list(voting), []
-    positive = next((words for k, (on, words) in reasons.items() if on and k in pushers), None)
+        voting, hard_ok = list(voting), []
+    positive = next((words for k, (on, words) in reasons.items() if on and k in hard_ok), None)
     verdict = core.evidence_call(levels, voting, spasm, holds, positive)
     return {
         "date": day, "verdict": verdict, "score": core.readiness_score(levels, verdict),
         "signals": signals, "ramp": ramp, "checkin": ci, "voting": voting, "holds": holds,
-        "positive": positive, "push_reasons": reasons, "forced_rest": spasm,
+        "positive": positive, "hard_reasons": reasons, "forced_rest": spasm,
         "subjective_review": bool(ci["needs_review"]) if ci and ci["date"] == day else False,
         "poor_recovery_days": poor, "acwr": r_acwr, **rec,
         "streak": days_since_rest(con, prior), "streak_now": days_since_rest(con, day),
@@ -475,7 +475,7 @@ def readiness(con, day, goals, voting="auto"):
 _earned_cache = {}
 
 def earned(con, day, goals):
-    """{"voting": areas whose flagged days went worse, "push": reasons to push whose days
+    """{"voting": areas whose flagged days went worse, "hard": reasons to go hard whose days
     went better, "evidence": the table they came from}, over every session before `day`. Cached per database
     file and its last change: the evidence regrades every session, about a second on a long
     history, and the page asks on every load."""
@@ -483,7 +483,7 @@ def earned(con, day, goals):
     key = (path, day, os.path.getmtime(path)) if path else None
     if key not in _earned_cache:
         ev = evidence(con, "1900-01-01", s(d(day) - timedelta(days=1)), goals)
-        got = {"voting": ev["voting"], "push": ev["push"], "evidence": ev}
+        got = {"voting": ev["voting"], "hard": ev["hard"], "evidence": ev}
         if key is None:
             return got
         _earned_cache[key] = got
@@ -786,16 +786,16 @@ def evidence(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SET
     # The self-grade's backtest: the call each session would get with the votes found here.
     # In-sample, so it flatters the rule; the recorded calls (calls.csv) are the real test.
     voting = [a for a, e in by_area.items() if e["votes"]]
-    # Reasons to push, judged the other way round: days with the reason against days without.
+    # Reasons to go hard, judged the other way round: days with the reason against days without.
     by_reason = {}
     for k in ("check-in", "last session"):
-        has = [x for x in rows if k in x["call"]["push_reasons"]]
-        by_reason[k] = core.flag_effect([x["vs_phase"] for x in has if x["call"]["push_reasons"][k][0]],
-                                        [x["vs_phase"] for x in has if not x["call"]["push_reasons"][k][0]])
-    push = [k for k, e in by_reason.items() if e["supports"]]
+        has = [x for x in rows if k in x["call"]["hard_reasons"]]
+        by_reason[k] = core.flag_effect([x["vs_phase"] for x in has if x["call"]["hard_reasons"][k][0]],
+                                        [x["vs_phase"] for x in has if not x["call"]["hard_reasons"][k][0]])
+    hard = [k for k, e in by_reason.items() if e["supports"]]
     for x in rows:
         c = x["call"]
-        why = next((w for k, (on, w) in c["push_reasons"].items() if on and k in push), None)
+        why = next((w for k, (on, w) in c["hard_reasons"].items() if on and k in hard), None)
         x["verdict"] = core.evidence_call(x["levels"], voting, c["forced_rest"], c["holds"], why)
     by_verdict = {}
     for v in ("hard", "normal", "light", "rest"):
@@ -805,7 +805,7 @@ def evidence(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SET
                              "vs_phase": st.mean(x["vs_phase"] for x in got)}
     return {"start": start, "end": end, "sessions": len(rows), "phase_days": PHASE_DAYS,
             "areas": by_area, "voting": voting,
-            "push_reasons": by_reason, "push": push, "candidates": candidates, "verdicts": by_verdict}
+            "hard_reasons": by_reason, "hard": hard, "candidates": candidates, "verdicts": by_verdict}
 
 def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS, training=None):
     """Which session is next and a target for each exercise. Morning decision: only sessions
@@ -860,6 +860,6 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
     # the back rules name single lifts, so they stay on those.
     return {"kind": kind, "variant": variant, "main": next((e for e in order if e in mains), None),
             "after": last, "template": template["date"], "rest": verdict == "rest", "exercises": items,
-            "day_adjust": ("Hold: repeat last time's loads with one set fewer, and stop each set by "
-                           "RPE 8." if verdict == "light" else
-                           "Push: go for every target today." if verdict == "hard" else None)}
+            "day_adjust": ("Take it easy: repeat last time's loads with one set fewer, and stop each "
+                           "set by RPE 8." if verdict == "light" else
+                           "Go hard: go for every target today." if verdict == "hard" else None)}

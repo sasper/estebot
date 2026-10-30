@@ -258,12 +258,12 @@ def evidence_call(levels: dict[str, str | None], voting, forced_rest: bool = Fal
       rest   forced_rest, or red in 2+ voting areas
       light  red in 1 voting area, amber in 2+, or any hold: a safety rule (sick, injured,
              back from a near-idle stretch), which applies whatever the evidence says
-      hard   no voting area flagged AND a reason to push that has itself earned it (a good
+      hard   no voting area flagged AND a reason to go hard that has itself earned it (a good
              check-in, a strong last session, each only once days with it went better).
-             An absence of warnings is not a reason to push.
+             An absence of warnings is not a reason to go hard.
       normal anything else, including every day with nothing measured
-    Verdict keys stay those of combine_signals; the page words them push / as planned /
-    hold / rest."""
+    Verdict keys stay those of combine_signals; the page words them go hard / go as
+    planned / take it easy / rest."""
     if forced_rest:
         return "rest"
     vals = [levels.get(a) for a in voting if levels.get(a)]
@@ -317,7 +317,7 @@ def flag_effect(flagged: list[float], clear: list[float], min_n: int = EVIDENCE_
     (normal approximation). An input votes only when the whole band is below zero: on
     four years of sessions none of the readiness inputs did, and an input that has never
     shown an effect should not decide a day. A band wholly above zero means the flag goes
-    with better sessions: never a warning's vote, but what a reason to push must show
+    with better sessions: never a warning's vote, but what a reason to go hard must show
     (supports)."""
     out = {"n_flagged": len(flagged), "n_clear": len(clear), "diff": None, "lo": None, "hi": None}
     if len(flagged) < min_n or len(clear) < min_n:

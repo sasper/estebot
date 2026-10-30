@@ -332,7 +332,7 @@ class TestEvidenceCall:
         assert evidence_call(levels, voting=["sleep"]) == "light"
         assert evidence_call(levels, voting=["sleep", "load"]) == "rest"
 
-    def test_nothing_flagged_is_not_a_reason_to_push(self):
+    def test_nothing_flagged_is_not_a_reason_to_go_hard(self):
         from estebot.core import evidence_call
         green = {"sleep": "green", "recovery": "green"}
         assert evidence_call(green, voting=["sleep"]) == "normal"

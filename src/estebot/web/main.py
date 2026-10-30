@@ -47,8 +47,8 @@ def _refuse(p, csrf):
         return PlainTextResponse("This form has expired. Reload the page and try again.",
                                  status_code=403)
 
-# The engine's verdicts, in words. "hard" is a push: an earned reason to go for every target.
-VERDICT_TEXT = {"hard": "Push", "normal": "As planned", "light": "Hold", "rest": "Rest day"}
+# The engine's verdicts, in words. "hard" needs an earned reason to go for every target.
+VERDICT_TEXT = {"hard": "Go hard", "normal": "Go as planned", "light": "Take it easy", "rest": "Rest day"}
 BACK_LEVELS = ("ok", "tired", "sore", "spasm")      # checkin.back, mildest first
 
 @app.get("/", response_class=HTMLResponse)

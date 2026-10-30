@@ -237,7 +237,7 @@ def test_a_take_it_easy_day_holds_and_a_sore_back_drops_spinal_lifts(con):
     _session(con, "2026-10-22", "quads|hamstrings|calves", [("Barbell Squat", 315, 1, 9)] * 5)
     _session(con, "2026-10-25", "chest|shoulders|triceps", [("Barbell Bench Press", 225, 4, 8.5)] * 5)
     light = engine.training_plan(con, "2026-10-26", "light")
-    assert "Hold" in light["day_adjust"]                 # said once, for the session
+    assert "Take it easy" in light["day_adjust"]                 # said once, for the session
     assert not any(x.get("adjust") for x in light["exercises"])
     con.execute("INSERT INTO checkin (date, back, back_reported) VALUES ('2026-10-26', 'sore', 1)")
     ci = con.execute("SELECT * FROM checkin WHERE date='2026-10-26'").fetchone()
@@ -375,15 +375,15 @@ def test_the_evidence_pairs_each_session_with_the_one_before(con):
     assert (c["n_flagged"], c["n_clear"]) == (4, 0) and c["status"] == "not enough data"
 
 
-def test_a_good_check_in_earns_a_push_only_once_it_has_a_record(con):
+def test_a_good_check_in_earns_going_hard_only_once_it_has_a_record(con):
     # "Go all out" came too easily: on a day with nothing flagged it was the default. A good
-    # check-in is a reason to push only when days with one have gone better, and with no
+    # check-in is a reason to go hard only when days with one have gone better, and with no
     # history behind it the call stays as planned.
     from estebot.analysis import engine
     con.execute("INSERT INTO checkin (date, back, energy, source, back_reported) "
                 "VALUES ('2026-10-14', 'ok', 3, 'manual', 1)")
     r = engine.readiness(con, "2026-10-14", GOALS)
-    assert r["push_reasons"]["check-in"][0] and r["positive"] is None
+    assert r["hard_reasons"]["check-in"][0] and r["positive"] is None
     assert r["verdict"] == "normal"
 
 

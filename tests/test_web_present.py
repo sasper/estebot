@@ -230,7 +230,7 @@ def test_the_example_call_reads_right_when_nothing_is_flagged():
     green = [sig(a, "green", f"{a} fine") for a in examples.AREA]
     a = examples._call({"verdict": "hard", "score": 100, "signals": green, "voting": ["sleep"],
                         "positive": "your last session met 5 of 5 targets"})["a"]
-    assert a.startswith("Push") and "holding you back" not in a and "Flagged but not counted" not in a
+    assert a.startswith("Go hard") and "holding you back" not in a and "Flagged but not counted" not in a
     a = examples._call({"verdict": "light", "score": 46, "voting": ["load"],
                         "signals": [sig("load", "red", "too alike")] + green[1:]})["a"]
     assert "holding you back" in a and "too alike" in a
