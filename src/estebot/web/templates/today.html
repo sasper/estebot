@@ -62,7 +62,7 @@
       <a class="intro-card" href="#readiness"><span class="n">03</span><b>A call that grades itself.</b>
         <span>Seven signals are tracked, but only the ones your own sessions show matter get a vote, and every call is checked against how the session went.</span></a>
       <a class="intro-card" href="#ask"><span class="n">04</span><b>Ask your data anything.</b>
-        <span>Plain-English questions, answered from EsteBot's own numbers, not the AI's imagination. Off in this demo.</span></a>
+        <span>Plain-English questions, answered from EsteBot's own numbers, not the AI's imagination. {{ "Live in this demo." if chat_on else "Off in this demo." }}</span></a>
     </div>
   </section>
   {% endif %}
@@ -502,7 +502,8 @@
   <div class="chat-head"><h2>Ask EsteBot</h2>
     {% if chat_on %}<button type="button" class="chip chat-clear"{{ " hidden" if not chat_history }}>Clear</button>{% endif %}
     <button type="button" class="chat-close" aria-label="Close">&times;</button></div>
-  {% if not chat_on %}<p class="small ask-off">{{ "Off in the demo. Here's the kind of thing it answers:" if chat_history else "Off in the demo." }}</p>{% call info() %}<p>On your own page, Claude answers questions about your data here, using only numbers from EsteBot's own algorithms. It's off in the demo, where anyone could run up the bill.</p>{% endcall %}{% endif %}
+  {% if not chat_on %}<p class="small ask-off">{{ chat_resting or "Off in the demo." }}{{ " Here's the kind of thing it answers:" if chat_history }}</p>{% call info() %}<p>Claude answers questions here using only numbers from EsteBot's own algorithms. {{ "The demo's chat has a small daily budget shared by every visitor, and five questions an hour each." if chat_resting else "It's off in the demo, where anyone could run up the bill." }}</p>{% endcall %}
+  {% elif demo %}<p class="small ask-off">Live: ask about this made-up athlete's data. Five questions an hour.</p>{% endif %}
   <div class="ask-log" id="ask-log" aria-live="polite">
     {%- for m in chat_history %}<div class="ask-msg {{ 'me' if m.role == 'user' else 'bot' }}">{{ m.text }}</div>{% endfor -%}
   </div>
@@ -512,10 +513,10 @@
   </div>
   <form class="ask-form" id="ask-form">
     <textarea name="q" rows="2" maxlength="2000" required{{ " disabled" if not chat_on }}
-              placeholder="{{ 'Ask about your training, weight, sleep…' if chat_on else 'Sign in to ask about your own data' }}"></textarea>
+              placeholder="{{ ('Ask about their training, weight, sleep…' if demo else 'Ask about your training, weight, sleep…') if chat_on else 'Sign in to ask about your own data' }}"></textarea>
     <button type="submit"{{ " disabled" if not chat_on }}>Ask</button>
   </form>
-  {% if chat_on %}{% call info() %}<p>Claude answers using only numbers from EsteBot's own algorithms. Your last few questions are kept until you clear them.</p>{% endcall %}{% endif %}
+  {% if chat_on %}{% call info() %}<p>Claude answers using only numbers from EsteBot's own algorithms. {{ "Nothing you ask here is kept, and the demo's chat has a small daily budget shared by every visitor." if demo else "Your last few questions are kept until you clear them." }}</p>{% endcall %}{% endif %}
 </aside>
 <button type="button" class="chat-fab" aria-controls="ask">Ask</button>
 <script>
@@ -558,6 +559,7 @@
         headers: {"content-type": "application/json", "x-csrf-token": "{{ csrf }}"},
         body: JSON.stringify({history})});
       const j = await r.json();
+      if (j.resting) { location.reload(); return; }      // the page shows the examples instead
       if (!r.ok) throw new Error(j.error || "Something went wrong.");
       reply.textContent = j.answer; reply.className = "ask-msg bot";
       history.push({role: "assistant", text: j.answer}); clear.hidden = false;

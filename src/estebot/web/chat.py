@@ -6,9 +6,12 @@ prompt says to state only numbers that appear in a tool result. The model explai
 computes.
 
 Each person's spend is metered in their own database (chat_usage) and capped per day by
-$ESTEBOT_CHAT_DAILY_USD. The key is $ANTHROPIC_API_KEY.
+$ESTEBOT_CHAT_DAILY_USD. The demo is one person shared by every visitor, so its cap
+($ESTEBOT_DEMO_CHAT_DAILY_USD) is global, and each visitor also gets RATE_PER_HOUR questions.
+The key is $ANTHROPIC_API_KEY.
 """
-import json, os
+import json, os, sqlite3, time
+from collections import defaultdict, deque
 from datetime import date, timedelta
 
 import anthropic
@@ -175,8 +178,39 @@ def cost(usage):
     return (n("input_tokens") * PRICE["input"] + n("cache_creation_input_tokens") * PRICE["cache_write"]
             + n("cache_read_input_tokens") * PRICE["cache_read"] + n("output_tokens") * PRICE["output"]) / 1e6
 
-def daily_cap():
+def daily_cap(person=None):
+    if person is not None and person.read_only:
+        return float(os.environ.get("ESTEBOT_DEMO_CHAT_DAILY_USD", "3.00"))
     return float(os.environ.get("ESTEBOT_CHAT_DAILY_USD", "1.00"))
+
+def meter(person):
+    """Where a person's spend is kept: their own database. The demo's database is rebuilt at
+    every machine start, which would hand out a fresh budget with each deploy, so on the
+    server its meter lives on the volume beside it ($ESTEBOT_DEMO_CHAT_METER)."""
+    path = os.environ.get("ESTEBOT_DEMO_CHAT_METER") if person.read_only else None
+    return sqlite3.connect(path) if path else person.connect()
+
+def over_cap(person, con, today):
+    return spent_today(con, today) >= daily_cap(person)
+
+
+# ---------------------------------------------------------------- the demo's rate limit
+
+# Per visitor, in this process's memory: one machine serves the site, and a restart only
+# forgets the last hour. The daily cap is the limit that has to hold; this one spreads it out.
+RATE_PER_HOUR = 5
+_asked = defaultdict(deque)
+
+def rate_ok(visitor, now=None):
+    """True if this visitor has asked fewer than RATE_PER_HOUR questions in the last hour."""
+    now = time.time() if now is None else now
+    q = _asked[visitor]
+    while q and q[0] <= now - 3600:
+        q.popleft()
+    return len(q) < RATE_PER_HOUR
+
+def note_question(visitor, now=None):
+    _asked[visitor].append(time.time() if now is None else now)
 
 
 # ---------------------------------------------------------------- one question
@@ -198,10 +232,12 @@ def history_ok(history):
     return history[-1]["role"] == "user"
 
 
-def ask(person, con, history, today, client=None):
+def ask(person, con, history, today, client=None, spend=None):
     """-> (answer text, dollars spent). The browser keeps the conversation as text and sends
-    it each time; tool calls and thinking stay on the server for one question only."""
-    if spent_today(con, today) >= daily_cap():
+    it each time; tool calls and thinking stay on the server for one question only. Spend is
+    checked and recorded in `spend` (default: con)."""
+    spend = spend or con
+    if over_cap(person, spend, today):
         raise ChatError("Today's chat budget is used up. It resets tomorrow.")
     client = client or anthropic.Anthropic()
     messages = [{"role": m["role"], "content": m["text"]} for m in history]
@@ -233,9 +269,9 @@ def ask(person, con, history, today, client=None):
             messages.append({"role": "user", "content": results})
         return "That needed more lookups than I allow for one question. Try narrowing it down.", spent
     finally:
-        _ensure_usage(con)
-        con.execute("INSERT INTO chat_usage VALUES (?, ?)", (today, spent))
-        con.commit()
+        _ensure_usage(spend)
+        spend.execute("INSERT INTO chat_usage VALUES (?, ?)", (today, spent))
+        spend.commit()
 
 
 # ---------------------------------------------------------------- the conversation

@@ -20,6 +20,7 @@ RUN useradd --create-home --uid 1000 estebot && mkdir /data && chown estebot /da
 
 USER estebot
 ENV ESTEBOT_DEMO=1 ESTEBOT_DEMO_DIR=/data/demo ESTEBOT_CONFIG=/data/demo/estebot.toml \
+    ESTEBOT_DEMO_CHAT_METER=/data/demo-chat.sqlite \
     DATA_DIR=/data/health-data PORT=8080
 EXPOSE 8080
 CMD ["/app/entrypoint.sh"]
