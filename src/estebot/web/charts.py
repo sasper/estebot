@@ -5,6 +5,16 @@ stylesheet, so light/dark swap in one place and the chart body is written agains
 rather than hex. Palette slots 1-3 of the validated default categorical theme.
 """
 from datetime import date
+from itertools import count
+
+_fade_ids = count()
+
+def _fade(slot):
+    """A vertical fade in a series colour, for the area under a line; ids are unique per page."""
+    i = next(_fade_ids)
+    return (f'fade{i}', f'<defs><linearGradient id="fade{i}" x1="0" y1="0" x2="0" y2="1">'
+            f'<stop offset="0" class="fs{slot}" stop-opacity=".28"/>'
+            f'<stop offset="1" class="fs{slot}" stop-opacity="0"/></linearGradient></defs>')
 
 def _nice(lo, hi, ticks=5):
     if hi == lo: hi = lo + 1
@@ -57,6 +67,11 @@ def line_chart(series, *, width=720, height=260, ylabel="", pad_l=52, pad_b=28,
         dash = ' stroke-dasharray="5 4"' if s_.get("dashed") else ""
         dpath = " ".join(f'{"M" if i==0 else "L"}{X(dt):.1f},{Y(v):.1f}'
                          for i, (dt, v) in enumerate(p))
+        if s_ is series[0] and not s_.get("dashed"):     # a soft fill under the main line
+            fid, defs = _fade(s_["slot"])
+            base = pad_t + H
+            out.append(defs + f'<path class="area" fill="url(#{fid})" d="{dpath} '
+                       f'L{X(p[-1][0]):.1f},{base:.1f} L{X(p[0][0]):.1f},{base:.1f} Z"/>')
         out.append(f'<path class="ln s{s_["slot"]}" d="{dpath}"{dash}/>')
         if not s_.get("dashed"):
             for dt, v in p:
@@ -137,6 +152,8 @@ def sparkline(points, *, width=120, height=34, slot=1):
     Y = lambda v: 3 + (hi - v) / span * (height - 6)
     pts = " ".join(f"{X(dt):.1f},{Y(v):.1f}" for dt, v in p)
     x, y = X(p[-1][0]), Y(p[-1][1])
-    return (f'<svg viewBox="0 0 {width} {height}" class="spark" aria-hidden="true">'
+    fid, defs = _fade(slot)
+    return (f'<svg viewBox="0 0 {width} {height}" class="spark" aria-hidden="true">{defs}'
+            f'<polygon class="area" fill="url(#{fid})" points="{X(p[0][0]):.1f},{height} {pts} {x:.1f},{height}"/>'
             f'<polyline class="ln s{slot}" points="{pts}" stroke-width="1.6"/>'
             f'<circle class="pt s{slot}" cx="{x:.1f}" cy="{y:.1f}" r="2.6" stroke-width="0"/></svg>')

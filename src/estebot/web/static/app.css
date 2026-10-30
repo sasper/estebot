@@ -293,12 +293,12 @@ body.chat-open .chat-fab{display:none}
 }
 /* Trend tiles: a title, one headline line and a sparkline; the full card opens on tap.
    Two to a row when the trends column is wide; an open tile takes the whole row. */
-.tile summary{display:flex;align-items:center;gap:14px;cursor:pointer;list-style:none;
+.tile > summary{display:flex;align-items:center;gap:14px;cursor:pointer;list-style:none;
   -webkit-tap-highlight-color:transparent}
-.tile summary::-webkit-details-marker{display:none}
-.tile summary::after{content:"\203A";color:var(--text-muted);font-size:19px;transition:transform .15s}
-.tile[open] summary::after{transform:rotate(90deg)}
-.tile[open] summary{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.tile > summary::-webkit-details-marker{display:none}
+.tile > summary::after{content:"\203A";color:var(--text-muted);font-size:19px;transition:transform .15s}
+.tile[open] > summary::after{transform:rotate(90deg)}
+.tile[open] > summary{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .thead{flex:1;min-width:0}
 .thead h2{margin:0 0 4px}
 .tline{font-size:14px;color:var(--text-secondary);font-variant-numeric:tabular-nums}
@@ -348,7 +348,7 @@ h1 span{color:var(--accent)}
 .ring{filter:drop-shadow(0 0 7px color-mix(in srgb,var(--vcol) 45%,transparent))}
 .rscore{font-size:46px;font-weight:700}
 .v-normal{color:var(--accent)}
-.tile summary:hover h2,.tile summary:hover::after{color:var(--accent)}
+.tile > summary:hover h2,.tile > summary:hover::after{color:var(--accent)}
 .tile:hover{border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
 .spark .ln{filter:drop-shadow(0 0 3px color-mix(in srgb,var(--series-1) 50%,transparent))}
 a{color:var(--accent)}
@@ -381,3 +381,23 @@ html{scroll-behavior:smooth}
   .intro-pitch{font-size:27px}
   .intro{margin-bottom:18px}
 }
+/* (i): a card's explanation, one tap away. Pinned to the card's bottom-right corner,
+   opening upward over the card. */
+.card,.chat{position:relative}
+.card:not(.tile):has(> .info),.tile[open]:has(> .info){padding-bottom:44px}
+.info{position:absolute;right:14px;bottom:12px;z-index:5}
+.info summary{list-style:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
+  font:italic 700 13px/1 Georgia,serif;color:var(--text-muted);border:1px solid var(--line);user-select:none}
+.info summary::-webkit-details-marker{display:none}
+.info summary:hover,.info[open] summary{color:var(--accent);border-color:var(--accent)}
+.info-pop{position:absolute;right:0;bottom:32px;width:min(340px,80vw);padding:12px 14px;border-radius:12px;
+  background:var(--surface-1);border:1px solid var(--line);box-shadow:0 12px 32px rgb(0 0 0 / .35);
+  font-size:13px;line-height:1.5;color:var(--text-secondary)}
+.info-pop p{margin:0 0 8px} .info-pop p:last-child{margin:0}
+.chat .info{bottom:auto;top:14px;right:52px}
+.chat .info-pop{bottom:auto;top:32px}
+@media (min-width:1100px){ .chat .info{right:16px} .chat .chat-head{padding-right:30px} }
+.area{stroke:none}
+.fs1{stop-color:var(--series-1)} .fs2{stop-color:var(--series-2)} .fs3{stop-color:var(--series-3)}
+.ico{width:15px;height:15px;fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  vertical-align:-2px;margin-right:7px}
