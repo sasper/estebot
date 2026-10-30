@@ -228,7 +228,13 @@ def test_the_example_call_reads_right_when_nothing_is_flagged():
     from estebot.web import examples
     sig = lambda area, level, reason: {"area": area, "level": level, "reasons": [reason]}
     green = [sig(a, "green", f"{a} fine") for a in examples.AREA]
-    a = examples._call({"verdict": "hard", "score": 100, "signals": green})["a"]
-    assert "All 7 signals are good" in a and "strained signal" not in a and "holding you back" not in a
-    a = examples._call({"verdict": "light", "score": 46, "signals": [sig("load", "red", "too alike")] + green[1:]})["a"]
-    assert "holding you back" in a and "The other 6 signals are good" in a
+    a = examples._call({"verdict": "hard", "score": 100, "signals": green, "voting": ["sleep"],
+                        "positive": "your last session met 5 of 5 targets"})["a"]
+    assert a.startswith("Push") and "holding you back" not in a and "Flagged but not counted" not in a
+    a = examples._call({"verdict": "light", "score": 46, "voting": ["load"],
+                        "signals": [sig("load", "red", "too alike")] + green[1:]})["a"]
+    assert "holding you back" in a and "too alike" in a
+    # a flagged area with no vote is named as such, never as what held the day back
+    a = examples._call({"verdict": "normal", "score": 60, "voting": [],
+                        "signals": [sig("load", "red", "too alike")] + green[1:]})["a"]
+    assert "holding you back" not in a and "Flagged but not counted: training load" in a

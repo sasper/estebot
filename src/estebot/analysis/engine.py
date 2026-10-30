@@ -3,7 +3,7 @@
 Every number the app shows or acts on is produced here, in plain arithmetic, so it can
 be checked by hand. The LLM layer explains these outputs; it never produces them.
 """
-import re, statistics as st
+import os, re, statistics as st
 from dataclasses import dataclass
 from datetime import date, timedelta
 from estebot import config, core
@@ -397,9 +397,17 @@ def _pace_signal(con, day, goals):
     return _signal("pace", lv, [f"losing {m['pct']:.2f}% of body weight a week"
                                 + (", fast enough to cost recovery" if lv != "green" else "")])
 
-def readiness(con, day, goals):
-    """Signal-counting, explainable: seven areas, each green/amber/red/no-data with its
-    reasons, combined by core.combine_signals. No single input decides the day.
+POSITIVE_LAST_SESSION = 0.8   # share of targets met that makes a strong last session
+
+def _last_session(con, day, min_sets=LIFT_STREAK_MIN_SETS):
+    r = con.execute("SELECT MAX(date) d FROM lift_session WHERE date < ? AND n_sets >= ?",
+                    (day, min_sets)).fetchone()
+    return session_outcome(con, r["d"]) if r and r["d"] else None
+
+def readiness(con, day, goals, voting="auto"):
+    """Seven areas, each green/amber/red/no-data with its reasons; the call from those that
+    have earned a vote (core.evidence_call). `voting` is "auto" (each area's record over the
+    sessions before `day`, voting_areas) or the areas to count.
 
     Load is read through YESTERDAY (a morning decision; today's session hasn't happened).
     Recovery and sleep are read through TODAY (measured overnight, there when you wake).
@@ -418,7 +426,6 @@ def readiness(con, day, goals):
     if spasm:
         feel["reasons"].append("a back spasm means rest, whatever else says (your rule)")
     levels = {x["area"]: x["level"] for x in signals}
-    verdict = core.combine_signals(levels, forced_rest=spasm)
 
     ramp = None
     recent5 = st.mean(_load_series(con, prior, 5))
@@ -427,14 +434,60 @@ def readiness(con, day, goals):
         cap = round(chronic * 1.3)
         ramp = (f"Coming off a low-load stretch ({recent5:.0f} vs {chronic:.0f} min/day norm). "
                 f"Cap today near {cap} min rather than making up the deficit at once.")
+    # Safety rules hold the day whatever the evidence says: they are about not getting hurt,
+    # and a few sick days a year are too few to ever earn a vote.
+    holds = []
+    unwell = unwell_days(con, prior, day)
+    if any(e["sick"] for e in unwell.values()):
+        holds.append("sick today or yesterday")
+    if any(e["injured"] for e in unwell.values()):
+        holds.append("injured today or yesterday")
+    if ramp:
+        holds.append("back from a near-idle stretch")
+    # Reasons to push, each (present, words); only those whose record earned it count. Only
+    # this morning's check-in: yesterday's says how yesterday went, not today.
+    reasons = {}
+    if ci and ci["date"] == day and ci["energy"] is not None:
+        reasons["check-in"] = (ci["energy"] >= 2 and feel["level"] == "green",
+                               f"you checked in this morning with energy {ci['energy']}/3")
+    last = _last_session(con, day)
+    if last:
+        met = sum(x["met"] for x in last["exercises"])
+        reasons["last session"] = (last["hit"] >= POSITIVE_LAST_SESSION,
+                                   f"your last session met {met} of {len(last['exercises'])} targets")
+    if voting == "auto":
+        got = earned(con, day, goals)
+        voting, pushers = got["voting"], got["push"]
+    else:
+        voting, pushers = list(voting), []
+    positive = next((words for k, (on, words) in reasons.items() if on and k in pushers), None)
+    verdict = core.evidence_call(levels, voting, spasm, holds, positive)
     return {
         "date": day, "verdict": verdict, "score": core.readiness_score(levels, verdict),
-        "signals": signals, "ramp": ramp, "checkin": ci,
+        "signals": signals, "ramp": ramp, "checkin": ci, "voting": voting, "holds": holds,
+        "positive": positive, "push_reasons": reasons, "forced_rest": spasm,
         "subjective_review": bool(ci["needs_review"]) if ci and ci["date"] == day else False,
         "poor_recovery_days": poor, "acwr": r_acwr, **rec,
         "streak": days_since_rest(con, prior), "streak_now": days_since_rest(con, day),
         "last_sleep": last_sleep, "last_rest": last_rest_day(con, day),
     }
+
+_earned_cache = {}
+
+def earned(con, day, goals):
+    """{"voting": areas whose flagged days went worse, "push": reasons to push whose days
+    went better, "evidence": the table they came from}, over every session before `day`. Cached per database
+    file and its last change: the evidence regrades every session, about a second on a long
+    history, and the page asks on every load."""
+    path = con.execute("PRAGMA database_list").fetchone()[2]
+    key = (path, day, os.path.getmtime(path)) if path else None
+    if key not in _earned_cache:
+        ev = evidence(con, "1900-01-01", s(d(day) - timedelta(days=1)), goals)
+        got = {"voting": ev["voting"], "push": ev["push"], "evidence": ev}
+        if key is None:
+            return got
+        _earned_cache[key] = got
+    return _earned_cache[key]
 
 def recovery_series(con, start, end):
     """The readiness inputs as daily series over [start, end], for the page's charts.
@@ -713,8 +766,8 @@ def evidence(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SET
         o = session_outcome(con, r["date"], training)
         if o is None:
             continue
-        call = readiness(con, r["date"], goals)
-        rows.append({"date": r["date"], "hit": o["hit"], "verdict": call["verdict"],
+        call = readiness(con, r["date"], goals, voting=())
+        rows.append({"date": r["date"], "hit": o["hit"], "call": call,
                      "levels": {x["area"]: x["level"] for x in call["signals"]}})
     for x in rows:
         near = [y["hit"] for y in rows if y is not x
@@ -730,14 +783,29 @@ def evidence(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SET
     after_miss = [(prev["hit"] < 0.5, x["vs_phase"]) for prev, x in zip(rows, rows[1:])]
     candidates = {"missed most targets last session": core.flag_effect(
         [v for f, v in after_miss if f], [v for f, v in after_miss if not f])}
+    # The self-grade's backtest: the call each session would get with the votes found here.
+    # In-sample, so it flatters the rule; the recorded calls (calls.csv) are the real test.
+    voting = [a for a, e in by_area.items() if e["votes"]]
+    # Reasons to push, judged the other way round: days with the reason against days without.
+    by_reason = {}
+    for k in ("check-in", "last session"):
+        has = [x for x in rows if k in x["call"]["push_reasons"]]
+        by_reason[k] = core.flag_effect([x["vs_phase"] for x in has if x["call"]["push_reasons"][k][0]],
+                                        [x["vs_phase"] for x in has if not x["call"]["push_reasons"][k][0]])
+    push = [k for k, e in by_reason.items() if e["supports"]]
+    for x in rows:
+        c = x["call"]
+        why = next((w for k, (on, w) in c["push_reasons"].items() if on and k in push), None)
+        x["verdict"] = core.evidence_call(x["levels"], voting, c["forced_rest"], c["holds"], why)
     by_verdict = {}
     for v in ("hard", "normal", "light", "rest"):
         got = [x for x in rows if x["verdict"] == v]
         if got:
             by_verdict[v] = {"n": len(got), "hit": st.mean(x["hit"] for x in got),
                              "vs_phase": st.mean(x["vs_phase"] for x in got)}
-    return {"start": start, "end": end, "sessions": len(rows), "areas": by_area,
-            "candidates": candidates, "verdicts": by_verdict}
+    return {"start": start, "end": end, "sessions": len(rows), "phase_days": PHASE_DAYS,
+            "areas": by_area, "voting": voting,
+            "push_reasons": by_reason, "push": push, "candidates": candidates, "verdicts": by_verdict}
 
 def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS, training=None):
     """Which session is next and a target for each exercise. Morning decision: only sessions
@@ -792,5 +860,6 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
     # the back rules name single lifts, so they stay on those.
     return {"kind": kind, "variant": variant, "main": next((e for e in order if e in mains), None),
             "after": last, "template": template["date"], "rest": verdict == "rest", "exercises": items,
-            "day_adjust": ("Take it easy: repeat last time's loads with one set fewer, and stop each "
-                           "set by RPE 8." if verdict == "light" else None)}
+            "day_adjust": ("Hold: repeat last time's loads with one set fewer, and stop each set by "
+                           "RPE 8." if verdict == "light" else
+                           "Push: go for every target today." if verdict == "hard" else None)}

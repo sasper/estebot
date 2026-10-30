@@ -51,8 +51,8 @@
         <span>Workouts from Hevy, food from Cronometer, 2&nbsp;GB of Apple Health and a live phone feed, pulled every day and lined up into one tidy record per day.</span></a>
       <a class="intro-card" href="https://github.com/sasper/estebot"><span class="n">02</span><b>Messy data, fixed at the source.</b>
         <span>Weights that switched units mid-history. Renamed exercises. Two apps logging the same day. Every fix is a dated rule, never a hand edit, so years of history rebuild exactly.</span></a>
-      <a class="intro-card" href="#readiness"><span class="n">03</span><b>Seven signals. One call.</b>
-        <span>Load, effort, sleep, HRV, how you feel, food and weight pace all get a vote. One bad reading never decides your day.</span></a>
+      <a class="intro-card" href="#readiness"><span class="n">03</span><b>A call that grades itself.</b>
+        <span>Seven signals are tracked, but only the ones your own sessions show matter get a vote, and every call is checked against how the session went.</span></a>
       <a class="intro-card" href="#ask"><span class="n">04</span><b>Ask your data anything.</b>
         <span>Plain-English questions, answered from EsteBot's own numbers, not the AI's imagination. Off in this demo.</span></a>
     </div>
@@ -79,27 +79,32 @@
                  "feel": "How you feel", "nutrition": "Nutrition", "pace": "Weight-loss pace"} %}
   {% set LEVEL = {"green": "good", "amber": "watch", "red": "strain", None: "no data"} %}
   {% set flagged = r.signals|selectattr("level", "in", ["red", "amber"])|list %}
+  {% set counted = flagged|selectattr("area", "in", r.voting)|list %}
   <div class="card readiness" id="readiness" data-verdict="{{ r.verdict }}">
     <h2>How should you train today?</h2>
     <div class="rhero">
       {{ ring|safe }}
       <div>
         <div class="vbadge v-{{ r.verdict }}">{{ verdict_text }}</div>
-        <p class="why">{% if flagged %}Held back by
-          {% for x in flagged %}<b class="lv-{{ x.level }}">{{ AREA[x.area]|lower }}</b>{{ " and " if loop.revindex == 2 else (", " if not loop.last) }}{% endfor %}.
-          {% else %}Nothing is holding you back.{% endif %}</p>
+        <p class="why">{% if r.holds %}Held by a safety rule: {{ r.holds|join(", ") }}.
+          {% elif counted %}Held back by
+          {% for x in counted %}<b class="lv-{{ x.level }}">{{ AREA[x.area]|lower }}</b>{{ " and " if loop.revindex == 2 else (", " if not loop.last) }}{% endfor %}.
+          {% elif r.positive %}Reason to push: {{ r.positive }}.
+          {% elif r.voting %}Nothing that has earned a vote is flagged.
+          {% else %}No signal has a record of mattering for you yet, so the plan stands.{% endif %}</p>
       </div>
     </div>
     <div class="contrib">
       {% for x in r.signals %}
-      <details class="lv-{{ x.level or 'none' }}"{{ " open" if x.level == "red" }}>
-        <summary><span class="dot"></span><span class="area">{{ AREA[x.area] }}</span><span class="state">{{ LEVEL[x.level] }}</span></summary>
+      {% set votes = x.area in r.voting %}
+      <details class="lv-{{ x.level or 'none' }}{{ '' if votes else ' ctx' }}"{{ " open" if x.level == "red" and votes }}>
+        <summary><span class="dot"></span><span class="area">{{ AREA[x.area] }}</span><span class="vote{{ ' on' if votes }}">{{ "votes" if votes else "context" }}</span><span class="state">{{ LEVEL[x.level] }}</span></summary>
         <p>{{ x.reasons|join("; ") }}</p>
       </details>
       {% endfor %}
     </div>
-    {% call info() %}<p>The call counts these: rest when two or more areas show strain, take it easy with one strain or two to watch, go all out only when everything is good. No single signal decides the day.
-      The score sits inside the call's band (rest 0–24, take it easy 25–49, normal 50–74, all out 75–100), higher the more areas are clear.</p>{% endcall %}
+    {% call info() %}<p>Only areas with a record vote: an area votes once your sessions on its flagged days have gone worse than on its clear days (see <b>Is the call working?</b>). The rest are shown as context. Hold with one voting area in strain or two to watch, rest with two in strain. A push needs a reason that has itself gone with better sessions, never just nothing flagged. A safety rule (a health note, or coming back from a near-idle stretch) holds the day whatever the record says.
+      The score sits inside the call's band (rest 0–24, hold 25–49, as planned 50–74, push 75–100), higher the more areas are clear.</p>{% endcall %}
     {% if r.ramp %}<div class="ramp"><b>Ramp cap.</b> {{ r.ramp }}</div>{% endif %}
     {% if r.subjective_review %}<div class="ramp review"><b>Check this.</b>
       Your note for today carries conflicting signals, so nothing was inferred from it.
@@ -144,7 +149,7 @@
     <h2>{{ icon("session") }}Today's session{% if plan.rest %}, if you train{% endif %}</h2>
     <div class="verdict"><span class="vbadge">{{ plan.kind|title }} {{ plan.variant }}{% if plan.main %} · {{ plan.main }}{% endif %}</span></div>
     {% call info() %}<p>Next in your push → pull → legs rotation after {{ plan.after.kind }} on {{ plan.after.date|shortdate }}.
-      {% if plan.template %}Exercises from your last {{ plan.kind|title }} {{ plan.variant }} ({{ plan.template|shortdate }}); each target comes from the last time you did that exercise.{% endif %}</p><p>One rule for every exercise, applied to its last session. Strength work (top set of 5 or fewer): RPE 8 or under adds load, 8.5–9 adds a rep. Accessories: add a rep up to 12 (15 for calves, laterals, shrugs, face pulls, leg extensions, flyes), then add load and drop to the bottom of the range. Bodyweight: beat the last total reps by 1–2. Any top set at RPE 9.5+: hold the load and make it cleaner. No RPE logged: repeat it. A take-it-easy verdict holds every load; a sore back drops the spine-loading lifts.</p>{% endcall %}
+      {% if plan.template %}Exercises from your last {{ plan.kind|title }} {{ plan.variant }} ({{ plan.template|shortdate }}); each target comes from the last time you did that exercise.{% endif %}</p><p>One rule for every exercise, applied to its last session. Strength work (top set of 5 or fewer): RPE 8 or under adds load, 8.5–9 adds a rep. Accessories: add a rep up to 12 (15 for calves, laterals, shrugs, face pulls, leg extensions, flyes), then add load and drop to the bottom of the range. Bodyweight: beat the last total reps by 1–2. Any top set at RPE 9.5+: hold the load and make it cleaner. No RPE logged: repeat it. A hold day repeats every load; a sore back drops the spine-loading lifts.</p>{% endcall %}
     {% if plan.day_adjust %}<div class="ramp">{{ plan.day_adjust }}</div>{% endif %}
     {% if plan.rest %}<div class="ramp"><b>Rest day.</b> The verdict above says rest; this is what the next session looks like when you do train.</div>{% endif %}
     {% if plan.exercises %}
@@ -400,6 +405,35 @@
     </table>
     </div>
     {% call info() %}<p>Interim progress only. Each prediction resolves in ledger.md by its criterion as written, including the judgement calls a number can't make.</p>{% endcall %}
+  </details>
+
+  {% set STATUS = {"predicts worse sessions": "votes", "no effect seen": "no effect seen", "goes with better sessions": "goes with better days", "not enough data": "not enough data yet"} %}
+  <details class="card tile" data-tile="evidence">
+    <summary><div class="thead"><h2>{{ icon("recovery") }}Is the call working?</h2><div class="tline">{{ ev.voting|length }} of {{ ev.areas|length }} areas vote · {{ ev.sessions }} sessions graded</div></div></summary>
+    <p class="sub">Each session is graded on the share of its targets met, against the sessions within {{ ev.phase_days }} days of it. Points are the difference between days an area was flagged and days it was clear.</p>
+    <div class="tablewrap"><table class="evidence">
+      <tr><th>Area</th><th>Flagged / clear days</th><th>Flagged vs clear</th><th>Status</th></tr>
+      {% for a, e in ev.areas.items() %}
+      <tr class="{{ 'on' if e.votes }}"><td>{{ AREA[a] }}</td><td>{{ e.n_flagged }} / {{ e.n_clear }}</td>
+        <td>{% if e.diff is not none %}{{ "%+.0f"|format(e.diff * 100) }} pts <span class="muted">({{ "%+.0f"|format(e.lo * 100) }} to {{ "%+.0f"|format(e.hi * 100) }})</span>{% else %}–{% endif %}</td>
+        <td>{{ STATUS[e.status] }}</td></tr>
+      {% endfor %}
+      {% for k, e in ev.push_reasons.items() %}
+      <tr class="{{ 'on' if e.supports }}"><td>Reason to push: {{ k }}</td><td>{{ e.n_flagged }} / {{ e.n_clear }}</td>
+        <td>{% if e.diff is not none %}{{ "%+.0f"|format(e.diff * 100) }} pts <span class="muted">({{ "%+.0f"|format(e.lo * 100) }} to {{ "%+.0f"|format(e.hi * 100) }})</span>{% else %}–{% endif %}</td>
+        <td>{{ "earns a push" if e.supports else STATUS[e.status] }}</td></tr>
+      {% endfor %}
+    </table></div>
+    <h3 class="charttitle">Targets met after each call</h3>
+    <div class="tablewrap"><table class="evidence">
+      <tr><th>Call</th><th>Recorded calls</th><th>Under today's rules, all history</th></tr>
+      {% for v in ["hard", "normal", "light", "rest"] if v in recorded or v in ev.verdicts %}
+      <tr><td>{{ verdict_words[v] }}</td>
+        <td>{% if v in recorded %}{{ "%.0f"|format(recorded[v].hit * 100) }}% <span class="muted">({{ recorded[v].n }})</span>{% else %}–{% endif %}</td>
+        <td>{% if v in ev.verdicts %}{{ "%.0f"|format(ev.verdicts[v].hit * 100) }}% <span class="muted">({{ ev.verdicts[v].n }})</span>{% else %}–{% endif %}</td></tr>
+      {% endfor %}
+    </table></div>
+    {% call info() %}<p>The call is graded against what happened after it. <b>Recorded calls</b> are the calls as they were made each morning; they are the real test, and they start empty. <b>Under today's rules</b> replays every past session through the current votes; it was fitted on the same sessions, so it flatters the rule. If a push and a hold don't end up apart, the call isn't earning its place.</p>{% endcall %}
   </details>
 
   <details class="card tile" data-tile="load">

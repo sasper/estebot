@@ -11,7 +11,7 @@ from estebot.analysis import engine as an, nutrition
 
 AREA = {"load": "training load", "effort": "effort", "sleep": "sleep", "recovery": "HRV and resting heart rate",
         "feel": "how you feel", "nutrition": "nutrition", "pace": "weight-loss pace"}
-VERDICT = {"hard": "Go all out", "normal": "A normal day", "light": "Take it easy", "rest": "Rest"}
+VERDICT = {"hard": "Push", "normal": "As planned", "light": "Hold", "rest": "Rest"}
 
 
 def _join(items):
@@ -19,20 +19,27 @@ def _join(items):
 
 
 def _call(r):
+    voting = r.get("voting", [])
     flagged = [x for x in r["signals"] if x["level"] in ("red", "amber")]
-    clear = [x for x in r["signals"] if x["level"] == "green"]
+    counted = [x for x in flagged if x["area"] in voting]
     a = f"{VERDICT[r['verdict']]}, readiness {r['score']}."
-    if flagged:
+    if r.get("holds"):
+        a += " Held by a safety rule: " + _join(r["holds"]) + "."
+    if counted:
         a += " What's holding you back:\n" + "\n".join(
-            f"- {AREA[x['area']].capitalize()}: {x['reasons'][0]}" for x in flagged if x["reasons"])
-    if clear:
-        a += ("\n\n" + (f"The other {len(clear)} signals are good" if flagged else f"All {len(clear)} signals are good")
-              + ", including " + _join(
-            [x["reasons"][0] for x in clear if x["area"] in ("sleep", "recovery") and x["reasons"]] or
-            [AREA[x["area"]] for x in clear[:2]]) + ".")
-    a += ("\n\nThe call counts all seven, so feeling good can't outvote a strained signal, and one bad "
-          "reading can't sink a good day." if flagged else
-          "\n\nWith nothing strained, today is the day to push, and the session's targets build on last time.")
+            f"- {AREA[x['area']].capitalize()}: {x['reasons'][0]}" for x in counted if x["reasons"])
+    if r.get("positive"):
+        a += f" The reason to push: {r['positive']}, and days like that have gone better for you."
+    if voting:
+        a += ("\n\nOnly " + _join([AREA[v] for v in voting]) + (" has" if len(voting) == 1 else " have")
+              + " earned a vote: days it was flagged, your sessions went worse. The other signals are"
+              " shown but don't decide the day.")
+    else:
+        a += ("\n\nNo signal has earned a vote yet: none has gone with worse sessions for you, so the"
+              " day stays as planned until one does.")
+    other = [x for x in flagged if x["area"] not in voting]
+    if other:
+        a += " Flagged but not counted: " + _join([AREA[x["area"]] for x in other]) + "."
     return {"q": "What's behind today's call?", "a": a}
 
 

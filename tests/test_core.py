@@ -322,6 +322,29 @@ class TestFlagEffect:
         assert e["status"] == "not enough data" and not e["votes"] and e["diff"] is None
 
 
+class TestEvidenceCall:
+    # Every area used to vote, and over 689 sessions the calls didn't separate outcomes:
+    # 78% of targets met after "go all out", 77% after "take it easy".
+    def test_only_areas_that_earned_a_vote_count(self):
+        from estebot.core import evidence_call
+        levels = {"sleep": "red", "load": "red", "recovery": "green"}
+        assert evidence_call(levels, voting=[]) == "normal"
+        assert evidence_call(levels, voting=["sleep"]) == "light"
+        assert evidence_call(levels, voting=["sleep", "load"]) == "rest"
+
+    def test_nothing_flagged_is_not_a_reason_to_push(self):
+        from estebot.core import evidence_call
+        green = {"sleep": "green", "recovery": "green"}
+        assert evidence_call(green, voting=["sleep"]) == "normal"
+        assert evidence_call(green, voting=["sleep"], positive="a strong last session") == "hard"
+        assert evidence_call({"sleep": "amber"}, voting=["sleep"], positive="a strong last session") == "normal"
+
+    def test_safety_rules_hold_whatever_the_evidence(self):
+        from estebot.core import evidence_call
+        assert evidence_call({}, voting=[], holds=["sick today or yesterday"], positive="x") == "light"
+        assert evidence_call({}, voting=[], forced_rest=True) == "rest"
+
+
 class TestStrengthStandards:
     def test_a_heavy_lifter_is_not_underrated_by_a_plain_ratio(self):
         # A 470 lb squat at 260 lb is 1.8x, which plain ratio bands call intermediate

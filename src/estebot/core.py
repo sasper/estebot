@@ -248,6 +248,35 @@ def combine_signals(levels: dict[str, str | None], forced_rest: bool = False) ->
     return "normal"
 
 
+def evidence_call(levels: dict[str, str | None], voting, forced_rest: bool = False,
+                  holds=(), positive: str | None = None) -> str:
+    """The readiness call when only proven inputs vote.
+
+    combine_signals let every area vote, and over 689 sessions its calls didn't separate
+    outcomes (78% of targets met after "go all out", 77% after "take it easy"). Here only
+    the areas in `voting` (those whose evidence shows flagged days going worse) count:
+      rest   forced_rest, or red in 2+ voting areas
+      light  red in 1 voting area, amber in 2+, or any hold: a safety rule (sick, injured,
+             back from a near-idle stretch), which applies whatever the evidence says
+      hard   no voting area flagged AND a reason to push that has itself earned it (a good
+             check-in, a strong last session, each only once days with it went better).
+             An absence of warnings is not a reason to push.
+      normal anything else, including every day with nothing measured
+    Verdict keys stay those of combine_signals; the page words them push / as planned /
+    hold / rest."""
+    if forced_rest:
+        return "rest"
+    vals = [levels.get(a) for a in voting if levels.get(a)]
+    reds, ambers = vals.count("red"), vals.count("amber")
+    if reds >= 2:
+        return "rest"
+    if reds == 1 or ambers >= 2 or holds:
+        return "light"
+    if ambers == 0 and positive:
+        return "hard"
+    return "normal"
+
+
 # Each verdict owns a band of the 0-100 readiness score, so the number can never contradict
 # the call next to it (six good areas and one strained must not read 86 beside "take it easy").
 SCORE_BANDS = {"rest": (0, 24), "light": (25, 49), "normal": (50, 74), "hard": (75, 100)}
@@ -288,16 +317,17 @@ def flag_effect(flagged: list[float], clear: list[float], min_n: int = EVIDENCE_
     (normal approximation). An input votes only when the whole band is below zero: on
     four years of sessions none of the readiness inputs did, and an input that has never
     shown an effect should not decide a day. A band wholly above zero means the flag goes
-    with better sessions, which is reported and never voted on."""
+    with better sessions: never a warning's vote, but what a reason to push must show
+    (supports)."""
     out = {"n_flagged": len(flagged), "n_clear": len(clear), "diff": None, "lo": None, "hi": None}
     if len(flagged) < min_n or len(clear) < min_n:
-        return out | {"status": "not enough data", "votes": False}
+        return out | {"status": "not enough data", "votes": False, "supports": False}
     diff = st.mean(flagged) - st.mean(clear)
     se = math.sqrt(st.variance(flagged) / len(flagged) + st.variance(clear) / len(clear))
     lo, hi = diff - 1.96 * se, diff + 1.96 * se
     status = ("predicts worse sessions" if hi < 0 else
               "goes with better sessions" if lo > 0 else "no effect seen")
-    return out | {"diff": diff, "lo": lo, "hi": hi, "status": status, "votes": hi < 0}
+    return out | {"diff": diff, "lo": lo, "hi": hi, "status": status, "votes": hi < 0, "supports": lo > 0}
 
 
 def worst(*levels: str | None) -> str | None:

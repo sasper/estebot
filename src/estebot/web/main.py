@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from estebot import config, core
-from estebot.analysis import engine as an, nutrition, predictions
+from estebot.analysis import calls, engine as an, nutrition, predictions
 import anthropic
 from starlette.concurrency import run_in_threadpool
 
@@ -47,8 +47,8 @@ def _refuse(p, csrf):
         return PlainTextResponse("This form has expired. Reload the page and try again.",
                                  status_code=403)
 
-# The engine's verdicts, in words. "hard" means everything lines up for a big session.
-VERDICT_TEXT = {"hard": "Go all out", "normal": "Normal", "light": "Take it easy", "rest": "Rest day"}
+# The engine's verdicts, in words. "hard" is a push: an earned reason to go for every target.
+VERDICT_TEXT = {"hard": "Push", "normal": "As planned", "light": "Hold", "rest": "Rest day"}
 BACK_LEVELS = ("ok", "tired", "sore", "spasm")      # checkin.back, mildest first
 
 @app.get("/", response_class=HTMLResponse)
@@ -103,7 +103,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
             refs=[(r["rhr_baseline"] + 3, "baseline + 3")] if r["rhr_baseline"] else [])),
         ("Sleep (hours asleep)", charts.line_chart(
             [{"name": "Sleep", "points": rs["sleep"], "slot": 1}], **small, fmt="{:.1f}",
-            refs=[(5, "under 5 h: take it easy")])),
+            refs=[(5, "under 5 h: strain")])),
         ("Load ratio (7-day vs 28-day)", charts.line_chart(
             [{"name": "Load ratio", "points": rs["acwr"], "slot": 1}], **small, fmt="{:.1f}",
             refs=[(0.8, "0.8 light week"), (1.5, "1.5 injury risk")])),
@@ -145,7 +145,11 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     nut["gaps"], nut["near_limit"], nut["unmeasured"] = nutrition.micronutrients(
         con, day, nutrition.supplement_amounts(products, day), supp_notes)
     verdict_text = VERDICT_TEXT[r["verdict"]]
-    ctx = dict(verdict_text=verdict_text, ring=charts.signal_ring(r["signals"], r["score"], r["verdict"]),
+    # The evidence behind the votes (cached by the engine) and the self-grade on recorded calls.
+    ev = an.earned(con, day, goals)["evidence"]
+    recorded = calls.graded(con, calls.load(cfg.data_file("calls.csv")))
+    ctx = dict(verdict_text=verdict_text, verdict_words=VERDICT_TEXT, ev=ev, recorded=recorded,
+        ring=charts.signal_ring(r["signals"], r["score"], r["verdict"], voting=r["voting"]),
         day_label=date.fromisoformat(day).strftime("%a %-d %b %Y"),
         day=day, r=r, preds=preds, wchart=wchart, load_charts=load_charts,
         multiples=multiples, sparks=sparks, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=goals.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,
@@ -187,6 +191,10 @@ def presentable(ctx):
     r["signals"] = [dict(x, reasons=[t for t in x["reasons"] if "back" not in t] or
                          ["from the daily check-in"]) if x["area"] == "feel" else x
                     for x in r["signals"]]
+    # The hold stays (it decided the day), its reason doesn't: sick and injured are medical.
+    r["holds"] = [h if h.startswith("back from") else "a health note" for h in ctx["r"].get("holds", [])]
+    if r.get("positive", "") and "checked in" in r["positive"]:
+        r["positive"] = "a good check-in this morning"
     if ctx["checkin"]:
         c["checkin"] = r["checkin"] = dict(ctx["checkin"], note=None, back_reported=0, needs_review=0,
                                            sick=0, injured=0)

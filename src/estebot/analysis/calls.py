@@ -66,6 +66,17 @@ def record(path, row):
     return True
 
 
+def graded(con, rows):
+    """{verdict: {"n", "hit"}} over the recorded calls whose day had a session: the
+    self-grade on calls as they were made, not as today's rules would make them."""
+    out = {}
+    for c in rows:
+        o = engine.session_outcome(con, c["date"])
+        if o is not None:
+            out.setdefault(c["verdict"], []).append(o["hit"])
+    return {v: {"n": len(h), "hit": sum(h) / len(h)} for v, h in out.items()}
+
+
 def main(argv):
     cfg = config.load()
     path = cfg.data_file("calls.csv")
