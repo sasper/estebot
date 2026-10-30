@@ -157,6 +157,26 @@ def test_coming_off_a_layoff_is_never_go_all_out(con):
     assert next(x for x in r["signals"] if x["area"] == "load")["level"] == "amber"
 
 
+def test_one_session_back_after_a_week_off_is_still_a_load_warning(con):
+    # The near-idle check read only the 5 days to yesterday, so the first session back
+    # cleared it: a week off, one session, and the next morning said go all out.
+    from estebot.analysis import engine
+    _hard_sets(con, "2026-08-20", [14, 4, 18, 12, 0, 16, 8] * 4 + [0] * 6 + [12])
+    r = engine.readiness(con, "2026-09-25", GOALS)
+    assert r["verdict"] != "hard" and r["ramp"]
+    assert next(x for x in r["signals"] if x["area"] == "load")["level"] == "amber"
+
+
+def test_a_deload_week_alone_is_not_a_load_warning(con):
+    # Any ratio under 0.8 used to be amber: 20-30% of days, mostly planned deloads, trips
+    # and illness. Light but still training is not the near-idle setup the flag is for.
+    from estebot.analysis import engine
+    _hard_sets(con, "2026-09-10", [14, 4, 18, 12, 0, 16, 8] * 4 + [6, 0, 8, 6, 0, 6, 4])
+    r = engine.readiness(con, "2026-10-15", GOALS)
+    load = next(x for x in r["signals"] if x["area"] == "load")
+    assert r["acwr"] < 0.8 and load["level"] == "green" and not r["ramp"]
+
+
 def test_six_days_in_a_row_alone_does_not_force_a_rest_day(con):
     # The old rule: 6 consecutive training days -> rest, whatever else said. Now it is
     # information; with varied load and nothing else flagged the day is not rest.

@@ -131,15 +131,28 @@ def acwr(con, day):
 
     `day` must be the last COMPLETED day. Readiness is a morning decision, so today's
     training has not happened yet and must not be an input - see readiness().
-    >1.5 is the injury-risk zone; <0.8 means detrained relative to recent norm.
-    This is the metric that would have flagged a big session straight off a near-idle
-    week, the setup for an injury the next day."""
+    >1.5 is the injury-risk zone. A low ratio alone is not flagged: it fired on 20-30% of
+    days, mostly deloads, trips and illness. The low-side danger, a big session straight
+    off a near-idle week (the setup for an injury the next day), is _coming_off_idle()."""
     acute, chronic = _acwr_parts(con, day)
     return (acute / chronic) if chronic > 0 else None
 
 def _acwr_parts(con, day):
     """The two means acwr() divides: hard sets a day over 7 days and over 28."""
     return st.mean(_load_series(con, day, 7)), st.mean(_load_series(con, day, 28))
+
+def _coming_off_idle(con, day):
+    """(5-day mean, 28-day norm) in hard sets a day when a 5-day stretch ending in the last
+    3 days fell under a quarter of its norm, else None. Ending up to 2 days back keeps the
+    flag on through the first sessions after a break, when one of them would otherwise
+    clear it. Drives both the load signal and the ramp cap."""
+    for k in range(3):
+        end = s(d(day) - timedelta(days=k))
+        recent5 = st.mean(_load_series(con, end, 5))
+        chronic = st.mean(_load_series(con, end, 28))
+        if chronic > 0 and recent5 < 0.25 * chronic:
+            return recent5, chronic
+    return None
 
 def _metric_baseline(con, day, col, days=30):
     start = s(d(day) - timedelta(days=days))
@@ -284,13 +297,15 @@ def _signal(area, level, reasons):
 def _load_signal(con, prior):
     r = acwr(con, prior)
     mono = core.monotony(_load_series(con, prior, 7))
-    # Low is amber too: a spike straight off a layoff week is the setup that once preceded
-    # an injury the next day.
-    lv_r = None if r is None else ("red" if r > 1.5 else "amber" if (r > 1.3 or r < 0.8) else "green")
+    # Coming off near-idle days is amber too: a big session straight off a layoff week is
+    # the setup that once preceded an injury the next day. A merely light week is not.
+    idle = _coming_off_idle(con, prior)
+    lv_r = None if r is None else ("red" if r > 1.5 else "amber" if (r > 1.3 or idle) else "green")
     lv_m = None if mono is None else ("red" if mono > 2.5 else "amber" if mono > 2.0 else "green")
     acute, chronic = _acwr_parts(con, prior)
     meaning = ("" if r is None else ": a big jump, keep today moderate" if r > 1.3
-               else ": a light week, build back up rather than going all out" if r < 0.8
+               else ": coming off a near-idle stretch, ease back in" if idle
+               else ": a lighter week than usual" if r < 0.8
                else ": within the normal range")
     ratio = r is not None and (f"{acute * 7:.0f} hard sets in the last 7 days vs {chronic * 7:.0f} "
                                f"a week over the last 4 ({r:.2f}×){meaning}")
@@ -428,14 +443,13 @@ def readiness(con, day, goals):
     verdict = core.combine_signals(levels, forced_rest=spasm)
 
     ramp = None
-    recent5 = st.mean(_load_series(con, prior, 5))
-    chronic = st.mean(_load_series(con, prior, 28))
-    if chronic > 0 and recent5 < 0.25 * chronic:
+    if idle := _coming_off_idle(con, prior):
+        recent5, chronic = idle
         # Capped at a usual session, not 1.3x the daily mean: the mean counts rest days,
         # so it is far below what one session holds.
         sessions = [x for x in _load_series(con, prior, 28) if x > 0]
         cap = round(st.mean(sessions))
-        ramp = (f"Coming off a light stretch ({recent5 * 5:.0f} hard sets in the last 5 days, "
+        ramp = (f"Coming off a near-idle stretch ({recent5 * 5:.0f} hard sets in 5 days, "
                 f"about {chronic * 5:.0f} usually). Keep today to a normal session, about {cap} "
                 f"hard sets, rather than making up the missed work at once.")
     return {
