@@ -18,6 +18,27 @@
     {%- if signin %}{% if email %}<form method="post" action="/auth/logout" class="signout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="chip" title="Signed in as {{ email }}">Sign out</button></form>
     {% else %}<a class="chip" href="/auth/login">Sign in</a>{% endif %}{% endif %}
   </header>
+  {# The public demo opens with what this is and what to look at; the person's own page doesn't. #}
+  {% if demo %}
+  <section class="intro">
+    <p class="intro-pitch">Training and body-weight analysis over one person's exported health data, with a daily call on how hard to train.</p>
+    <p class="intro-note">This is the real app running on a made-up person, generated fresh every day. Every number on the page is computed in plain arithmetic; the AI explains them and never produces one.</p>
+    <div class="intro-links">
+      <a class="intro-btn" href="https://github.com/sasper/estebot">View the code on GitHub</a>
+      <a class="intro-more" href="#readiness">See today's call &darr;</a>
+    </div>
+    <div class="intro-cards">
+      <a class="intro-card" href="#readiness"><span class="n">01</span><b>A readiness score that can't contradict itself</b>
+        <span>Seven signals, from training load to sleep and HRV, each green, amber or red. The call counts them, so no single input decides the day, and the 0&ndash;100 score sits inside the call's band. A test checks all 16,384 combinations.</span></a>
+      <a class="intro-card" href="#ask"><span class="n">02</span><b>A chat that only quotes the engine</b>
+        <span>Ask in plain English. Claude answers through read-only tools that call the same functions the page uses, and states only numbers they return. Metered and capped per day; off in this demo.</span></a>
+      <a class="intro-card" href="#calendar"><span class="n">03</span><b>Four messy sources, one clean day</b>
+        <span>A daily sync pulls workouts from Hevy and food from Cronometer, streams a 2&nbsp;GB Apple Health export plus a phone feed, and merges them per day, with dated corrections for logging quirks.</span></a>
+      <a class="intro-card" href="https://github.com/sasper/estebot"><span class="n">04</span><b>Built to be trusted</b>
+        <span>One implementation per metric, shared by the page, the CLI and the chat. Refactors must reproduce parser output byte for byte, tests come from real failures, and git hooks keep personal data out of this public repo.</span></a>
+    </div>
+  </section>
+  {% endif %}
   <p class="sub" style="margin-bottom:10px">{{ "Today" if is_today else "Looking back" }} · {{ day_label }}</p>
   <nav class="daynav">
     <a href="/?day={{ prev_day }}">&larr;</a>
@@ -39,7 +60,7 @@
                  "feel": "How you feel", "nutrition": "Nutrition", "pace": "Weight-loss pace"} %}
   {% set LEVEL = {"green": "good", "amber": "watch", "red": "strain", None: "no data"} %}
   {% set flagged = r.signals|selectattr("level", "in", ["red", "amber"])|list %}
-  <div class="card readiness" data-verdict="{{ r.verdict }}">
+  <div class="card readiness" id="readiness" data-verdict="{{ r.verdict }}">
     <h2>How should you train today?</h2>
     <div class="rhero">
       {{ ring|safe }}
@@ -159,7 +180,7 @@
       {% for k, v in axial.items() %}<b>{{ k }}</b> {{ "%.2f"|format(v) }}{{ " · " if not loop.last }}{% endfor %} (0–3).</p>
   </details>
 
-  <div class="card">
+  <div class="card" id="calendar">
     <h2>Training calendar</h2>
     <div class="legend">
       <span><i class="swatch cal-train"></i>Training: lifting 5+ sets, or any workout but a walk</span>
@@ -430,6 +451,8 @@
     toggle(true); panel.querySelector("textarea").focus();
   });
   panel.querySelector(".chat-close").addEventListener("click", () => toggle(false));
+  // On a phone the panel is a closed sheet, so a link to it opens it.
+  document.querySelectorAll('a[href="#ask"]').forEach((a) => a.addEventListener("click", () => toggle(true)));
   {% if chat_on %}
   const form = document.getElementById("ask-form"), log = document.getElementById("ask-log");
   const tryit = document.getElementById("ask-try"), clear = panel.querySelector(".chat-clear");
