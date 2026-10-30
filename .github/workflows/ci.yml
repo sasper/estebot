@@ -33,7 +33,7 @@ jobs:
       - name: Assert no personal data is tracked
         run: |
           set -e
-          banned='ledger.md|context-log.md|annotations.csv|corrections.csv|renames.csv|predictions.toml|supplements.toml|health-context.txt|estebot.toml|\.sqlite$|^tidy/|^raw/'
+          banned='calls.csv|ledger.md|context-log.md|annotations.csv|corrections.csv|renames.csv|predictions.toml|supplements.toml|health-context.txt|estebot.toml|\.sqlite$|^tidy/|^raw/'
           if git ls-files | grep -Ei "$banned"; then
             echo "::error::A personal-data file is tracked in this repository."
             exit 1

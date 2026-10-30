@@ -669,6 +669,31 @@ def _last_sets(con, exercise, before):
                           ORDER BY set_idx""", (exercise, r["d"])).fetchall()
     return r["d"], [(x["weight_lb"], x["reps"], x["rpe"]) for x in rows]
 
+def session_outcome(con, day, training=None):
+    """How a day's lifting went against its plan: for each exercise done, the goal
+    core.progression set from the last time it was done, whether the day's working sets
+    met it, and the RPE of its first top set. Rebuilt from lift_set, so any past session can
+    be graded, not just those since calls were recorded. None on a day with nothing to grade."""
+    training = training or TRAINING
+    done = {}
+    for r in con.execute("""SELECT exercise, weight_lb, reps, rpe FROM lift_set
+                            WHERE date=? AND COALESCE(set_type,'') != 'warmup'
+                            ORDER BY rowid""", (day,)):
+        done.setdefault(r["exercise"], []).append((r["weight_lb"], r["reps"], r["rpe"]))
+    out = []
+    for ex, sets in done.items():
+        _, before = _last_sets(con, ex, day)
+        p = core.progression(ex, before, training.high_rep, training.rep_range, training.high_rep_range)
+        if p is None:
+            continue
+        top_w = max((w or 0.0) for w, _, _ in sets)
+        out.append({"exercise": ex, "action": p["action"], "target": p["target"],
+                    "met": core.goal_met(p["goal"], sets),
+                    "top_rpe": next((rpe for w, _, rpe in sets if (w or 0.0) == top_w), None)})
+    if not out:
+        return None
+    return {"date": day, "exercises": out, "hit": sum(x["met"] for x in out) / len(out)}
+
 def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS, training=None):
     """Which session is next and a target for each exercise. Morning decision: only sessions
     before `day` count, the same as readiness.
