@@ -21,21 +21,21 @@
   {# The public demo opens with what this is and what to look at; the person's own page doesn't. #}
   {% if demo %}
   <section class="intro">
-    <p class="intro-pitch">Training and body-weight analysis over one person's exported health data, with a daily call on how hard to train.</p>
-    <p class="intro-note">This is the real app running on a made-up person, generated fresh every day. Every number on the page is computed in plain arithmetic; the AI explains them and never produces one.</p>
+    <p class="intro-pitch">Your training, sleep, food and weight. One straight answer every morning.</p>
+    <p class="intro-note">A live demo on a made-up athlete, rebuilt every day. Every number is calculated, never guessed by AI.</p>
     <div class="intro-links">
-      <a class="intro-btn" href="https://github.com/sasper/estebot">View the code on GitHub</a>
-      <a class="intro-more" href="#readiness">See today's call &darr;</a>
+      <a class="intro-btn" href="https://github.com/sasper/estebot">See the code</a>
+      <a class="intro-more" href="#readiness">Jump to today &darr;</a>
     </div>
     <div class="intro-cards">
-      <a class="intro-card" href="#readiness"><span class="n">01</span><b>A readiness score that can't contradict itself</b>
-        <span>Seven signals, from training load to sleep and HRV, each green, amber or red. The call counts them, so no single input decides the day, and the 0&ndash;100 score sits inside the call's band. A test checks all 16,384 combinations.</span></a>
-      <a class="intro-card" href="#ask"><span class="n">02</span><b>A chat that only quotes the engine</b>
-        <span>Ask in plain English. Claude answers through read-only tools that call the same functions the page uses, and states only numbers they return. Metered and capped per day; off in this demo.</span></a>
-      <a class="intro-card" href="#calendar"><span class="n">03</span><b>Four messy sources, one clean day</b>
-        <span>A daily sync pulls workouts from Hevy and food from Cronometer, streams a 2&nbsp;GB Apple Health export plus a phone feed, and merges them per day, with dated corrections for logging quirks.</span></a>
-      <a class="intro-card" href="https://github.com/sasper/estebot"><span class="n">04</span><b>Built to be trusted</b>
-        <span>One implementation per metric, shared by the page, the CLI and the chat. Refactors must reproduce parser output byte for byte, tests come from real failures, and git hooks keep personal data out of this public repo.</span></a>
+      <a class="intro-card" href="#calendar"><span class="n">01</span><b>Four apps in. One clean day out.</b>
+        <span>Workouts from Hevy, food from Cronometer, 2&nbsp;GB of Apple Health and a live phone feed, pulled every day and lined up into one tidy record per day.</span></a>
+      <a class="intro-card" href="https://github.com/sasper/estebot"><span class="n">02</span><b>Messy data, fixed at the source.</b>
+        <span>Weights that switched units mid-history. Renamed exercises. Two apps logging the same day. Every fix is a dated rule, never a hand edit, so years of history rebuild exactly.</span></a>
+      <a class="intro-card" href="#readiness"><span class="n">03</span><b>Seven signals. One call.</b>
+        <span>Load, effort, sleep, HRV, how you feel, food and weight pace all get a vote. One bad reading never decides your day.</span></a>
+      <a class="intro-card" href="#ask"><span class="n">04</span><b>Ask your data anything.</b>
+        <span>Plain-English questions, answered from EsteBot's own numbers, not the AI's imagination. Off in this demo.</span></a>
     </div>
   </section>
   {% endif %}

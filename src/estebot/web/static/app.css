@@ -372,3 +372,12 @@ a{color:var(--accent)}
 html{scroll-behavior:smooth}
 :target{scroll-margin-top:16px}
 @media (min-width:720px){ .intro-pitch{font-size:38px} }
+/* Phones: the intro cards swipe sideways, so today's call shows without a long scroll. */
+@media (max-width:719px){
+  .intro-cards{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;
+    margin:0 -16px;padding:0 16px 6px;scroll-padding-inline:16px;scrollbar-width:none}
+  .intro-cards::-webkit-scrollbar{display:none}
+  .intro-card{flex:0 0 78%;scroll-snap-align:start}
+  .intro-pitch{font-size:27px}
+  .intro{margin-bottom:18px}
+}
