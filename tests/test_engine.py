@@ -358,3 +358,18 @@ def test_a_session_is_graded_against_the_target_its_last_session_set(con):
     assert met == {"Barbell Squat": False, "Dumbbell Row": True}   # squat asked 325 x 5; row 80 x 11
     assert o["hit"] == 0.5
     assert engine.session_outcome(con, "2026-10-02") is None
+
+
+def test_the_evidence_pairs_each_session_with_the_one_before(con):
+    # The after-a-miss candidate reads the previous session's grade; with every session a
+    # miss, each one after the first is on the flagged side and none on the clear side.
+    from datetime import date, timedelta
+    from estebot.analysis import engine
+    days = [(date(2026, 9, 1) + timedelta(days=2 * i)).isoformat() for i in range(6)]
+    con.executemany("INSERT INTO lift_session (date, n_sets) VALUES (?, 5)", [(x,) for x in days])
+    con.executemany("INSERT INTO lift_set (date, exercise, set_idx, weight_lb, reps, rpe, set_type) "
+                    "VALUES (?, 'Barbell Squat', 1, 300, 5, 9, 'normal')", [(x,) for x in days])
+    ev = engine.evidence(con, days[0], days[-1], {})
+    assert ev["sessions"] == 5                       # the first has nothing to be graded against
+    c = ev["candidates"]["missed most targets last session"]
+    assert (c["n_flagged"], c["n_clear"]) == (4, 0) and c["status"] == "not enough data"

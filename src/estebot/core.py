@@ -277,6 +277,29 @@ def weekly_shift_z(week: list[float], baseline: list[float]) -> float | None:
     return (st.mean(week) - st.mean(baseline)) / (sd / math.sqrt(len(week)))
 
 
+EVIDENCE_MIN_N = 15   # sessions on each side before a flag's effect is judged at all
+
+
+def flag_effect(flagged: list[float], clear: list[float], min_n: int = EVIDENCE_MIN_N) -> dict:
+    """Whether sessions on days an input was flagged went worse than days it was clear.
+
+    Values are each session's share of targets met, less its phase's average, so a good
+    year can't pass for a good signal. diff = flagged mean - clear mean with a 95% band
+    (normal approximation). An input votes only when the whole band is below zero: on
+    four years of sessions none of the readiness inputs did, and an input that has never
+    shown an effect should not decide a day. A band wholly above zero means the flag goes
+    with better sessions, which is reported and never voted on."""
+    out = {"n_flagged": len(flagged), "n_clear": len(clear), "diff": None, "lo": None, "hi": None}
+    if len(flagged) < min_n or len(clear) < min_n:
+        return out | {"status": "not enough data", "votes": False}
+    diff = st.mean(flagged) - st.mean(clear)
+    se = math.sqrt(st.variance(flagged) / len(flagged) + st.variance(clear) / len(clear))
+    lo, hi = diff - 1.96 * se, diff + 1.96 * se
+    status = ("predicts worse sessions" if hi < 0 else
+              "goes with better sessions" if lo > 0 else "no effect seen")
+    return out | {"diff": diff, "lo": lo, "hi": hi, "status": status, "votes": hi < 0}
+
+
 def worst(*levels: str | None) -> str | None:
     """The most severe of several levels; None only if all are None."""
     known = [l for l in levels if l]

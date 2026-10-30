@@ -694,6 +694,51 @@ def session_outcome(con, day, training=None):
         return None
     return {"date": day, "exercises": out, "hit": sum(x["met"] for x in out) / len(out)}
 
+PHASE_DAYS = 45   # a session is compared with the sessions within this many days either side
+
+def evidence(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SETS):
+    """Each readiness area's track record: did sessions go worse on days it was flagged?
+
+    Every session in [start, end] is graded (session_outcome) and paired with the morning
+    call readiness() makes for its day under today's rules. A session's score is its share
+    of targets met less the mean of the sessions within PHASE_DAYS either side, so years
+    that went well or badly as a whole don't read as an input's effect. Per area, flagged
+    (amber or red) against clear (green) goes through core.flag_effect; days with no data
+    for an area count on neither side. Also: how sessions went after each verdict, and
+    candidates: inputs outside the call, found by searching the history and tracked until
+    new sessions confirm them."""
+    rows = []
+    for r in con.execute("SELECT date FROM lift_session WHERE date BETWEEN ? AND ? AND n_sets >= ? "
+                         "ORDER BY date", (start, end, min_sets)):
+        o = session_outcome(con, r["date"], training)
+        if o is None:
+            continue
+        call = readiness(con, r["date"], goals)
+        rows.append({"date": r["date"], "hit": o["hit"], "verdict": call["verdict"],
+                     "levels": {x["area"]: x["level"] for x in call["signals"]}})
+    for x in rows:
+        near = [y["hit"] for y in rows if y is not x
+                and abs((d(y["date"]) - d(x["date"])).days) <= PHASE_DAYS]
+        x["vs_phase"] = x["hit"] - st.mean(near) if near else None
+    rows = [x for x in rows if x["vs_phase"] is not None]
+    areas = list(rows[0]["levels"]) if rows else []
+    by_area = {a: core.flag_effect([x["vs_phase"] for x in rows if x["levels"][a] in ("amber", "red")],
+                                   [x["vs_phase"] for x in rows if x["levels"][a] == "green"])
+               for a in areas}
+    # Found in Oct 2026 among 8 candidates searched, so it is watched, not trusted: a search
+    # that tries enough inputs finds one that looks real by chance.
+    after_miss = [(prev["hit"] < 0.5, x["vs_phase"]) for prev, x in zip(rows, rows[1:])]
+    candidates = {"missed most targets last session": core.flag_effect(
+        [v for f, v in after_miss if f], [v for f, v in after_miss if not f])}
+    by_verdict = {}
+    for v in ("hard", "normal", "light", "rest"):
+        got = [x for x in rows if x["verdict"] == v]
+        if got:
+            by_verdict[v] = {"n": len(got), "hit": st.mean(x["hit"] for x in got),
+                             "vs_phase": st.mean(x["vs_phase"] for x in got)}
+    return {"start": start, "end": end, "sessions": len(rows), "areas": by_area,
+            "candidates": candidates, "verdicts": by_verdict}
+
 def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS, training=None):
     """Which session is next and a target for each exercise. Morning decision: only sessions
     before `day` count, the same as readiness.
