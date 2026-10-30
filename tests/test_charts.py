@@ -12,3 +12,12 @@ def test_end_labels_that_would_overlap_are_stacked_apart():
                               "dashed": True}], fmt="{:.0f}")
     ys = sorted(float(y) for y in re.findall(r'class="endlabel[^"]*" x="[^"]*" y="([^"]+)"', svg))
     assert len(ys) == 2 and ys[1] - ys[0] >= 14
+
+
+def test_an_energy_balance_reads_as_a_deficit_or_a_surplus_never_a_signed_number():
+    # The demo showed "Deficit, logged -46": a negative deficit, which is a surplus.
+    from estebot.web.charts import kcal_balance
+    assert kcal_balance(246.4) == "246 kcal deficit"
+    assert kcal_balance(-46) == "46 kcal surplus"
+    assert kcal_balance(1234) == "1,234 kcal deficit"
+    assert kcal_balance(0.3) == "even" and kcal_balance(None) == "–"

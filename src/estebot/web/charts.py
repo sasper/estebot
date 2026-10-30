@@ -9,6 +9,15 @@ from itertools import count
 
 _fade_ids = count()
 
+def kcal_balance(kcal):
+    """A daily energy balance in words: positive is a deficit (burned more than eaten).
+    A signed number reads backwards to most people ("deficit -46" is a surplus)."""
+    if kcal is None:
+        return "–"
+    n = round(abs(kcal))
+    return "even" if n == 0 else f"{n:,} kcal {'deficit' if kcal > 0 else 'surplus'}"
+
+
 def _fade(slot):
     """A vertical fade in a series colour, for the area under a line; ids are unique per page."""
     i = next(_fade_ids)

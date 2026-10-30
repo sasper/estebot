@@ -301,7 +301,7 @@ def _effort_signal(con, prior):
         return _signal("effort", None, ["not enough sessions with RPE yet"])
     m, bm = st.mean(recent), st.mean(base)
     lv = "red" if m - bm >= 1.5 else "amber" if (m - bm >= 0.75 or m >= 9.0) else "green"
-    return _signal("effort", lv, [f"sessions felt RPE {m:.1f} this week vs {bm:.1f} before"])
+    return _signal("effort", lv, [f"sessions felt RPE {m:.1f} over the last 7 days vs {bm:.1f} in the 4 weeks before"])
 
 def _sleep_signal(con, day):
     nights = lambda a, b: [x["asleep_hr"] for x in con.execute(
@@ -319,7 +319,7 @@ def _sleep_signal(con, day):
         lv_3 = "red" if gap > 1.5 else "amber" if gap > 0.75 else "green"
     return _signal("sleep", core.worst(lv_l, lv_3), [
         (lv_l, last is not None and f"{last:.1f} h last night"),
-        (lv_3, lv_3 and f"{st.mean(three):.1f} h a night lately vs {st.mean(base):.1f} h usual")]), last
+        (lv_3, lv_3 and f"{st.mean(three):.1f} h a night over the last 3 nights vs {st.mean(base):.1f} h over the 30 before")]), last
 
 def _recovery_signal(con, day):
     # This week against the 30 days before it, never including it: a baseline that holds
@@ -336,8 +336,8 @@ def _recovery_signal(con, day):
     if rhr7 and rmu:
         lv_r = "red" if rhr7 > rmu + 5 else "amber" if rhr7 > rmu + 3 else "green"
     sig = _signal("recovery", core.worst(lv_h, lv_r), [
-        (lv_h, z is not None and f"HRV {hrv7:.0f} this week vs {mu:.0f} usual"),
-        (lv_r, lv_r and f"resting HR {rhr7:.0f} this week vs {rmu:.0f} usual")])
+        (lv_h, z is not None and f"HRV {hrv7:.0f} over the last 7 days vs {mu:.0f} over the 30 before"),
+        (lv_r, lv_r and f"resting HR {rhr7:.0f} vs {rmu:.0f}, same windows")])
     return sig, dict(hrv7=hrv7, hrv_baseline=mu, hrv_z=z, rhr7=rhr7, rhr_baseline=rmu)
 
 def _feel_signal(con, day):
@@ -379,13 +379,14 @@ def _nutrition_signal(con, day, goals, body_lb, rate, days=4):
     maint = nutrition.maintenance(con, prior, rate)
     target = nutrition.protein_target(goals, body_lb)
     levels, reasons = [], []
+    over = f"the last {days} days" if n == days else f"{n} complete days of the last {days}"
     if maint:
         gap = maint - kc
         levels.append("red" if gap > 1500 else "amber" if gap > 1000 else "green")
-        reasons.append((levels[-1], f"eating {kc:,.0f} kcal a day vs ~{maint:,.0f} to maintain"))
+        reasons.append((levels[-1], f"eating {kc:,.0f} kcal a day over {over} vs ~{maint:,.0f} to maintain (4-week trend)"))
     if target and pr["mean"] is not None:
         levels.append("red" if pr["mean"] < 0.6 * target else "amber" if pr["mean"] < 0.8 * target else "green")
-        reasons.append((levels[-1], f"protein {pr['mean']:.0f} g a day vs {target:.0f} g target"))
+        reasons.append((levels[-1], f"protein {pr['mean']:.0f} g a day over the same days vs {target:.0f} g target"))
     return _signal("nutrition", core.worst(*levels), reasons)
 
 def _pace_signal(con, day, goals):
@@ -394,7 +395,7 @@ def _pace_signal(con, day, goals):
     if m.get("pct") is None:
         return _signal("pace", None, ["not enough weigh-ins for a 4-week comparison"])
     lv = "red" if m["pct"] > 1.5 * hi else "amber" if m["pct"] > hi else "green"
-    return _signal("pace", lv, [f"losing {m['pct']:.2f}% of body weight a week"
+    return _signal("pace", lv, [f"losing {m['pct']:.2f}% of body weight a week (last 4 weeks vs the 4 before)"
                                 + (", fast enough to cost recovery" if lv != "green" else "")])
 
 POSITIVE_LAST_SESSION = 0.8   # share of targets met that makes a strong last session

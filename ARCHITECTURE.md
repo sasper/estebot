@@ -87,6 +87,9 @@ committed, snapshot it and diff against the snapshot instead of discarding anyth
 - A branch per change, a PR, squash merge.
 - Commit messages explain why. The diff already shows what.
 - A test in `tests/test_core.py` should correspond to a real failure, not hypothetical input.
+- Every rate or average on the page says its window inline ("last 7 days", "4-week fit",
+  "since 1 May"). One metric over two windows is two numbers that look like a contradiction,
+  so if two cards show it, either keep one or label both.
 
 ## Known problems, in the order worth fixing
 

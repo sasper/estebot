@@ -113,6 +113,15 @@ def test_the_read_only_demo_person_gets_it_without_the_demo_flag(main, monkeypat
     assert "How it was built" in page(main)[0]
 
 
+def test_every_weight_rate_on_the_page_names_its_window(main):
+    # The headline rate, the two comparison rows and the pace pill all looked like one number
+    # disagreeing with itself until each said which days it covers.
+    html, _ = page(main)
+    assert "lb a week, 4-week fit" in html
+    assert "Last 7 days vs the 7 before" in html and "Last 4 weeks vs the 4 before" in html
+    assert "Average this week" not in html and "Losing less than expected" not in html
+
+
 TAP_NOTE = "Slept badly, legs heavy"     # invented
 
 

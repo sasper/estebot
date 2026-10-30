@@ -8,6 +8,7 @@ results the page shows. Nothing is calculated here; numbers are only formatted.
 from datetime import date
 
 from estebot.analysis import engine as an, nutrition
+from estebot.web import charts
 
 AREA = {"load": "training load", "effort": "effort", "sleep": "sleep", "recovery": "HRV and resting heart rate",
         "feel": "how you feel", "nutrition": "nutrition", "pace": "weight-loss pace"}
@@ -72,14 +73,14 @@ def _scale(con, day, goals, ws):
         return None
     e = nutrition.energy_balance(con, day, ws["rate"])
     pr, target = nutrition.protein(con, day, ws["current"]), nutrition.protein_target(goals, ws["current"])
-    a = (f"This week's average is {wow['change_lb']:+.1f} lb against last week's, but the last 4 weeks are "
+    a = (f"The last 7 days average {wow['change_lb']:+.1f} lb against the 7 before, but the last 4 weeks are "
          f"{mom['change_lb']:+.1f} lb against the 4 before, {mom['pct']:.2f}% of body weight a week"
          + (", right on your planned pace." if mom["status"] == "on_pace" else "."))
     a += ("\n\nA single week swings 2–3 lb on water and glycogen alone, so a flat week inside a steady "
           "month is noise. The 4-week line is the one to act on.")
     if e.get("measured") is not None:
-        a += f"\n\nThe scale says you're running a deficit of about {e['measured']:,.0f} kcal a day"
-        a += (f"; your food and activity logs say {e['logged']:,.0f}. Over weeks, trust the scale."
+        a += f"\n\nOver the last {e['n']} complete food days, the scale says you're running a {charts.kcal_balance(e['measured'])} a day"
+        a += (f"; your food and activity logs say a {charts.kcal_balance(e['logged'])}. Over weeks, trust the scale."
               if e.get("logged") is not None else ".")
     if pr.get("mean") and target:
         a += f" Protein is {pr['mean']:.0f} g a day against a {target:.0f} g target, which protects muscle on a cut."
