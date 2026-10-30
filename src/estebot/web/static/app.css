@@ -371,6 +371,15 @@ a{color:var(--accent)}
 .intro-more{color:var(--text-secondary);text-decoration:none;font-weight:550}
 .intro-more:hover{color:var(--accent)}
 .intro-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+/* The reviewers' line: one muted row until opened, then about five lines. */
+.intro-build{margin:-6px 0 20px;font-size:13.5px;color:var(--text-secondary);max-width:70ch}
+.intro-build summary{cursor:pointer;font-weight:550;list-style:none;min-height:32px;display:flex;align-items:center}
+.intro-build summary::-webkit-details-marker{display:none}
+.intro-build summary::before{content:"\25B8";display:inline-block;width:1em;transition:transform .15s}
+.intro-build[open] summary::before{transform:rotate(90deg)}
+.intro-build summary:hover{color:var(--accent)}
+.intro-build p{margin:4px 0 0 1em;line-height:1.5;overflow-wrap:anywhere}
+.intro-build b{color:var(--text-primary)}
 .intro-card{display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid var(--line);border-radius:var(--radius);
   text-decoration:none;color:var(--text-secondary);font-size:13.5px;line-height:1.5;
   background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 6%,var(--surface-1)),var(--surface-1) 70%)}

@@ -96,6 +96,23 @@ def test_the_public_demo_is_read_only(main, con, monkeypatch):
     assert con.execute("SELECT source FROM checkin WHERE date=?", (DAY,)).fetchone()[0] == "notes"
 
 
+def test_the_how_it_was_built_line_is_on_the_demo_only(main, monkeypatch):
+    # It's for people reviewing the project; a person's own page has no use for it.
+    assert "How it was built" not in page(main)[0]
+    monkeypatch.setenv("ESTEBOT_DEMO", "1")
+    shown, _ = page(main)
+    assert "How it was built" in shown and "ARCHITECTURE.md" in shown and "linkedin.com/in/" in shown
+    assert shown.index("How it was built") < shown.index('id="readiness"')
+
+
+def test_the_read_only_demo_person_gets_it_without_the_demo_flag(main, monkeypatch):
+    # The signed-in site serves the demo person to visitors; Person.read_only marks them.
+    from dataclasses import replace
+    me = main.people.for_request(None)
+    monkeypatch.setattr(main.people, "for_request", lambda request: replace(me, read_only=True))
+    assert "How it was built" in page(main)[0]
+
+
 TAP_NOTE = "Slept badly, legs heavy"     # invented
 
 
