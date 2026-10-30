@@ -38,30 +38,50 @@ analysis engine reads from SQLite. The web layer only formats what the engine re
 src/estebot/
   config.py        TOML config: the data directory, export globs, goals, [training]
   core.py          pure functions, no I/O. Most of them exist because of a bug that happened
-  daily.py         the unattended daily sync: pull, parse, ingest, commit the data repo
+  daily.py         the unattended daily sync: pull, parse, ingest, record the call, commit
+                   the data repo (at noon on the server, deploy/scheduler.py)
   demo.py          writes a complete data directory for a made-up person, from one seed
   parsers/         one module per source, plus shared table layouts (health_tables,
                    lift_tables) so two sources can't drift apart
   analysis/
-    engine.py      readiness (seven green/amber/red signals, counted, no single input
-                   decides), training load, e1RM windows, spinal-load scoring, the
-                   training plan (next day in the rotation, a target per exercise)
+    engine.py      readiness (seven green/amber/red areas; only those with a record vote),
+                   the evidence table behind the votes, training load, e1RM windows,
+                   spinal-load scoring, the training plan (next day in the rotation, a
+                   target per exercise)
+    calls.py       each morning's first call, written to calls.csv and never rewritten
+    evidence.py    the evidence table as a text report
     nutrition.py   energy balance, protein, micronutrient gaps and upper limits vs the US DRI
     predictions.py pre-registered predictions and their interim progress
     report.py      text report
-  web/             FastAPI page, inline SVG charts, the SQLite cache and its loader
+    blocks.py      long-history correlation
+  web/             FastAPI page, inline SVG charts, the SQLite cache and its loader, Google
+                   sign-in (auth, people), Ask EsteBot (chat), a check-in said in a
+                   sentence (checkin_text)
+deploy/            the Fly.io entrypoint and the noon scheduler
 tests/             pytest; most tests pin a failure that really happened
 ```
 
 ## Readiness, briefly
 
-The daily verdict comes from seven areas: training load, effort (RPE), sleep, HRV and
-resting heart rate, how I feel, nutrition and weight-loss pace. Each one is green, amber or
-red with its reasons written out. `core.combine_signals` counts them: rest when two or more
-areas show strain, take it easy with one strain or two to watch, go all out only when
-everything is good. An earlier version let single inputs decide the day: six training days
-in a row forced rest, whatever everything else said. The one deliberate exception left is a
-back spasm, which forces rest on its own.
+Seven areas are tracked: training load, effort (RPE), sleep, HRV and resting heart rate,
+how I feel, nutrition and weight-loss pace. Each is green, amber or red with its reasons
+written out, but an area only gets a vote once the record says it matters. Every session is
+graded on the share of its targets met, against the sessions within 45 days of it, and an
+area votes when its flagged days have gone with worse sessions than its clear days: the
+whole 95% band of the difference below zero, with at least 15 sessions on each side
+(`engine.evidence`, `core.flag_effect`). The others are shown as context.
+
+`core.evidence_call` makes the call from the voting areas: rest with two in strain, take it
+easy with one in strain or two to watch, otherwise go as planned. Going hard needs a reason
+that has itself gone with better sessions (a good check-in that morning, or a strong last
+session), never just nothing flagged. Safety rules apply whatever the record says: sick,
+injured or back from a near-idle stretch makes it a take-it-easy day, and a back spasm
+forces rest.
+
+The earlier version counted every area (`core.combine_signals`). Over 689 sessions its calls
+didn't separate outcomes: 78% of targets met after its top call, 77% after "take it easy".
+Each morning's first call now goes to `calls.csv` and is never rewritten, so the page grades
+the calls as they were made, not as today's rules would remake them.
 
 ## Verifying a refactor
 

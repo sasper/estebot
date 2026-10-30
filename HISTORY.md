@@ -64,10 +64,10 @@ Then the parts that make it usable every day:
 - strength standards per lift, now and at the goal weight
 
 The biggest change in this stretch was the readiness verdict. The first version let single
-rules decide the day: six training days in a row meant rest, whatever else was true. It now
-counts seven areas (load, effort, sleep, HRV and resting heart rate, how I feel, nutrition,
-weight-loss pace), each green, amber or red with its reasons written out, and the verdict
-comes from the count.
+rules decide the day: six training days in a row meant rest, whatever else was true. The
+second counted seven areas (load, effort, sleep, HRV and resting heart rate, how I feel,
+nutrition, weight-loss pace), each green, amber or red with its reasons written out, and
+took the verdict from the count. That lasted until 29 Oct (below).
 
 ## 28 Oct: a plan for the session, and going public
 
@@ -80,13 +80,34 @@ comes from the count.
   config, and the page got a tap check-in so nobody has to write notes.
 - A presentation mode leaves private details out of the HTML entirely, because CSS-hidden
   text is still in view-source.
-- A generator writes six months of data for a made-up person from one seed, and the same
-  seed always gives the same files. Running the app on someone else's data exposed four
+- A generator writes six months of data for a made-up person from one seed (a year since
+  29 Oct), and the same seed always gives the same files. Running the app on someone else's data exposed four
   bugs at once, all fixed before launch. The demo runs on Fly.io at
   [estebot.app](https://estebot.app), read-only, regenerated every time it starts.
 - Before publishing I scrubbed comments, tests and docs of my own history. Then an audit of
   the exported tree, checked against my private notes, found more. This repo started from
   that cleaned tree with no history.
+
+## 29-30 Oct: a server, and a call that has to earn its votes
+
+- The site moved to one Fly.io machine. Visitors still get the demo; signing in with Google
+  shows a person's own page, and the noon sync runs on the server and pushes the data repo.
+- The counted verdict said "go all out" most days, so I tested it: over 689 sessions, days
+  after its top call met 78% of their targets and days after "take it easy" met 77%. The
+  call didn't tell days apart. Now every session is graded on its targets, an area only
+  votes once its flagged days have gone with worse sessions, and going hard needs a reason
+  that has itself gone with better ones. On my data no area has earned a vote yet, so the
+  call mostly says "go as planned", which is the honest answer.
+- Each morning's first call is written down and never rewritten, so the page can grade the
+  calls as they were made.
+- A check-in can be said in a sentence. Claude picks the tap card's own words from it as a
+  draft, and nothing counts until I save it.
+- I tried measuring training load in Hevy hard sets instead of Apple's exercise minutes and
+  went back: in daily use the minutes version read closer to how training actually felt.
+- The demo's chat went live, inside a $3 daily budget shared by every visitor and five
+  questions an hour each.
+- Every rate and average on the page now says which days it covers, after three weight
+  rates on one page looked like the page disagreeing with itself.
 
 ## What I'd tell someone starting the same thing
 
