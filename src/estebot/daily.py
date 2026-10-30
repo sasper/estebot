@@ -26,7 +26,7 @@ health-context.txt, both derived or copied, so an authored file being edited is 
 into an automatic commit.
 """
 import fcntl, os, plistlib, shutil, subprocess, sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 LABEL = "com.estebot.daily"
@@ -114,7 +114,8 @@ def _run(cfg, feed_only):
     head = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],
                           capture_output=True, text=True).stdout.strip()
     kind = "feed upload" if feed_only else "daily sync"
-    print(f"== {date.today().isoformat()} {kind}, code {head or '?'} from {REPO}")
+    # The time too: when the morning's first upload lands decides when the day's call is made.
+    print(f"== {datetime.now().isoformat(sep=' ', timespec='minutes')} {kind}, code {head or '?'} from {REPO}")
     if not feed_only:
         # The checkout was just refreshed to origin/main; restart the page so it serves the
         # same code. No-op if the web service isn't installed (always, on a server).
