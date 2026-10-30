@@ -12,6 +12,8 @@ English.
 day. Read-only; the first load after a quiet spell takes a few seconds while the server
 wakes up.
 
+<img src="docs/screenshots/dashboard.png" alt="The EsteBot dashboard: today's call, session, trends and the Ask EsteBot panel" width="900">
+
 ## What it does
 
 - **One call a day.** Seven signals (training load, effort, sleep, HRV and resting heart
@@ -29,9 +31,11 @@ wakes up.
 - **Ask EsteBot.** Claude answers questions about your data from EsteBot's own numbers. The
   algorithms decide; the AI explains.
 
-<img src="docs/screenshots/verdict.png" alt="Readiness verdict with seven signals" width="720">
+<img src="docs/screenshots/verdict.png" alt="Today's call: a readiness score of 46 in a ring of seven signals, held back by training load" width="720">
 
-<img src="docs/screenshots/session.png" alt="Today's session with per-exercise targets" width="720">
+<img src="docs/screenshots/session.png" alt="Today's session with a target for every exercise" width="720">
+
+<img src="docs/screenshots/chat.png" alt="Ask EsteBot answering three questions from the day's numbers" width="380">
 
 <details>
 <summary>More: the training calendar, weight trend, strength standards, and the page on a phone</summary>
@@ -39,7 +43,7 @@ wakes up.
 <img src="docs/screenshots/calendar.png" alt="Training calendar" width="720">
 <img src="docs/screenshots/weight.png" alt="Body weight trend" width="720">
 <img src="docs/screenshots/strength.png" alt="Strength standards" width="720">
-<img src="docs/screenshots/phone.png" alt="The page on a phone" width="300">
+<img src="docs/screenshots/phone.png" alt="The demo on a phone" width="300">
 
 </details>
 
