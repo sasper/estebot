@@ -77,24 +77,22 @@
     <form method="post" action="/checkin" class="tap">{% if csrf %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endif %}
       <input type="hidden" name="day" value="{{ day }}">
       <input type="hidden" name="soreness" value="{{ ci.soreness or 0 }}">
+      {# One row per question, words on the buttons; the values saved are unchanged (0-3). #}
       <fieldset><legend>Lower back</legend>
         <div class="seg">{% for v in back_levels %}<label><input type="radio" name="back" value="{{ v }}"{{ " checked" if ci.back_reported and ci.back == v }}><span>{{ v }}</span></label>{% endfor %}</div>
       </fieldset>
-      {% for name, label, lo, hi in [("energy", "Energy", "wiped", "great"),
-                                     ("inter_set_recovery", "Recovery between sets", "much longer rests", "normal rests")] %}
+      {% for name, label, words in [("energy", "Energy", ["wiped", "low", "ok", "great"]),
+                                    ("inter_set_recovery", "Recovery between sets", ["very slow", "slow", "ok", "normal"])] %}
       <fieldset><legend>{{ label }}</legend>
-        <div class="seg">{% for v in [0, 1, 2, 3] %}<label><input type="radio" name="{{ name }}" value="{{ v }}"{{ " checked" if ci[name] == v }}><span>{{ v }}</span></label>{% endfor %}</div>
-        <div class="ends"><span>{{ lo }}</span><span>{{ hi }}</span></div>
+        <div class="seg">{% for v in [0, 1, 2, 3] %}<label><input type="radio" name="{{ name }}" value="{{ v }}"{{ " checked" if ci[name] == v }}><span>{{ words[v] }}</span></label>{% endfor %}</div>
       </fieldset>
       {% endfor %}
-      <div class="toggles">
-        <label><input type="checkbox" name="sick" value="1"{{ " checked" if ci.sick }}><span>Sick{{ when }}</span></label>
-        <label><input type="checkbox" name="injured" value="1"{{ " checked" if ci.injured }}><span>Injured{{ when }}</span></label>
+      <div class="tapfoot">
+        <label class="flag" title="Sick with no energy picked counts as energy 0"><input type="checkbox" name="sick" value="1"{{ " checked" if ci.sick }}><span>Sick{{ when }}</span></label>
+        <label class="flag"><input type="checkbox" name="injured" value="1"{{ " checked" if ci.injured }}><span>Injured{{ when }}</span></label>
+        <input class="tapnote-in" name="note" maxlength="400" placeholder="Note (optional)" value="{{ ci.note or '' }}" aria-label="Note">
+        <button type="submit">Save</button>
       </div>
-      <label class="tapnote"><span>Note <i>optional</i></span>
-        <textarea name="note" rows="2" maxlength="400">{{ ci.note or "" }}</textarea></label>
-      <button type="submit">Save</button>
-      <p class="muted small">Sick with no energy picked counts as energy 0.</p>
     </form>
   </details>
   {% endif %}
@@ -419,7 +417,7 @@
               placeholder="{{ 'Ask about your training, weight, sleep…' if chat_on else 'Sign in to ask about your own data' }}"></textarea>
     <button type="submit"{{ " disabled" if not chat_on }}>Ask</button>
   </form>
-  {% if chat_on %}<p class="muted small">Claude answers using only numbers EsteBot has already worked out. The conversation lives in this tab.</p>{% endif %}
+  {% if chat_on %}<p class="muted small">Claude answers using only numbers EsteBot has already worked out. Your last few questions are kept until you clear them.</p>{% endif %}
 </aside>
 <button type="button" class="chat-fab" aria-controls="ask">Ask</button>
 <script>
