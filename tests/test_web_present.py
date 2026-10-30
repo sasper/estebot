@@ -241,6 +241,15 @@ def test_the_demo_shows_example_answers_built_from_the_days_numbers(main, monkey
     assert "behind today" not in page(main)[0]
 
 
+def test_the_read_only_demo_person_gets_the_examples_too(main, monkeypatch):
+    # The signed-in site serves visitors the read-only demo person without ESTEBOT_DEMO set;
+    # the examples were tied to the flag, so estebot.app showed an empty panel.
+    from dataclasses import replace
+    me = main.people.for_request(None)
+    monkeypatch.setattr(main.people, "for_request", lambda request: replace(me, read_only=True))
+    assert "behind today" in page(main)[0]
+
+
 def test_the_example_call_reads_right_when_nothing_is_flagged():
     # Written against a take-it-easy day, the example said "The other 7 signals are good"
     # and explained a strained signal on a day with none.

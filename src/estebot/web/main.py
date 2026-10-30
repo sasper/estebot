@@ -1,6 +1,7 @@
 """FastAPI app. Thin layer over analysis/engine.py - it formats, it does not compute."""
 import os, re, statistics as st, subprocess, sys
 from collections import Counter
+from dataclasses import replace
 import logging
 from datetime import date, timedelta
 from pathlib import Path
@@ -154,6 +155,9 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     # The evidence behind the votes (cached by the engine) and the self-grade on recorded calls.
     ev = an.earned(con, day, goals)["evidence"]
     recorded = calls.graded(con, calls.load(cfg.data_file("calls.csv")))
+    demo = demo_mode() or p.read_only
+    resting = _chat_resting(request, p) if chat_enabled(p) else None
+    chat_on = chat_enabled(p) and not resting
     ctx = dict(verdict_text=verdict_text, verdict_words=VERDICT_TEXT, ev=ev, recorded=recorded,
         ring=charts.signal_ring(r["signals"], r["score"], r["verdict"], voting=r["voting"]),
         day_label=date.fromisoformat(day).strftime("%a %-d %b %Y"),
@@ -163,10 +167,12 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
         said=request.query_params.get("said"),
         review_days=review_days, prev_day=prev_day, next_day=next_day,
-        is_today=(day == date.today().isoformat()), demo=demo_mode() or p.read_only,
-        signin=auth.settings() is not None, email=p.email, chat_on=chat_enabled(p),
-        chat_history=(chat.recent(con) if chat_enabled(p) else
-                      examples.conversation(con, day, goals, r, ws, strength) if demo_mode() else []),
+        is_today=(day == date.today().isoformat()), demo=demo,
+        signin=auth.settings() is not None, email=p.email, chat_on=chat_on, chat_resting=resting,
+        # The demo opens on the canned conversation, live or not; live, it's the history a
+        # visitor's follow-up is asked in.
+        chat_history=(examples.conversation(con, day, goals, r, ws, strength) if demo else
+                      chat.recent(con) if chat_on else []),
         csrf=auth.csrf_token(auth.settings(), p.session) if p.session else "")
     on = request.cookies.get(PRESENT_COOKIE) == "1" if present is None else present == "1"
     resp = tpl.TemplateResponse(request, "today.html", presentable(ctx) if on else dict(ctx, present=False))
@@ -441,15 +447,48 @@ async def health_auto_export(request: Request):
 # ---------------------------------------------------------------- Ask EsteBot (web/chat.py)
 
 def chat_enabled(p):
-    """On for a person's own page when there's an API key. Never for the demo: anyone could
-    run up the bill, and there's nothing of theirs to ask about."""
-    return bool(os.environ.get("ANTHROPIC_API_KEY")) and not (demo_mode() or p.read_only)
+    """On wherever there's an API key, the demo included: anyone can ask about the made-up
+    athlete, inside the demo's global daily cap and a per-visitor rate limit (_chat_resting).
+    A cap of 0 turns the demo's chat off."""
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return False
+    return not (demo_mode() or p.read_only) or chat.daily_cap(_demo_person(p)) > 0
+
+def _demo_person(p):
+    return replace(p, read_only=True) if demo_mode() else p
+
+def _visitor(request):
+    # Fly's proxy sets Fly-Client-IP and overwrites any a client sends; X-Forwarded-For can
+    # be written by the client, so it isn't used.
+    return request.headers.get("fly-client-ip") or (request.client.host if request.client else "?")
+
+def _chat_resting(request, p):
+    """None while the demo's chat is open to this visitor, else the line saying why it isn't.
+    A person's own page is never resting here; their own cap answers in the chat itself."""
+    p = _demo_person(p)
+    if not p.read_only:
+        return None
+    meter = chat.meter(p)
+    try:
+        if chat.over_cap(p, meter, date.today().isoformat()):
+            return "The live demo is resting for today."
+    finally:
+        meter.close()
+    if not chat.rate_ok(_visitor(request)):
+        return "The live demo is resting for now: five questions an hour each."
 
 def _chat_refusal(request, p):
     if not chat_enabled(p):
         return JSONResponse({"error": "Chat isn't available here."}, status_code=403)
     s = auth.settings()
-    if s is not None and not auth.csrf_ok(s, p.session, request.headers.get("x-csrf-token")):
+    if p.read_only or demo_mode():
+        # No session to tie a token to. A custom header still keeps other sites out: a
+        # cross-origin fetch can't send one without a preflight, which this server never answers.
+        if request.headers.get("x-csrf-token") is None:
+            return JSONResponse({"error": "This page has expired. Reload it and try again."}, status_code=403)
+        if (line := _chat_resting(request, p)) is not None:
+            return JSONResponse({"error": line, "resting": True}, status_code=429)
+    elif s is not None and not auth.csrf_ok(s, p.session, request.headers.get("x-csrf-token")):
         return JSONResponse({"error": "This page has expired. Reload it and try again."}, status_code=403)
 
 @app.post("/api/chat")
@@ -463,14 +502,24 @@ async def ask(request: Request):
         history = None
     if not chat.history_ok(history):
         return JSONResponse({"error": "That message couldn't be read."}, status_code=400)
+    demo = _demo_person(p).read_only
+    if demo:
+        chat.note_question(_visitor(request))
     def run():                       # in a worker thread, so the connection is opened there too
         con, today = p.connect(), date.today().isoformat()
-        answer, spent = chat.ask(p, con, history, today)
-        chat.save(con, history[-1]["text"], answer, today)
+        spend = chat.meter(_demo_person(p))
+        try:
+            answer, spent = chat.ask(_demo_person(p), con, history, today, spend=spend)
+        finally:
+            spend.close()
+        if not demo:                 # the demo is shared: one visitor's questions stay theirs
+            chat.save(con, history[-1]["text"], answer, today)
         return answer, spent
     try:
         answer, spent = await run_in_threadpool(run)
     except chat.ChatError as e:
+        if demo:
+            return JSONResponse({"error": "The live demo is resting for today.", "resting": True}, status_code=429)
         return JSONResponse({"error": str(e)}, status_code=429)
     except anthropic.APIError as e:
         log.warning("chat failed: %s", type(e).__name__)
@@ -482,5 +531,6 @@ async def clear_chat(request: Request):
     p = people.for_request(request)
     if (refused := _chat_refusal(request, p)) is not None:
         return refused
-    await run_in_threadpool(lambda: chat.clear(p.connect()))
+    if not _demo_person(p).read_only:      # the demo keeps nothing on the server to clear
+        await run_in_threadpool(lambda: chat.clear(p.connect()))
     return JSONResponse({"cleared": True})

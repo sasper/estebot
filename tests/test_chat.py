@@ -97,19 +97,119 @@ def test_only_a_plain_alternating_conversation_is_accepted(history, ok):
     assert chat.history_ok(history) is ok
 
 
-def test_the_demo_never_offers_or_answers_the_chat(person, monkeypatch):
-    # Anyone can open the demo; a chat there would spend the owner's money for strangers.
+def _post(main, path, body=None, ip="203.0.113.7", token=""):
     import asyncio
+    from starlette.requests import Request
+    raw = json.dumps(body or {}).encode()
+    async def receive():
+        return {"type": "http.request", "body": raw}
+    headers = [(b"fly-client-ip", ip.encode())] + ([(b"x-csrf-token", token.encode())] if token is not None else [])
+    req = Request({"type": "http", "method": "POST", "path": path, "query_string": b"", "headers": headers}, receive)
+    resp = asyncio.run(main.ask(req) if path == "/api/chat" else main.clear_chat(req))
+    return resp.status_code, json.loads(resp.body)
+
+
+def _page(main, ip="203.0.113.7"):
+    from starlette.requests import Request
+    req = Request({"type": "http", "method": "GET", "path": "/", "query_string": b"",
+                   "headers": [(b"fly-client-ip", ip.encode())]})
+    return main.today(req, DAY, "0").body.decode()
+
+
+@pytest.fixture
+def demo(person, monkeypatch):
+    # The demo person, with a key and a fake Claude that answers anything for a cent.
+    from estebot.web import chat, main
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    monkeypatch.setenv("ESTEBOT_DEMO", "1")
+    monkeypatch.delenv("ESTEBOT_DEMO_CHAT_DAILY_USD", raising=False)
+    chat._asked.clear()
+    asked = []
+    def fake_ask(p, con, history, today, client=None, spend=None):
+        asked.append(p)
+        chat._ensure_usage(spend)
+        spend.execute("INSERT INTO chat_usage VALUES (?, 0.01)", (today,))
+        spend.commit()
+        return "An answer.", 0.01
+    monkeypatch.setattr(chat, "ask", fake_ask)
+    yield main
+    chat._asked.clear()
+
+Q = {"history": [{"role": "user", "text": "How is the squat going?"}]}
+
+
+def test_the_demo_chat_is_live_with_a_key_and_off_with_a_zero_cap(demo, person, monkeypatch):
+    assert demo.chat_enabled(person) is True
+    html = _page(demo)
+    assert "Live: ask a follow-up" in html and "demo is resting" not in html
+    # Live, the demo still opens on the canned conversation, and the buttons follow on from it.
+    assert "behind today" in html and "What should I lift today?" in html
+    assert "Why this call today?" not in html and 'disabled' not in html.split('id="ask-try"')[1].split("</div>")[0]
+    monkeypatch.setenv("ESTEBOT_DEMO_CHAT_DAILY_USD", "0")
+    assert demo.chat_enabled(person) is False
+    assert _post(demo, "/api/chat", Q)[0] == 403
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    monkeypatch.delenv("ESTEBOT_DEMO_CHAT_DAILY_USD")
+    assert demo.chat_enabled(person) is False
+
+
+def test_the_demo_cap_is_global_and_rests_the_chat_on_the_examples(demo, con, monkeypatch):
+    # The demo is one person shared by everyone, so its budget is one too: spend from any
+    # visitor counts against all of them. Past it, the page shows the canned conversation.
+    from estebot.web import chat
+    monkeypatch.setenv("ESTEBOT_DEMO_CHAT_DAILY_USD", "0.02")
+    today = __import__("datetime").date.today().isoformat()
+    assert _post(demo, "/api/chat", Q, ip="198.51.100.1") == (200, {"answer": "An answer.", "cost_usd": 0.01})
+    assert _post(demo, "/api/chat", Q, ip="198.51.100.2")[0] == 200
+    assert chat.spent_today(con, today) == pytest.approx(0.02)
+    status, body = _post(demo, "/api/chat", Q, ip="198.51.100.3")
+    assert status == 429 and body == {"error": "The live demo is resting for today.", "resting": True}
+    html = _page(demo, ip="198.51.100.3")
+    assert "The live demo is resting for today. Here" in html and "kind of thing it answers" in html
+    assert "behind today" in html                # the canned conversation, built from the day
+    assert 'id="ask-form"' in html and "/api/chat\"" not in html
+
+
+def test_five_questions_an_hour_per_visitor_then_the_examples(demo):
+    for _ in range(5):
+        assert _post(demo, "/api/chat", Q, ip="198.51.100.9")[0] == 200
+    status, body = _post(demo, "/api/chat", Q, ip="198.51.100.9")
+    assert status == 429 and body["resting"] is True and "five questions an hour" in body["error"]
+    assert "resting for now" in _page(demo, ip="198.51.100.9") and "behind today" in _page(demo, ip="198.51.100.9")
+    assert _post(demo, "/api/chat", Q, ip="198.51.100.10")[0] == 200     # someone else isn't held up
+
+
+def test_the_rate_limit_forgets_questions_older_than_an_hour():
+    from estebot.web import chat
+    chat._asked.clear()
+    for t in range(5):
+        chat.note_question("v", now=1000 + t)
+    assert not chat.rate_ok("v", now=1000 + 3599)
+    assert chat.rate_ok("v", now=1000 + 3600)
+    chat._asked.clear()
+
+
+def test_the_demo_keeps_no_one_elses_questions(demo, con):
+    # Every visitor sees the same demo page; a saved conversation would show them each
+    # other's questions.
+    from estebot.web import chat
+    assert _post(demo, "/api/chat", Q)[0] == 200
+    assert chat.recent(con) == []
+    assert "How is the squat going?" not in _page(demo)
+    assert _post(demo, "/api/chat/clear")[0] == 200
+
+
+def test_the_demo_chat_needs_the_pages_header(demo):
+    # No session to sign a token with, but another site's fetch can't add a custom header
+    # without a preflight, so the header alone keeps it out.
+    assert _post(demo, "/api/chat", Q, token=None)[0] == 403
+
+
+def test_a_persons_own_chat_never_rests_on_the_demos_limits(person, monkeypatch):
     from estebot.web import main
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
     assert main.chat_enabled(person) is True
-    monkeypatch.setenv("ESTEBOT_DEMO", "1")
-    assert main.chat_enabled(person) is False
-    from starlette.requests import Request
-    async def receive():
-        return {"type": "http.request", "body": b'{"history": [{"role": "user", "text": "hi"}]}'}
-    req = Request({"type": "http", "method": "POST", "path": "/api/chat", "query_string": b"", "headers": []}, receive)
-    assert asyncio.run(main.ask(req)).status_code == 403
+    assert main._chat_resting(None, person) is None   # their own page never rests on the demo's limits
 
 
 def test_the_scope_rule_and_its_exact_refusal_are_in_every_request(person, con):
