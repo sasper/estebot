@@ -12,6 +12,11 @@ English.
 day. Read-only; the first load after a quiet spell takes a few seconds while the server
 wakes up.
 
+**How this was built.** I wrote the requirements and design docs, set the rules and the
+quality gates (tests, byte-identical parser output, a privacy check on every commit), used
+it every day and iterated on what it got wrong. Claude Code wrote the code from those docs.
+[ARCHITECTURE.md](ARCHITECTURE.md) has the design and [HISTORY.md](HISTORY.md) how it got here.
+
 <img src="docs/screenshots/dashboard.png" alt="The EsteBot dashboard: today's call, session, trends and the Ask EsteBot panel" width="900">
 
 ## What it does
