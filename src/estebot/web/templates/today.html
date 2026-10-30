@@ -199,7 +199,7 @@
         {{ "%.1f"|format(r.last_sleep) ~ "h" if r.last_sleep else "–" }}</div></div>
       <div class="metric"><div class="k">Load ratio</div><div class="v">
         {{ "%.2f"|format(r.acwr) if r.acwr else "–" }}</div></div>
-      <div class="metric"><div class="k">Days since rest</div><div class="v">{{ r.streak_now }}<span class="muted" style="font-size:13px;font-weight:400">{% if r.last_rest %} · rest {{ r.last_rest|shortdate }}{% endif %}{% if r.streak_now != r.streak %} · {{ r.streak }} before today{% endif %}</span></div></div>
+      <div class="metric"><div class="k">Days since rest</div><div class="v">{{ r.streak_now }}<span class="muted" style="font-size:13px;font-weight:400">{% if r.last_rest %} · rest {{ r.last_rest|shortdate }}{% endif %}{% if r.today_open %} · today not logged yet{% elif r.streak_now != r.streak %} · {{ r.streak }} before today{% endif %}</span></div></div>
     </div>
     {% if checkin %}
     {% set parts = [] %}
@@ -238,7 +238,7 @@
             {% if c is none %}<div class="calcell empty"></div>
             {% elif c.future %}<div class="calcell future"><span>{{ c.n }}</span></div>
             {% else %}{% set i = c.info %}{% set l = i.lift %}
-            {% set KIND = {"training": ("train", "Training"), "movement": ("move", "Rest day, light movement"), "rest": ("rest", "Rest day")} %}
+            {% set KIND = {"training": ("train", "Training"), "movement": ("move", "Rest day, light movement"), "rest": ("rest", "Rest day"), "open": ("open", "Today, nothing logged yet")} %}
             {% set u = c.unwell %}{% set ul = u and (["sick"] if u.sick else []) + (["injured"] if u.injured else []) %}
             <a class="calcell {{ KIND[c.kind][0] }}{{ ' today' if c.today }}{{ ' unwell' if u }}" href="/?day={{ c.date }}"
                aria-label="{{ c.date }}: {{ KIND[c.kind][1]|lower }}{% if u %}, {{ ul|join(' and ') }}{% endif %}">
@@ -450,7 +450,7 @@
         <td>{% if v in ev.verdicts %}{{ "%.0f"|format(ev.verdicts[v].hit * 100) }}% <span class="muted">({{ ev.verdicts[v].n }})</span>{% else %}–{% endif %}</td></tr>
       {% endfor %}
     </table></div>
-    {% call info() %}<p>The call is graded against what happened after it. <b>Recorded calls</b> are the calls as they were made each morning; they are the real test, and they start empty. <b>Under today's rules</b> replays every past session through the current votes; it was fitted on the same sessions, so it flatters the rule. If go-hard and take-it-easy days don't end up apart, the call isn't earning its place.</p>{% endcall %}
+    {% call info() %}<p>The call is graded against what happened after it. <b>Recorded calls</b> are the calls as they were made each morning; they are the real test, and they start empty.{% if demo %} The made-up athlete has no mornings, so theirs are backfilled: each day's call made from only the data before it.{% endif %} <b>Under today's rules</b> replays every past session through the current votes; it was fitted on the same sessions, so it flatters the rule. If go-hard and take-it-easy days don't end up apart, the call isn't earning its place.</p>{% endcall %}
   </details>
 
   <details class="card tile" data-tile="load">

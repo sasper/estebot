@@ -7,6 +7,7 @@ rewritten. The sync commits it with the tidy tables.
 
     PYTHONPATH=src python -m estebot.analysis.calls            # record today's call, once
     PYTHONPATH=src python -m estebot.analysis.calls --report   # each recorded call, then how the session went
+    PYTHONPATH=src python -m estebot.analysis.calls --backfill 90  # the demo only: the last 90 days' calls
 """
 import csv, json, subprocess, sys
 from datetime import date, datetime, timedelta
@@ -81,6 +82,21 @@ def record(path, row):
     return True
 
 
+def backfill(con, path, goals, days, today=None, training=None):
+    """For the made-up demo person, who has no mornings to record calls in: each of the last
+    `days` days' call, made from the data before it, as the morning would have made it
+    (readiness reads through the day before). Marked code=backfill and recorded at 07:00, so
+    the rows say what they are and the same data writes the same file. Never on a real
+    person's data: a call written after the session isn't a test of anything. -> rows written."""
+    end = date.fromisoformat(today or date.today().isoformat())
+    n = 0
+    for k in range(days - 1, -1, -1):
+        day = (end - timedelta(days=k)).isoformat()
+        row = dict(make_call(con, day, goals, training), recorded_at=f"{day}T07:00:00", code="backfill")
+        n += record(path, row)
+    return n
+
+
 def graded(con, rows):
     """{verdict: {"n", "hit"}} over the recorded calls whose day had a session: the
     self-grade on calls as they were made, not as today's rules would make them."""
@@ -96,6 +112,14 @@ def main(argv):
     cfg = config.load()
     path = cfg.data_file("calls.csv")
     con = db.connect()
+    if "--backfill" in argv:
+        if not cfg.data_file(".estebot-demo").exists():       # written by estebot.demo only
+            print("--backfill is for the demo person only")
+            return 1
+        last = engine.default_day(con, date.today().isoformat())   # an --end in the past stops there
+        n = backfill(con, path, cfg.goals, int(argv[argv.index("--backfill") + 1]), today=last)
+        print(f"backfilled {n} calls")
+        return 0
     if "--report" in argv:
         for c in load(path):
             o = engine.session_outcome(con, c["date"])

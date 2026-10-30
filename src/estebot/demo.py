@@ -29,6 +29,8 @@ MARKER = ".estebot-demo"        # a directory without it is never written into u
 
 # Starting weight, height and age of the made-up person. Generic numbers.
 START_LB, HEIGHT_CM, AGE = 214.0, 178, 36
+# The planned pace in its estebot.toml, which P-001 is written against too.
+MIN_PCT, MAX_PCT = 0.5, 1.0
 
 # name: (muscle group as jefit.py's GROUPS assigns it, kind, true 1RM at the start in lb,
 #        gain over the cut as a fraction). kind: main = 3 x 5 after two warm-ups,
@@ -242,7 +244,9 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
     variant = {k: "B" for k in ROTATION}           # so each kind opens on A
     tweak, back_days = None, {}
 
+    trends = []                                    # the weight trend each morning
     for i in range(days):
+        trends.append(trend)
         day = start + timedelta(days=i)
         dow, what, last = day.weekday(), ev.get(i), i == days - 1
         sick = what in ("sick", "stomach")
@@ -387,7 +391,7 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
 
     _write_notes(rng, notes, days, iso, ev, tweak)
     _write(out, start, end, days, weights, daily, workouts, segments, sets, sess_min,
-           nutrition, nutrients, notes)
+           nutrition, nutrients, notes, trends)
     return out
 
 
@@ -466,7 +470,7 @@ def _csv(path, header, rows):
 
 
 def _write(out, start, end, days, weights, daily, workouts, segments, sets, sess_min,
-           nutrition, nutrients, notes):
+           nutrition, nutrients, notes, trends):
     tidy = out / "tidy"
     tidy.mkdir(parents=True, exist_ok=True)
     # Ingest upserts notes and check-ins, so a database from an earlier run (another --end)
@@ -489,8 +493,12 @@ def _write(out, start, end, days, weights, daily, workouts, segments, sets, sess
     text += "".join(line + "\n" for _, line in sorted(notes, key=lambda x: x[0]))
     (out / "health-context.txt").write_text(text)
     (out / "supplements.toml").write_text(SUPPLEMENTS.format(mag_since=(start + timedelta(days=days // 4)).isoformat()))
-    _write_ledger(out, start, end, days)
-    (out / "estebot.toml").write_text(CONFIG.format(data_dir=str(out).replace("'", "")))
+    _write_ledger(out, start, end, days, trends)
+    # The goal sits ahead of where the cut has got to, on a round number at least 5 lb
+    # under today's trend; a fixed goal was already passed while the cut went on.
+    goal = 5 * math.floor((trends[-1] - 5) / 5)
+    (out / "estebot.toml").write_text(CONFIG.format(data_dir=str(out).replace("'", ""), goal=goal,
+                                                    min_pct=MIN_PCT, max_pct=MAX_PCT))
 
 
 def _write_lifting(tidy, weights, sets, sess_min):
@@ -519,23 +527,28 @@ def _write_lifting(tidy, weights, sets, sess_min):
     _csv(tidy / "exercise_progression.csv", L.PROGRESSION_COLS, L.progression_rows(rows))
 
 
-def _write_ledger(out, start, end, days):
+def _write_ledger(out, start, end, days, trends):
     """Three open predictions and one resolved, dated relative to the span so they stay
     open when --end moves."""
     a = lambda k: (start + timedelta(days=k)).isoformat()
     resolves = (end + timedelta(days=60)).isoformat()
     base = (a(0), a(27))
     mid = a(days // 2)
+    # P-001 is the planned pace (MIN_PCT to MAX_PCT of body weight a week) in pounds, at the
+    # trend the day it was registered.
+    at = trends[days // 2]
+    lo, hi = -round(MAX_PCT / 100 * at, 1), -round(MIN_PCT / 100 * at, 1)
     (out / "ledger.md").write_text(f"""# Prediction ledger
 
 Each prediction is written down before the data that settles it exists.
 
-### P-001 - The cut keeps a pace of 1 to 2 lb a week until it ends
+### P-001 - The cut keeps the planned pace, {MIN_PCT:g} to {MAX_PCT:g}% of body weight a week, until it ends
 - **Registered:** {mid}
 - **Resolves:** {resolves}
 - **Status:** open
 - **Criterion:** least-squares slope of every weigh-in from registration to resolution,
-  between -2.0 and -1.0 lb/week, with weigh-ins on at least 75% of days.
+  between {lo:.1f} and {hi:.1f} lb/week ({MIN_PCT:g} to {MAX_PCT:g}% of the {at:.0f} lb trend at
+  registration), with weigh-ins on at least 75% of days.
 
 ### P-002 - Squat, bench, deadlift and press stay within 5% of their pre-cut best
 - **Registered:** {a(14)}
@@ -559,7 +572,7 @@ Each prediction is written down before the data that settles it exists.
 [P-001]
 metric = "weight_slope"
 window = ["{mid}", "{resolves}"]
-band = [-2.0, -1.0]
+band = [{lo:.1f}, {hi:.1f}]
 coverage = {{ table = "weight", window = ["{mid}", "{resolves}"], need = {int(0.75 * (end + timedelta(days=60) - date.fromisoformat(mid)).days)}, max_gap = 7, label = "weigh-ins" }}
 
 [P-002]
@@ -574,7 +587,7 @@ lifts = ["Barbell Squat", "Barbell Bench Press", "Barbell Deadlift", "Barbell Mi
 metric = "hrv_vs_baseline"
 baseline = ["{base[0]}", "{base[1]}"]
 window_days = 30
-coverage = {{ table = "nutrition", window = ["{a(28)}", "{resolves}"], need = {int(0.8 * (days - 28 + 60))}, complete = true, label = "complete food logs" }}
+coverage = {{ table = "daily", column = "hrv_sdnn", window = ["{a(28)}", "{resolves}"], need = {int(0.8 * (days - 28 + 60))}, label = "nights with HRV" }}
 """)
 
 
@@ -589,9 +602,9 @@ sex = "male"
 units = "imperial"
 
 [goals]
-target_weight_lb = 175
-max_loss_pct_per_week = 1.0
-min_loss_pct_per_week = 0.5
+target_weight_lb = {goal}
+max_loss_pct_per_week = {max_pct}
+min_loss_pct_per_week = {min_pct}
 protein_g_per_lb_target = 0.8
 fat_g_per_lb_floor = 0.30
 

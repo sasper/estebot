@@ -175,7 +175,7 @@ def test_a_sick_tap_with_no_energy_reads_as_energy_zero_and_rings_the_calendar(m
     feel = next(x for x in engine.readiness(con, today, {})["signals"] if x["area"] == "feel")
     assert feel["level"] == "red" and not any("back" in t for t in feel["reasons"])
     assert engine.unwell_days(con, today, today)[today]["sick"]
-    assert f'aria-label="{today}: rest day, sick"' in today_page(main)
+    assert f'aria-label="{today}: today, nothing logged yet, sick"' in today_page(main)   # not over yet, so not rest
 
 
 def test_an_energy_answer_given_with_the_sick_tap_stands(main, con):

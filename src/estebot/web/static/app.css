@@ -175,6 +175,7 @@ table.paces .pill{margin-top:0}
   justify-content:center;font-size:11px;font-variant-numeric:tabular-nums;text-decoration:none}
 .calcell.empty{visibility:hidden}
 .calcell.future{border:1px dashed var(--line);color:var(--text-muted)}
+.calcell.open{border:1px dashed var(--text-secondary)}
 .calcell.train{background:var(--accent);color:var(--on-accent)}
 .calcell.rest{background:var(--rest);color:#c3c2b7;box-shadow:inset 0 0 0 1px var(--line)}
 .calcell.move{background:var(--rest);color:#c3c2b7;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--series-3) 80%,transparent)}
