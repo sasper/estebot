@@ -263,6 +263,20 @@ def readiness_score(levels: dict[str, str | None], verdict: str) -> int:
     return lo + round(clear / max(len(levels), 1) * (hi - lo))
 
 
+def weekly_shift_z(week: list[float], baseline: list[float]) -> float | None:
+    """How unusual this week's mean is against a baseline of single days, in standard
+    errors of a mean of len(week) readings. The recovery signal divided by the spread of
+    single nights, which a week's mean almost never reaches: HRV never got past -0.6
+    against an amber line at -1.0 in 90 days, so recovery read green every day. The
+    baseline must not include the week it is compared with."""
+    if len(week) < 3 or len(baseline) < 5:
+        return None
+    sd = st.pstdev(baseline)
+    if sd == 0:
+        return None
+    return (st.mean(week) - st.mean(baseline)) / (sd / math.sqrt(len(week)))
+
+
 def worst(*levels: str | None) -> str | None:
     """The most severe of several levels; None only if all are None."""
     known = [l for l in levels if l]

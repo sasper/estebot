@@ -154,20 +154,12 @@ def _coming_off_idle(con, day):
             return recent5, chronic
     return None
 
-def _metric_baseline(con, day, col, days=30):
-    start = s(d(day) - timedelta(days=days))
-    vals = [r[col] for r in con.execute(
+def _metric_values(con, day, col, days, skip=0):
+    """Non-null readings of `col` over `days` days ending `skip` days before `day`."""
+    end = d(day) - timedelta(days=skip)
+    return [r[col] for r in con.execute(
         f"SELECT {col} FROM daily WHERE date BETWEEN ? AND ? AND {col} IS NOT NULL",
-        (start, day))]
-    if len(vals) < 5: return None, None
-    return st.mean(vals), (st.pstdev(vals) or None)
-
-def _recent_mean(con, day, col, days=7):
-    start = s(d(day) - timedelta(days=days-1))
-    vals = [r[col] for r in con.execute(
-        f"SELECT {col} FROM daily WHERE date BETWEEN ? AND ? AND {col} IS NOT NULL",
-        (start, day))]
-    return st.mean(vals) if vals else None
+        (s(end - timedelta(days=days-1)), s(end)))]
 
 LIFT_STREAK_MIN_SETS = 5   # fewer than 5 sets is not a lifting session
 NOT_TRAINING = ("Walking",)  # a logged walk alone does not make a training day
@@ -348,11 +340,15 @@ def _sleep_signal(con, day):
         (lv_3, lv_3 and f"{st.mean(three):.1f} h a night lately vs {st.mean(base):.1f} h usual")]), last
 
 def _recovery_signal(con, day):
-    hrv7 = _recent_mean(con, day, "hrv_sdnn", 7)
-    mu, sd = _metric_baseline(con, day, "hrv_sdnn")
-    rhr7 = _recent_mean(con, day, "resting_hr", 7)
-    rmu, _ = _metric_baseline(con, day, "resting_hr")
-    z = ((hrv7 - mu) / sd) if (hrv7 and mu and sd) else None
+    # This week against the 30 days before it, never including it: a baseline that holds
+    # the week being judged drags toward it and hides the change.
+    week, base = _metric_values(con, day, "hrv_sdnn", 7), _metric_values(con, day, "hrv_sdnn", 30, 7)
+    rweek, rbase = _metric_values(con, day, "resting_hr", 7), _metric_values(con, day, "resting_hr", 30, 7)
+    hrv7 = st.mean(week) if week else None
+    mu = st.mean(base) if len(base) >= 5 else None
+    rhr7 = st.mean(rweek) if rweek else None
+    rmu = st.mean(rbase) if len(rbase) >= 5 else None
+    z = core.weekly_shift_z(week, base)
     lv_h = None if z is None else ("red" if z <= -1.5 else "amber" if z <= -1.0 else "green")
     lv_r = None
     if rhr7 and rmu:
