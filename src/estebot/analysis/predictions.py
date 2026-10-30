@@ -62,7 +62,8 @@ def _coverage(con, engine, spec, day):
     a, b = c["window"]
     end = min(b, day)
     logged, denom, exc, _ = engine.coverage(con, c["table"], a, end,
-                                            require_complete=c.get("complete", False))
+                                            require_complete=c.get("complete", False),
+                                            column=c.get("column"))
     total = (date.fromisoformat(b) - date.fromisoformat(a)).days + 1
     elapsed = (date.fromisoformat(end) - date.fromisoformat(a)).days + 1
     gap = engine.longest_gap(con, c["table"], a, end) if "max_gap" in c else None

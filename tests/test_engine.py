@@ -392,3 +392,25 @@ def test_a_voting_area_holds_the_day_and_a_non_voting_one_does_not(con):
     con.execute("INSERT INTO sleep (night, asleep_hr) VALUES ('2026-10-13', 4.5)")   # red
     assert engine.readiness(con, "2026-10-14", GOALS, voting=()).get("verdict") == "normal"
     assert engine.readiness(con, "2026-10-14", GOALS, voting=("sleep",))["verdict"] == "light"
+
+
+def test_today_with_nothing_logged_yet_is_not_a_rest_day(con):
+    # The demo said "Go hard" with a Legs A session while the calendar filed today as a rest
+    # day and 'days since rest' read 0, rest today: the session just hadn't happened yet.
+    from datetime import date, timedelta
+    from estebot.analysis import engine
+    today = date.today()
+    days = [(today - timedelta(days=k)).isoformat() for k in (4, 3, 2, 1, 0)]
+    for d_ in days[1:4]:                                  # rest, then three training days
+        con.execute("INSERT INTO lift_session (date, n_sets) VALUES (?, 18)", (d_,))
+    cal = engine.training_days(con, days[0], days[-1])
+    assert cal[days[0]]["kind"] == "rest" and cal[days[-1]]["kind"] == "open"
+    assert cal[days[-1]]["training"] is False
+    r = engine.readiness(con, days[-1], {})
+    assert r["today_open"] and r["streak_now"] == 3 and r["last_rest"] == days[0]
+    # once today's session is in, it counts
+    con.execute("INSERT INTO lift_session (date, n_sets) VALUES (?, 18)", (days[-1],))
+    r = engine.readiness(con, days[-1], {})
+    assert not r["today_open"] and r["streak_now"] == 4
+    # and a past day with nothing logged is a rest day, as before
+    assert engine.training_days(con, days[0], days[0], today=days[-1])[days[0]]["kind"] == "rest"

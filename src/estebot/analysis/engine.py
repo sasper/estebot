@@ -32,11 +32,17 @@ def excused_days(con, start, end):
             out.add(s(day))
     return out
 
-def coverage(con, table, start, end, date_col="date", require_complete=False):
+def coverage(con, table, start, end, date_col="date", require_complete=False, column=None):
     """Returns (logged, required_denominator, excused, pct). Excused days leave the
-    denominator - a family emergency is not a failure of discipline."""
+    denominator - a family emergency is not a failure of discipline. With `column`, a day
+    counts only if that column has a value (an HRV prediction counts nights with HRV, not
+    rows in the daily table)."""
     q = f"SELECT {date_col} AS dt FROM {table} WHERE {date_col} BETWEEN ? AND ?"
     if require_complete: q += " AND complete=1"
+    if column:
+        if not column.isidentifier():
+            raise ValueError(f"not a column name: {column!r}")
+        q += f" AND {column} IS NOT NULL"
     logged = {r["dt"] for r in con.execute(q, (start, end))}
     all_days = {s(x) for x in daterange(start, end)}
     exc = excused_days(con, start, end) - logged
@@ -187,12 +193,19 @@ def last_rest_day(con, day, horizon=30):
         cur -= timedelta(days=1)
     return None
 
-def training_days(con, start, end):
+def is_open(con, day, today=None):
+    """True while `day` hasn't happened yet or is still going and has no training logged:
+    an unfinished day isn't a rest day. Readiness for today said "go hard" while the
+    calendar filed today as rest and 'days since rest' reset to 0."""
+    return day >= (today or date.today().isoformat()) and not is_training_day(con, day)
+
+def training_days(con, start, end, today=None):
     """Per day over [start, end]: training or rest (is_training_day, the same rule as
     'days since rest') and what was done, for the calendar. Days after `end` are not here.
 
     kind splits rest in two: 'movement' when the only exercise was light (a walk), else
-    'rest'. It never changes `training`, so the calendar and 'days since rest' still agree."""
+    'rest'. It never changes `training`, so the calendar and 'days since rest' still agree.
+    Today with nothing logged yet is 'open', not rest (is_open)."""
     lift = {r["date"]: dict(r) for r in con.execute(
         """SELECT date, n_exercises, n_sets, hard_sets, total_volume_lb, muscle_groups, session_min
            FROM lift_session WHERE date BETWEEN ? AND ?""", (start, end))}
@@ -207,7 +220,8 @@ def training_days(con, start, end):
         k = s(x)
         training, workouts = is_training_day(con, k), work.get(k, [])
         kind = ("training" if training else
-                "movement" if any(is_light_movement(a) for a, _ in workouts) else "rest")
+                "movement" if any(is_light_movement(a) for a, _ in workouts) else
+                "open" if is_open(con, k, today) else "rest")
         out[k] = {"training": training, "kind": kind, "lift": lift.get(k),
                   "workouts": workouts, "exercise_min": mins.get(k)}
     return out
@@ -469,8 +483,10 @@ def readiness(con, day, goals, voting="auto"):
         "positive": positive, "hard_reasons": reasons, "forced_rest": spasm,
         "subjective_review": bool(ci["needs_review"]) if ci and ci["date"] == day else False,
         "poor_recovery_days": poor, "acwr": r_acwr, **rec,
-        "streak": days_since_rest(con, prior), "streak_now": days_since_rest(con, day),
-        "last_sleep": last_sleep, "last_rest": last_rest_day(con, day),
+        "streak": days_since_rest(con, prior), "last_sleep": last_sleep, "today_open": is_open(con, day),
+        # an unfinished day counts toward neither: today's training isn't in yet
+        "streak_now": days_since_rest(con, prior if is_open(con, day) else day),
+        "last_rest": last_rest_day(con, prior if is_open(con, day) else day),
     }
 
 _earned_cache = {}

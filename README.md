@@ -114,6 +114,7 @@ an `estebot.toml` pointing at them. Load it into the app's database and start th
 ```bash
 export ESTEBOT_CONFIG=/tmp/estebot-demo/estebot.toml
 ./.venv/bin/python -m estebot.web.ingest
+./.venv/bin/python -m estebot.analysis.calls --backfill 90   # optional: the self-grade's recorded calls
 ./.venv/bin/uvicorn estebot.web.main:app --port 8000
 ```
 
