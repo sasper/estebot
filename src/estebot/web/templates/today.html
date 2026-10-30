@@ -1,6 +1,8 @@
 <!doctype html>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>EsteBot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&display=swap">
 <link rel="stylesheet" href="/static/app.css?v={{ css_v }}">
 <link rel="icon" type="image/svg+xml" href="/static/icon.svg?v={{ icon_v }}">
 <link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png?v={{ icon_v }}">
@@ -9,7 +11,7 @@
 <div class="main">
   {% set here = "/?day=" ~ day ~ "&" if not is_today else "/?" %}
   <header class="top">
-    <h1>EsteBot</h1>
+    <h1>Este<span>Bot</span></h1>
     {# the demo person has nothing private to hide, so the demo has no toggle #}
     {% if demo %}{% elif present %}<a class="chip on" href="{{ here }}present=0" title="Notes and medical details are hidden. Click to show everything.">Presentation</a>
     {% else %}<a class="chip" href="{{ here }}present=1" title="Hide notes and medical details, for showing the page to someone">Present</a>{% endif %}
@@ -37,7 +39,7 @@
                  "feel": "How you feel", "nutrition": "Nutrition", "pace": "Weight-loss pace"} %}
   {% set LEVEL = {"green": "good", "amber": "watch", "red": "strain", None: "no data"} %}
   {% set flagged = r.signals|selectattr("level", "in", ["red", "amber"])|list %}
-  <div class="card readiness">
+  <div class="card readiness" data-verdict="{{ r.verdict }}">
     <h2>How should you train today?</h2>
     <div class="rhero">
       {{ ring|safe }}

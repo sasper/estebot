@@ -1,27 +1,31 @@
 :root{
   color-scheme: light;
   --rest:#1d1d1b;
-  --bg:#f6f6f4; --surface-1:#fcfcfb; --line:#e4e3df;
-  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#86857f;
-  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a;
-  --good:#1a7f47; --warn:#9a6700; --bad:#b3261e;
-  --radius:12px;
+  --bg:#f3f4f6; --surface-1:#ffffff; --line:#e2e5ea;
+  --text-primary:#0b0d10; --text-secondary:#4b525c; --text-muted:#7c838d;
+  --series-1:#0e7490; --series-2:#e2622a; --series-3:#1baf7a;
+  --good:#16794a; --warn:#9a6700; --bad:#b3261e;
+  --accent:#0e7490; --on-accent:#ffffff; --halo:7%;
+  --radius:14px;
+  --display:"Barlow Semi Condensed",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){ :root:where(:not([data-theme="light"])){
   color-scheme: dark;
   --rest:#000000;
-  --bg:#121211; --surface-1:#1a1a19; --line:#2f2f2d;
-  --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8e8d85;
-  --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
-  --good:#4ab878; --warn:#d9a21b; --bad:#e66767;
+  --bg:#08090b; --surface-1:#111317; --line:#22262d;
+  --text-primary:#f4f6f8; --text-secondary:#b3b9c2; --text-muted:#7b828c;
+  --series-1:#22d3ee; --series-2:#fb7a3c; --series-3:#2bbf8a;
+  --good:#3fcf7f; --warn:#f5b52e; --bad:#f2686a;
+  --accent:#22d3ee; --on-accent:#03181c; --halo:18%;
 }}
 :root[data-theme="dark"]{
   color-scheme: dark;
   --rest:#000000;
-  --bg:#121211; --surface-1:#1a1a19; --line:#2f2f2d;
-  --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8e8d85;
-  --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
-  --good:#4ab878; --warn:#d9a21b; --bad:#e66767;
+  --bg:#08090b; --surface-1:#111317; --line:#22262d;
+  --text-primary:#f4f6f8; --text-secondary:#b3b9c2; --text-muted:#7b828c;
+  --series-1:#22d3ee; --series-2:#fb7a3c; --series-3:#2bbf8a;
+  --good:#3fcf7f; --warn:#f5b52e; --bad:#f2686a;
+  --accent:#22d3ee; --on-accent:#03181c; --halo:18%;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text-primary);
@@ -110,7 +114,7 @@ table.gaps td:last-child,table.gaps th:last-child{padding-right:0}
 .seg span,.toggles span{display:flex;align-items:center;justify-content:center;min-height:44px;
   padding:0 6px;font-size:15px;font-weight:550;color:var(--text-secondary);cursor:pointer;
   font-variant-numeric:tabular-nums;user-select:none;-webkit-tap-highlight-color:transparent}
-.seg input:checked + span{background:var(--series-1);color:#fff}
+.seg input:checked + span{background:var(--accent);color:var(--on-accent)}
 .seg input:focus-visible + span,.toggles input:focus-visible + span{
   outline:2px solid var(--text-primary);outline-offset:-3px}
 .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:4px}
@@ -125,7 +129,7 @@ table.gaps td:last-child,table.gaps th:last-child{padding-right:0}
   border-radius:10px;background:var(--surface-1);color:var(--text-primary);resize:vertical;
   text-transform:none;letter-spacing:0}
 .tap button{font:inherit;font-size:16px;font-weight:600;min-height:46px;border-radius:10px;
-  cursor:pointer;background:var(--series-1);color:#fff;border:0}
+  cursor:pointer;background:var(--accent);color:var(--on-accent);border:0}
 .tap p{margin:-6px 0 0}
 .note{font-size:13.5px;color:var(--text-secondary);padding:7px 0;border-top:1px solid var(--line)}
 .note b{color:var(--text-primary);font-weight:600}
@@ -171,7 +175,7 @@ table.paces .pill{margin-top:0}
   justify-content:center;font-size:11px;font-variant-numeric:tabular-nums;text-decoration:none}
 .calcell.empty{visibility:hidden}
 .calcell.future{border:1px dashed var(--line);color:var(--text-muted)}
-.calcell.train{background:var(--series-1);color:#fff}
+.calcell.train{background:var(--accent);color:var(--on-accent)}
 .calcell.rest{background:var(--rest);color:#c3c2b7;box-shadow:inset 0 0 0 1px var(--line)}
 .calcell.move{background:var(--rest);color:#c3c2b7;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--series-3) 80%,transparent)}
 .calcell.unwell::after{content:"";position:absolute;inset:2px;border-radius:50%;
@@ -214,7 +218,7 @@ table.plan tr.main td:first-child{font-weight:600}
 .ask-form{display:flex;gap:8px;align-items:flex-end}
 .ask-form textarea{flex:1;font:inherit;font-size:16px;padding:8px 10px;border-radius:10px;
   border:1px solid var(--line);background:var(--surface-1);color:var(--text-primary);resize:vertical}
-.ask-form button{font:inherit;padding:9px 16px;border-radius:10px;border:0;background:var(--series-1);color:#fff;cursor:pointer}
+.ask-form button{font:inherit;padding:9px 16px;border-radius:10px;border:0;background:var(--accent);color:var(--on-accent);cursor:pointer}
 .ask-form button:disabled{opacity:.5;cursor:default}
 /* Readiness: the verdict beside a ring of its signals, then one line per signal; the
    thresholds behind each open on tap. Level colours live here once, for ring and rows. */
@@ -267,7 +271,7 @@ table.plan tr.main td:first-child{font-weight:600}
 .ask-try button:disabled,.ask-form :disabled{opacity:.55;cursor:default}
 .chat-fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;
   font:inherit;font-weight:600;padding:12px 20px;border-radius:999px;border:0;cursor:pointer;
-  background:var(--series-1);color:#fff;box-shadow:0 4px 16px rgb(0 0 0 / .25)}
+  background:var(--accent);color:var(--on-accent);box-shadow:0 4px 16px rgb(0 0 0 / .25)}
 body.chat-open .chat{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;height:min(82vh,680px);
   border-radius:16px 16px 0 0;padding-bottom:calc(16px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgb(0 0 0 / .3)}
 body.chat-open .chat-fab{display:none}
@@ -325,3 +329,27 @@ body.chat-open .chat-fab{display:none}
   .tapcheck .tap legend{float:left;width:34%;margin:0;line-height:42px}
   .tapcheck .seg{overflow:hidden}
 }
+/* Athletic dark: one cyan accent, display numerals, and the day's verdict as a glow. */
+body{background:radial-gradient(1100px 420px at 15% -8%,color-mix(in srgb,var(--accent) var(--halo),transparent),transparent 70%) no-repeat,var(--bg)}
+h1{font-family:var(--display);font-size:24px;font-weight:700;letter-spacing:.01em}
+h1 span{color:var(--accent)}
+.card{background:linear-gradient(180deg,color-mix(in srgb,var(--text-primary) 3%,var(--surface-1)),var(--surface-1) 140px);
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--text-primary) 5%,transparent)}
+.vbadge,.hero,.metric .v,.tline b,.rscore{font-family:var(--display);letter-spacing:0}
+.vbadge{font-size:31px;font-weight:700}
+.hero{font-size:44px;font-weight:700}
+.metric .v{font-size:22px;font-weight:600}
+.tline b{font-size:21px;font-weight:700}
+[data-verdict=hard]{--vcol:var(--good)} [data-verdict=normal]{--vcol:var(--accent)}
+[data-verdict=light]{--vcol:var(--warn)} [data-verdict=rest]{--vcol:var(--bad)}
+.readiness{background:radial-gradient(260px 200px at 64px 120px,color-mix(in srgb,var(--vcol) var(--halo),transparent),transparent 72%),
+  linear-gradient(180deg,color-mix(in srgb,var(--text-primary) 3%,var(--surface-1)),var(--surface-1) 140px);
+  border-color:color-mix(in srgb,var(--vcol) 28%,var(--line))}
+.ring{filter:drop-shadow(0 0 7px color-mix(in srgb,var(--vcol) 45%,transparent))}
+.rscore{font-size:46px;font-weight:700}
+.v-normal{color:var(--accent)}
+.tile summary:hover h2,.tile summary:hover::after{color:var(--accent)}
+.tile:hover{border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
+.spark .ln{filter:drop-shadow(0 0 3px color-mix(in srgb,var(--series-1) 50%,transparent))}
+a{color:var(--accent)}
+.calcell.train{background:color-mix(in srgb,var(--accent) 78%,var(--surface-1))}
