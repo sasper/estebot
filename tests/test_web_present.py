@@ -48,7 +48,7 @@ def test_presentation_mode_leaves_notes_and_doses_out_of_the_html(main):
                     'name="note"'):
         assert private not in shown, private
     assert "present=1" in cookie and "Presentation" in shown
-    assert "Body weight" in shown and "<h2>Strength</h2>" in shown
+    assert "Body weight" in shown and "Strength</h2>" in shown
 
 
 def test_the_cookie_keeps_presentation_mode_on_until_it_is_turned_off(main):

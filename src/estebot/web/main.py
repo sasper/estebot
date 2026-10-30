@@ -83,10 +83,10 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     tl = an.training_load_series(con, lstart, day)
     bars = dict(height=130)
     load_charts = [
-        ("Exercise minutes (Apple, all activity)", charts.bar_chart(tl["minutes"], **bars)),
-        ("Hard sets (RPE 7+, or every working set where no RPE was logged)",
+        ("Exercise minutes", charts.bar_chart(tl["minutes"], **bars)),
+        ("Hard sets",
          charts.bar_chart(tl["hard_sets"], **bars)),
-        ("Tonnage, thousand lb (logged weight × reps; pull-ups add sets, not pounds)",
+        ("Tonnage, thousand lb",
          charts.bar_chart(tl["tonnage_klb"], fmt="{:.0f}", **bars)),
     ]
 
