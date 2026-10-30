@@ -220,3 +220,15 @@ def test_the_demo_shows_example_answers_built_from_the_days_numbers(main, monkey
     assert f"readiness {score}." in html
     monkeypatch.delenv("ESTEBOT_DEMO")
     assert "behind today" not in page(main)[0]
+
+
+def test_the_example_call_reads_right_when_nothing_is_flagged():
+    # Written against a take-it-easy day, the example said "The other 7 signals are good"
+    # and explained a strained signal on a day with none.
+    from estebot.web import examples
+    sig = lambda area, level, reason: {"area": area, "level": level, "reasons": [reason]}
+    green = [sig(a, "green", f"{a} fine") for a in examples.AREA]
+    a = examples._call({"verdict": "hard", "score": 100, "signals": green})["a"]
+    assert "All 7 signals are good" in a and "strained signal" not in a and "holding you back" not in a
+    a = examples._call({"verdict": "light", "score": 46, "signals": [sig("load", "red", "too alike")] + green[1:]})["a"]
+    assert "holding you back" in a and "The other 6 signals are good" in a
