@@ -448,7 +448,7 @@
     {%- for m in chat_history %}<div class="ask-msg {{ 'me' if m.role == 'user' else 'bot' }}">{{ m.text }}</div>{% endfor -%}
   </div>
   <div class="ask-try" id="ask-try">
-    {% for q in ["Why is today a take-it-easy day?", "How has my squat moved this month?", "Am I eating enough protein?"] %}
+    {% for q in ["Why this call today?", "How has my squat moved this month?", "Am I eating enough protein?"] %}
     <button type="button"{{ " disabled" if not chat_on }}>{{ q }}</button>{% endfor %}
   </div>
   <form class="ask-form" id="ask-form">

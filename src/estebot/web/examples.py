@@ -26,11 +26,13 @@ def _call(r):
         a += " What's holding you back:\n" + "\n".join(
             f"- {AREA[x['area']].capitalize()}: {x['reasons'][0]}" for x in flagged if x["reasons"])
     if clear:
-        a += f"\n\nThe other {len(clear)} signals are good, including " + _join(
+        a += ("\n\n" + (f"The other {len(clear)} signals are good" if flagged else f"All {len(clear)} signals are good")
+              + ", including " + _join(
             [x["reasons"][0] for x in clear if x["area"] in ("sleep", "recovery") and x["reasons"]] or
-            [AREA[x["area"]] for x in clear[:2]]) + "."
+            [AREA[x["area"]] for x in clear[:2]]) + ".")
     a += ("\n\nThe call counts all seven, so feeling good can't outvote a strained signal, and one bad "
-          "reading can't sink a good day.")
+          "reading can't sink a good day." if flagged else
+          "\n\nWith nothing strained, today is the day to push, and the session's targets build on last time.")
     return {"q": "What's behind today's call?", "a": a}
 
 
