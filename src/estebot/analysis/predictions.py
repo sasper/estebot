@@ -82,7 +82,7 @@ def weight_slope(con, engine, spec, day):
     inside = slope is not None and lo <= slope <= hi
     return {"value": None if slope is None else f"{slope:+.2f} lb/week",
             "target": f"{lo:+.1f} to {hi:+.1f} lb/week", "inside": inside if slope is not None else None,
-            "detail": f"OLS over {len(pts)} weigh-ins, {a} to {b}"}
+            "detail": f"line fitted since {date.fromisoformat(a):%-d %b %Y} ({len(pts)} weigh-ins)"}
 
 def e1rm_median_change(con, engine, spec, day):
     final = spec["window"]

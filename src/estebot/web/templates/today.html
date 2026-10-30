@@ -263,18 +263,18 @@
   </div>
 
   <details class="card tile" data-tile="weight" open>
-    <summary><div class="thead"><h2>{{ icon("weight") }}Body weight</h2><div class="tline"><b>{{ "%.1f"|format(ws.current) if ws.current is not none else "–" }} lb</b>{% if ws.rate is not none %} · {{ "%+.2f"|format(ws.rate) }} lb a week{% endif %}</div></div>{{ sparks.weight|safe }}</summary>
+    <summary><div class="thead"><h2>{{ icon("weight") }}Body weight</h2><div class="tline"><b>{{ "%.1f"|format(ws.current) if ws.current is not none else "–" }} lb</b>{% if ws.rate is not none %} · {{ "%+.2f"|format(ws.rate) }} lb a week, 4-week fit{% endif %}</div></div>{{ sparks.weight|safe }}</summary>
     <div class="verdict">
       {# The headline is the 14-day average, not this morning: a day's reading swings ±1.5 lb
          on water, against a real change of ~0.1 lb/day, so a flat morning number says nothing. #}
       <span class="hero">{{ "%.1f"|format(ws.current) if ws.current is not none else "–" }}<span style="font-size:17px;font-weight:500"> lb</span></span>
       <span class="muted">14-day average{% if latest_w %} · this morning {{ "%.1f"|format(latest_w) }}{% endif %}</span>
-      {% if ws.rate is not none %}<br><span class="muted">{{ "%+.2f"|format(ws.rate) }} lb a week{% if ws.pct_per_week is not none and ws.pct_per_week > 0 %} · {{ "%.2f"|format(ws.pct_per_week) }}% of body weight{% endif %}</span>{% endif %}
+      {% if ws.rate is not none %}<br><span class="muted">{{ "%+.2f"|format(ws.rate) }} lb a week, 4-week fit{% if ws.pct_per_week is not none and ws.pct_per_week > 0 %} · {{ "%.2f"|format(ws.pct_per_week) }}% of body weight{% endif %}</span>{% endif %}
     </div>
-    {% set PACE = {"on_pace": ("On pace", "pill-ok"), "slow": ("Losing less than expected", "pill-warn"),
-                   "fast": ("Losing faster than planned", "pill-warn"), "gaining": ("Gaining", "pill-warn")} %}
+    {% set PACE = {"on_pace": ("Within planned pace", "pill-ok"), "slow": ("Slower than planned", "pill-warn"),
+                   "fast": ("Faster than planned", "pill-warn"), "gaining": ("Gaining", "pill-warn")} %}
     <table class="paces">
-      {% for key, label in (("wow", "Average this week vs last week"), ("mom", "Average last 4 weeks vs the 4 before")) %}{% set c = wc[key] %}
+      {% for key, label in (("wow", "Last 7 days vs the 7 before"), ("mom", "Last 4 weeks vs the 4 before")) %}{% set c = wc[key] %}
       <tr><td class="muted">{{ label }}</td>
         {% if c.status %}
         <td class="n">{{ "%+.1f"|format(c.change_lb) }} lb{% if key == "mom" %} <span class="muted">({{ "%+.2f"|format(c.rate) }}/wk)</span>{% endif %}</td>
@@ -285,9 +285,9 @@
         {% endif %}</tr>
       {% endfor %}
     </table>
-    {% call info() %}<p>The goal date is a straight line at today's pace. Loss usually slows, so it's the pace you're on, not a promise.</p><p>The weekly rate is a line fitted through the last 4 weeks of weigh-ins; the headline is the 14-day average, since one morning swings &plusmn;1.5 lb on water.</p><p>Planned pace: losing {{ pace_range[0] }}–{{ pace_range[1] }}% of body weight a week (estebot.toml).
-      {% if wc.trend == "slowing" %}<b>Loss is slowing:</b> this week is well under the 4-week pace.
-      {% elif wc.trend == "speeding_up" %}<b>Loss is speeding up:</b> this week is well over the 4-week pace.{% endif %}
+    {% call info() %}<p>The goal date is a straight line at today's pace. Loss usually slows, so it's the pace you're on, not a promise.</p><p>The headline is the 14-day average, since one morning swings &plusmn;1.5 lb on water. The <b>4-week fit</b> is a line through the last 4 weeks of weigh-ins. The two rows compare averages instead: the last 7 days against the 7 before, and the last 4 weeks against the 4 before, so they land near the fit but not on it. The weight prediction fits its own line since the cut started.</p><p>Planned pace: losing {{ pace_range[0] }}–{{ pace_range[1] }}% of body weight a week (estebot.toml).
+      {% if wc.trend == "slowing" %}<b>The last 7 days lost less</b> than the 4-week pace.
+      {% elif wc.trend == "speeding_up" %}<b>The last 7 days lost more</b> than the 4-week pace.{% endif %}
       A single week moves 2–3 lb on water and glycogen alone, so the 4-week line is the one to act on.</p>{% endcall %}
     <div class="goal">
       {% if present or demo %}<p>Goal: <b>{{ '%g'|format(ws.goal) }} lb</b></p>
@@ -350,16 +350,16 @@
   </details>
 
   <details class="card tile" data-tile="nutrition">
-    <summary><div class="thead"><h2>{{ icon("nutrition") }}Nutrition</h2><div class="tline">{% if nut.energy.intake %}<b>{{ "{:,.0f}".format(nut.energy.intake) }}</b> kcal a day{% endif %}{% if nut.protein.mean %} · protein {{ "%.0f"|format(nut.protein.mean) }} g{% if nut.protein_target_g %} of {{ "%.0f"|format(nut.protein_target_g) }}{% endif %}{% endif %} · last 14 complete days</div></div></summary>
+    <summary><div class="thead"><h2>{{ icon("nutrition") }}Nutrition</h2><div class="tline">{% if nut.energy.intake %}<b>{{ "{:,.0f}".format(nut.energy.intake) }}</b> kcal a day{% endif %}{% if nut.protein.mean %} · protein {{ "%.0f"|format(nut.protein.mean) }} g{% if nut.protein_target_g %} of {{ "%.0f"|format(nut.protein_target_g) }}{% endif %}{% endif %}{% if nut.energy.n %} · {{ nut.energy.n }} complete days of the last 14{% endif %}</div></div></summary>
     {% set e = nut.energy %}{% set pr = nut.protein %}
     <div class="metrics" style="margin-top:0;padding-top:0;border-top:0">
       <div class="metric"><div class="k">Calories in</div><div class="v">{{ "{:,.0f}".format(e.intake) if e.intake else "–" }}</div></div>
-      <div class="metric"><div class="k">Deficit, logged</div><div class="v">{{ "{:,.0f}".format(e.logged) if e.logged is not none else "–" }}</div></div>
-      <div class="metric"><div class="k">Deficit, measured</div><div class="v">{{ "{:,.0f}".format(e.measured) if e.measured is not none else "–" }}</div></div>
+      <div class="metric"><div class="k">Balance, logged</div><div class="v">{{ e.logged|balance }}</div></div>
+      <div class="metric"><div class="k">Balance, measured</div><div class="v">{{ e.measured|balance }}</div></div>
       <div class="metric"><div class="k">Protein / day</div><div class="v">{{ "%.0f"|format(pr.mean) ~ " g" if pr.mean else "–" }}{% if nut.protein_target_g %}<span class="muted" style="font-size:13px;font-weight:400"> / {{ "%.0f"|format(nut.protein_target_g) }} target</span>{% elif pr.g_per_kg %}<span class="muted" style="font-size:13px;font-weight:400"> · {{ "%.1f"|format(pr.g_per_kg) }} g/kg</span>{% endif %}</div></div>
     </div>
     <p class="muted small" style="margin:10px 0 0">
-    {% call info() %}<p><b>Running low</b> means under 90% of the reference intake, from food and supplements; <b>near an upper limit</b> means 50% of it or more.</p><p>kcal/day over {{ e.n }} complete days. <b>Logged</b> = Apple's burn (active + resting) minus Cronometer intake.
+    {% call info() %}<p><b>Running low</b> means under 90% of the reference intake, from food and supplements; <b>near an upper limit</b> means 50% of it or more.</p><p>kcal a day over {{ e.n }} complete days of the last 14. The readiness card's nutrition line uses the last 4 days, so its number differs. <b>Logged</b> = Apple's burn (active + resting) minus Cronometer intake.
       <b>Measured</b> = what the 4-week weight trend implies (lb/week × 3,500 ÷ 7).
       {% if e.logged is not none and e.measured is not none %}They differ by {{ "{:,.0f}".format((e.logged - e.measured)|abs) }} kcal/day.{% endif %}
       {% if nut.protein_target_g %}Protein target: {{ nut.protein_per_lb }} g per lb of body weight = <b>{{ "%.0f"|format(nut.protein_target_g) }} g/day</b> at the 14-day trend (estebot.toml){% if pr.mean %}; you're averaging {{ "%.0f"|format(pr.mean) }} g, {{ "%.0f"|format(pr.mean / nut.protein_target_g * 100) }}% of it{% endif %}.{% endif %}

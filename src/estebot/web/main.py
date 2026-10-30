@@ -31,6 +31,7 @@ def _static_v(name):
         return hashlib.sha1(f.read()).hexdigest()[:10]
 tpl.env.globals["css_v"] = _static_v("app.css")
 tpl.env.globals["icon_v"] = _static_v("icon.svg")       # same reason: a cached old icon
+tpl.env.filters["balance"] = charts.kcal_balance
 tpl.env.filters["shortdate"] = lambda iso: date.fromisoformat(iso).strftime("%a %-d %b")
 
 # The public demo (ESTEBOT_DEMO=1) is one page shared by every visitor, so nobody gets to
