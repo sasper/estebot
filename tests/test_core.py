@@ -304,6 +304,24 @@ class TestGoalMet:
         assert not goal_met(goal, [(0, 8, None), (0, 7, None), (0, 6, None)])
 
 
+class TestFlagEffect:
+    def test_only_a_band_wholly_below_zero_votes(self):
+        # Readiness inputs voted for years without ever being checked against sessions; on
+        # 689 of them none predicted anything. An input earns a vote by showing an effect.
+        from estebot.core import flag_effect
+        worse = flag_effect([-0.2, -0.1, -0.15, -0.25] * 5, [0.0, 0.05, -0.05, 0.02] * 5)
+        assert worse["status"] == "predicts worse sessions" and worse["votes"]
+        noise = flag_effect([-0.3, 0.2, 0.1, -0.2] * 5, [0.25, -0.3, -0.1, 0.2] * 5)
+        assert noise["status"] == "no effect seen" and not noise["votes"]
+        better = flag_effect([0.2, 0.1, 0.15, 0.25] * 5, [0.0, 0.05, -0.05, 0.02] * 5)
+        assert better["status"] == "goes with better sessions" and not better["votes"]
+
+    def test_a_handful_of_sessions_is_not_judged(self):
+        from estebot.core import flag_effect
+        e = flag_effect([-0.5] * 10, [0.1] * 40)
+        assert e["status"] == "not enough data" and not e["votes"] and e["diff"] is None
+
+
 class TestStrengthStandards:
     def test_a_heavy_lifter_is_not_underrated_by_a_plain_ratio(self):
         # A 470 lb squat at 260 lb is 1.8x, which plain ratio bands call intermediate
