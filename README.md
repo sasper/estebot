@@ -28,7 +28,8 @@ against those docs and gates, and nothing merged until it passed them.
   sleep, HRV and resting heart rate, how you feel, food, weight-loss pace), but a signal only
   gets a vote once your own sessions show that its flagged days went worse. Every session is
   graded against its targets, and the page shows how sessions went after each call: *go hard*,
-  *go as planned*, *take it easy* or *rest*. Nothing flagged is never on its own a reason to go hard.
+  *go as planned*, *take it easy* or *rest*. An absence of warnings is never by itself a
+  reason to go hard; that needs a reason with its own record.
 - **Your next session, already planned.** It knows where you are in the rotation and sets a
   target for every exercise from the last time you did it, held back on a take-it-easy day.
 - **A weight trend that sees through the noise.** A 14-day average and a fitted weekly rate
@@ -45,7 +46,7 @@ against those docs and gates, and nothing merged until it passed them.
 
 <img src="docs/screenshots/session.png" alt="Today's session with a target for every exercise" width="720">
 
-<img src="docs/screenshots/chat.png" alt="Ask EsteBot answering three questions from the day's numbers" width="380">
+<img src="docs/screenshots/chat.png" alt="Ask EsteBot: three answers from the day's numbers, then follow-up questions to ask" width="380">
 
 <details>
 <summary>More: the training calendar, weight trend, strength standards, and the page on a phone</summary>
@@ -140,7 +141,8 @@ Getting the exports: Apple Health, profile icon, Export All Health Data. Jefit, 
 export training logs. Cronometer, Profile, gear, Export Data, Daily Nutrition. Each
 source's filename pattern is a glob in the config, so a new export is picked up without
 edits. Hevy and Cronometer can also be pulled automatically (see `daily.py`); both read
-their credentials from the macOS Keychain, never from a file.
+their credentials from the environment (secrets, on a server) or the macOS Keychain, never
+from a file.
 
 ## How it fits together
 
@@ -170,8 +172,10 @@ more depth, how I verify refactors, and the known problems.
 | `analysis/engine.py` | Coverage gates, load ratio, the readiness signals, strength standards, the next-session plan. |
 | `analysis/nutrition.py` | Energy balance, protein, and micronutrient gaps against the US reference intakes. |
 | `analysis/predictions.py` | Reads the prediction ledger and shows interim progress on open claims. |
-| `web/` | FastAPI and Jinja templates. It formats numbers the engine computed; it does not compute its own. |
-| `daily.py` | The unattended daily sync, scheduled with launchd on macOS. |
+| `analysis/calls.py` | Writes each morning's first call to `calls.csv`, never rewritten, so the calls can be graded as they were made. |
+| `web/` | FastAPI and Jinja templates. It formats numbers the engine computed; it does not compute its own. Also Google sign-in, Ask EsteBot, and the sentence check-in. |
+| `daily.py` | The unattended daily sync: at noon on the server (`deploy/scheduler.py`), or with launchd on a Mac. |
+| `demo.py` | A complete data directory for a made-up person, from one seed. |
 
 Derived data is disposable and gets rebuilt from the exports. Authored data (annotations,
 the ledger, dated correction rules) lives apart from it, because only a person can
@@ -196,7 +200,8 @@ I use it every day, for one person. The personal values (height, goals, file loc
 are in config, but some assumptions are still mine: imperial units on the page, a
 push/pull/legs rotation as the default training split (`[training]` in config changes it), and
 reference intakes for one demographic.
-The daily sync and the page service assume macOS and launchd.
+It runs on one Fly.io machine: the demo for visitors, and each signed-in person's own page
+with its noon sync. It also runs on a Mac with launchd.
 
 ## License
 
