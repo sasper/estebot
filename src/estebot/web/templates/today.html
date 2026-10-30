@@ -25,7 +25,12 @@
 <div class="main">
   {% set here = "/?day=" ~ day ~ "&" if not is_today else "/?" %}
   <header class="top">
-    <h1>Este<span>Bot</span></h1>
+    <h1><svg class="logo" viewBox="0 0 64 64" aria-hidden="true">{# the tab icon's mark, in the theme's colours #}
+      <rect width="64" height="64" rx="14" class="logo-bg"/>
+      <polyline points="12,27 23,20 32,23 47,12" class="logo-trend"/><polyline points="40,11 48,11.5 47.5,19.5" class="logo-trend"/>
+      <g class="logo-bar"><rect x="7" y="41.5" width="50" height="5" rx="2.5"/><rect x="12" y="32" width="7" height="24" rx="2.5"/>
+      <rect x="20.5" y="36" width="5" height="16" rx="2"/><rect x="45" y="32" width="7" height="24" rx="2.5"/>
+      <rect x="38.5" y="36" width="5" height="16" rx="2"/></g></svg><span class="word">Este<span>Bot</span></span></h1>
     {# the demo person has nothing private to hide, so the demo has no toggle #}
     {% if demo %}{% elif present %}<a class="chip on" href="{{ here }}present=0" title="Notes and medical details are hidden. Click to show everything.">Presentation</a>
     {% else %}<a class="chip" href="{{ here }}present=1" title="Hide notes and medical details, for showing the page to someone">Present</a>{% endif %}
@@ -438,7 +443,7 @@
   <div class="chat-head"><h2>Ask EsteBot</h2>
     {% if chat_on %}<button type="button" class="chip chat-clear"{{ " hidden" if not chat_history }}>Clear</button>{% endif %}
     <button type="button" class="chat-close" aria-label="Close">&times;</button></div>
-  {% if not chat_on %}<p class="small ask-off">Off in the demo.</p>{% call info() %}<p>On your own page, Claude answers questions about your data here, using only numbers from EsteBot's own algorithms. It's off in the demo, where anyone could run up the bill.</p>{% endcall %}{% endif %}
+  {% if not chat_on %}<p class="small ask-off">{{ "Off in the demo. Here's the kind of thing it answers:" if chat_history else "Off in the demo." }}</p>{% call info() %}<p>On your own page, Claude answers questions about your data here, using only numbers from EsteBot's own algorithms. It's off in the demo, where anyone could run up the bill.</p>{% endcall %}{% endif %}
   <div class="ask-log" id="ask-log" aria-live="polite">
     {%- for m in chat_history %}<div class="ask-msg {{ 'me' if m.role == 'user' else 'bot' }}">{{ m.text }}</div>{% endfor -%}
   </div>
