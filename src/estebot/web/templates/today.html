@@ -405,7 +405,7 @@
   <details class="card tile" data-tile="load">
     <summary><div class="thead"><h2>{{ icon("load") }}Training load</h2><div class="tline">Last 7 days at {{ "%.2f"|format(r.acwr) ~ "×" if r.acwr is not none else "–" }} your 4-week norm</div></div>{{ sparks.load|safe }}</summary>
     {% for title, svg in load_charts %}<h3 class="charttitle">{{ title }}</h3>{{ svg|safe }}{% endfor %}
-    {% call info() %}<p><b>Exercise minutes</b> are Apple's, from all activity. <b>Hard sets</b> are sets at RPE 7 or more, or every working set where no RPE was logged. <b>Tonnage</b> is logged weight &times; reps; pull-ups add sets, not pounds.</p><p><b>Load ratio</b> is exercise minutes a day over the last 7 days divided by the same over the last 4 weeks, through yesterday. 1.0 is a normal week. Over 1.3 is a sharp jump and over 1.5 is where injury risk climbs; under 0.8 is a light week, flagged because a big session straight after one is the classic way to get hurt.</p>{% endcall %}
+    {% call info() %}<p><b>Exercise minutes</b> are Apple's, from all activity. <b>Hard sets</b> are sets at RPE 7 or more, or every working set where no RPE was logged. <b>Tonnage</b> is logged weight &times; reps; pull-ups add sets, not pounds.</p><p><b>Load ratio</b> is hard sets in the last 7 days divided by a week's worth at your 4-week average, through yesterday. Walks and cardio aren't in it. 1.0 is a normal week. Over 1.3 is a sharp jump and over 1.5 is where injury risk climbs; under 0.8 is a light week, flagged because a big session straight after one is the classic way to get hurt.</p>{% endcall %}
   </details>
 
   {% if notes %}

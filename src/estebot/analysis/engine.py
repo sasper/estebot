@@ -116,12 +116,14 @@ def weight_changes(con, day, min_pct, max_pct, min_weighins=4):
     return out
 
 # ---------------------------------------------------------------- readiness
-# Training load uses Apple's exercise_min: it is the only daily-complete load signal
-# and it captures cardio and incidental activity, not just logged lifting.
+# Training load is hard sets a day (core.is_hard_set), 0 on a day with no lifting. It used
+# to be Apple's exercise minutes, which count time with the heart rate up, not effort: an
+# hour's walk scored like an hour of squats, and the rests in a heavy 5x5 barely registered.
+# Walks and cardio are left out of load on purpose; they still show on the calendar.
 def _load_series(con, end, days):
     start = s(d(end) - timedelta(days=days-1))
-    got = {r["date"]: (r["exercise_min"] or 0.0) for r in con.execute(
-        "SELECT date, exercise_min FROM daily WHERE date BETWEEN ? AND ?", (start, end))}
+    got = {r["date"]: (r["hard_sets"] or 0.0) for r in con.execute(
+        "SELECT date, hard_sets FROM lift_session WHERE date BETWEEN ? AND ?", (start, end))}
     return [got.get(s(x), 0.0) for x in daterange(start, end)]
 
 def acwr(con, day):
@@ -136,7 +138,7 @@ def acwr(con, day):
     return (acute / chronic) if chronic > 0 else None
 
 def _acwr_parts(con, day):
-    """The two means acwr() divides: exercise minutes a day over 7 days and over 28."""
+    """The two means acwr() divides: hard sets a day over 7 days and over 28."""
     return st.mean(_load_series(con, day, 7)), st.mean(_load_series(con, day, 28))
 
 def _metric_baseline(con, day, col, days=30):
@@ -159,8 +161,9 @@ NOT_TRAINING = ("Walking",)  # a logged walk alone does not make a training day
 
 def is_light_movement(activity):
     """A walk: exercise, but light. It shows on the calendar and counts in Apple's exercise
-    minutes (so in training load), but never makes a training day. The incline treadmill
-    walks are cardio, not rest, and the calendar used to file a walk-only day as plain rest."""
+    minutes, but never makes a training day and adds nothing to training load. The incline
+    treadmill walks are cardio, not rest, and the calendar used to file a walk-only day as
+    plain rest."""
     return activity in NOT_TRAINING
 
 def is_training_day(con, day, min_sets=LIFT_STREAK_MIN_SETS):
@@ -289,11 +292,11 @@ def _load_signal(con, prior):
     meaning = ("" if r is None else ": a big jump, keep today moderate" if r > 1.3
                else ": a light week, build back up rather than going all out" if r < 0.8
                else ": within the normal range")
-    ratio = r is not None and (f"last 7 days averaged {acute:.0f} exercise min a day vs {chronic:.0f} "
-                               f"over the last 4 weeks ({r:.2f}×){meaning}")
-    alike = (None if mono is None else "no easy day in the last 7, the same exercise minutes every day"
+    ratio = r is not None and (f"{acute * 7:.0f} hard sets in the last 7 days vs {chronic * 7:.0f} "
+                               f"a week over the last 4 ({r:.2f}×){meaning}")
+    alike = (None if mono is None else "no easy day in the last 7, the same hard sets every day"
              if mono == float("inf")
-             else f"no easy day in the last 7, every day about as long as the next (monotony {mono:.1f})"
+             else f"no easy day in the last 7, every day about as hard as the next (monotony {mono:.1f})"
              if lv_m != "green"
              else f"a mix of harder and easier days in the last 7 (monotony {mono:.1f})")
     return _signal("load", core.worst(lv_r, lv_m), [(lv_r, ratio), (lv_m, alike)]), r
@@ -428,9 +431,13 @@ def readiness(con, day, goals):
     recent5 = st.mean(_load_series(con, prior, 5))
     chronic = st.mean(_load_series(con, prior, 28))
     if chronic > 0 and recent5 < 0.25 * chronic:
-        cap = round(chronic * 1.3)
-        ramp = (f"Coming off a low-load stretch ({recent5:.0f} vs {chronic:.0f} min/day norm). "
-                f"Cap today near {cap} min rather than making up the deficit at once.")
+        # Capped at a usual session, not 1.3x the daily mean: the mean counts rest days,
+        # so it is far below what one session holds.
+        sessions = [x for x in _load_series(con, prior, 28) if x > 0]
+        cap = round(st.mean(sessions))
+        ramp = (f"Coming off a light stretch ({recent5 * 5:.0f} hard sets in the last 5 days, "
+                f"about {chronic * 5:.0f} usually). Keep today to a normal session, about {cap} "
+                f"hard sets, rather than making up the missed work at once.")
     return {
         "date": day, "verdict": verdict, "score": core.readiness_score(levels, verdict),
         "signals": signals, "ramp": ramp, "checkin": ci,
