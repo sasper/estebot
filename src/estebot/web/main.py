@@ -15,7 +15,7 @@ from estebot.analysis import calls, engine as an, nutrition, predictions
 import anthropic
 from starlette.concurrency import run_in_threadpool
 
-from estebot.web import auth, chat, db, charts, examples, people
+from estebot.web import auth, chat, checkin_text, db, charts, examples, people
 
 log = logging.getLogger("estebot")
 HERE = os.path.dirname(__file__)
@@ -120,6 +120,12 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     # The tap card prefills from this day's own row, never yesterday's: carrying yesterday's
     # answers forward would save them as today's with one tap.
     day_ci = con.execute("SELECT * FROM checkin WHERE date=?", (day,)).fetchone()
+    # A check-in said in a sentence prefills the card until it's saved; a manual save after
+    # it clears it, so a draft never sits over what was confirmed.
+    draft = con.execute("SELECT * FROM checkin_draft WHERE date=?", (day,)).fetchone()
+    if draft:
+        day_ci = dict(draft, source="draft", back_reported=int(draft["back"] is not None),
+                      back=draft["back"] or "ok", soreness=(day_ci["soreness"] if day_ci else 0))
 
     # days that still need a subjective answer, so they can be reached from the UI. Only the
     # last week's: an answer only changes that day's call (and the next, through "how you
@@ -155,6 +161,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         multiples=multiples, sparks=sparks, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=goals.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,
         pattern=pattern, plan=plan, axial=axial, checkin=checkin,
         day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
+        said=request.query_params.get("said"),
         review_days=review_days, prev_day=prev_day, next_day=next_day,
         is_today=(day == date.today().isoformat()), demo=demo_mode() or p.read_only,
         signin=auth.settings() is not None, email=p.email, chat_on=chat_enabled(p),
@@ -290,8 +297,36 @@ def checkin(request: Request, day: str = Form(...), back: str | None = Form(None
                      source='manual', needs_review=0""",
                 (day, back if reported else "ok", int(reported), soreness, energy,
                  scale(inter_set_recovery), note.strip()[:400] or None, int(sick), int(injured)))
+    con.execute("DELETE FROM checkin_draft WHERE date=?", (day,))
     con.commit()
     return RedirectResponse(f"/?day={day}", status_code=303)
+
+
+@app.post("/checkin/text")
+def checkin_from_text(request: Request, day: str = Form(...), text: str = Form(""), csrf: str = Form("")):
+    """Read a sentence onto the tap card as a draft. The sentence is kept as the note."""
+    p = people.for_request(request)
+    if refused := _refuse(p, csrf):
+        return refused
+    if not chat_enabled(p):
+        return PlainTextResponse("Reading a check-in isn't available here.", status_code=403)
+    try:
+        day = date.fromisoformat(day).isoformat()
+    except ValueError:
+        return PlainTextResponse("Bad date.", status_code=400)
+    con = p.connect()
+    try:
+        f = checkin_text.read(con, text, date.today().isoformat())
+    except checkin_text.CheckinTextError as e:
+        log.warning("check-in not read: %s", e)
+        return RedirectResponse(f"/?day={day}&said=failed#checkin", status_code=303)
+    con.execute("""INSERT OR REPLACE INTO checkin_draft
+                     (date, back, energy, inter_set_recovery, sick, injured, note)
+                   VALUES (?,?,?,?,?,?,?)""",
+                (day, f["back"], f["energy"], f["inter_set_recovery"], int(f["sick"]),
+                 int(f["injured"]), text.strip()[:checkin_text.MAX_CHARS]))
+    con.commit()
+    return RedirectResponse(f"/?day={day}#checkin", status_code=303)
 
 
 # ---------------------------------------------------------------- sign-in (web/auth.py)
