@@ -14,6 +14,8 @@ SICK_NOTE = "Sick with a fever, stayed in bed"
 def main(con):
     from estebot.web import main as mod
     mod = importlib.reload(mod)
+    mod.recorded = []                    # the save's background call recorder, kept in-process
+    mod._record_call = lambda p: mod.recorded.append(p)
     d = lambda n: (date.fromisoformat(DAY) - timedelta(days=n)).isoformat()
     for n in range(20):
         con.execute("INSERT INTO weight (date, weight_lb) VALUES (?, ?)", (d(n), 250 + n * 0.2))
@@ -133,7 +135,7 @@ def test_a_tap_check_in_is_saved_prefilled_and_read_by_the_verdict(main, con):
 
     html = today_page(main)
     assert 'value="sore" checked' in card(html) and 'name="energy" value="1" checked' in card(html)
-    assert TAP_NOTE in card(html) and "saved, tap to change" in html
+    assert TAP_NOTE in card(html) and "call uses it" in html
 
 
 def test_a_sick_tap_with_no_energy_reads_as_energy_zero_and_rings_the_calendar(main, con):
@@ -258,3 +260,14 @@ def test_a_check_in_said_in_a_sentence_is_only_a_draft_until_saved(main, con, mo
     save(main, today, "sore", 1, None, TAP_NOTE)
     assert con.execute("SELECT 1 FROM checkin_draft WHERE date=?", (today,)).fetchone() is None
     assert con.execute("SELECT source FROM checkin WHERE date=?", (today,)).fetchone()["source"] == "manual"
+
+
+def test_saving_todays_check_in_records_the_call_and_a_past_one_does_not(main, con):
+    # The recorded call is what the self-grade judges. Recorded at a 6 a.m. phone upload, it
+    # would miss a check-in made at 7, so saving today's check-in records it then.
+    today = date.today().isoformat()
+    save(main, today, "ok", 2)
+    assert len(main.recorded) == 1
+    save(main, (date.today() - timedelta(days=3)).isoformat(), "ok", 2)
+    assert len(main.recorded) == 1
+    assert "call uses it" in today_page(main)

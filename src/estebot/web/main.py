@@ -265,6 +265,12 @@ def set_goal(request: Request, goal_weight_lb: float = Form(...), day: str = For
     return RedirectResponse(f"/?day={day}" if day else "/", status_code=303)
 
 
+def _record_call(p):
+    """Record today's call now, in the background, so a morning check-in is in it."""
+    sync_log = open(p.cfg.data_dir / ".sync.log", "a")
+    subprocess.Popen([sys.executable, "-m", "estebot.analysis.calls"], stdout=sync_log, stderr=sync_log,
+                     env={**os.environ, "ESTEBOT_CONFIG": str(p.cfg.path)}, start_new_session=True)
+
 @app.post("/checkin")
 def checkin(request: Request, day: str = Form(...), back: str | None = Form(None),
             soreness: int = Form(0), energy: int | None = Form(None),
@@ -299,6 +305,8 @@ def checkin(request: Request, day: str = Form(...), back: str | None = Form(None
                  scale(inter_set_recovery), note.strip()[:400] or None, int(sick), int(injured)))
     con.execute("DELETE FROM checkin_draft WHERE date=?", (day,))
     con.commit()
+    if day == date.today().isoformat():
+        _record_call(p)
     return RedirectResponse(f"/?day={day}", status_code=303)
 
 

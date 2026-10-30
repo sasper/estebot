@@ -18,9 +18,24 @@ from estebot.web import db
 
 AREAS = ("load", "effort", "sleep", "recovery", "feel", "nutrition", "pace")
 FIELDS = ("date", "recorded_at", "code", "verdict", "score", *AREAS, "acwr", "plan", "targets")
-# Before noon a call waits for last night's sleep: a phone upload at 2 a.m. would otherwise
-# record the day's call with no sleep in it, and the first call is the one kept.
-WAIT_FOR_SLEEP_UNTIL = 12
+# Before noon a call waits for last night's sleep and this morning's check-in: the first call
+# is the one kept, so a phone upload at 6 a.m. would otherwise record the day's call without
+# the check-in made at 7. Saving a check-in records the call (web/main.py), so a morning
+# check-in is in it; from noon the call is recorded with whatever there is.
+WAIT_UNTIL = 12
+
+
+def waiting_for(con, now):
+    """What the morning's call still waits for, in words; [] when it can be recorded."""
+    if now.hour >= WAIT_UNTIL:
+        return []
+    day, night = now.date().isoformat(), (now.date() - timedelta(days=1)).isoformat()
+    missing = []
+    if not con.execute("SELECT 1 FROM sleep WHERE night=?", (night,)).fetchone():
+        missing.append("last night's sleep")
+    if not con.execute("SELECT 1 FROM checkin WHERE date=?", (day,)).fetchone():
+        missing.append("this morning's check-in")
+    return missing
 
 
 def _code_version():
@@ -90,10 +105,8 @@ def main(argv):
         return 0
     now = datetime.now()
     day = now.date().isoformat()
-    slept = con.execute("SELECT 1 FROM sleep WHERE night=?",
-                        ((now.date() - timedelta(days=1)).isoformat(),)).fetchone()
-    if not slept and now.hour < WAIT_FOR_SLEEP_UNTIL:
-        print(f"{day}: waiting for last night's sleep before recording the call")
+    if missing := waiting_for(con, now):
+        print(f"{day}: waiting for {' and '.join(missing)} before recording the call")
         return 0
     row = make_call(con, day, cfg.goals)
     print(f"{day}: {row['verdict']} {row['score']}"
