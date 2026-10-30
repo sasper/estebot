@@ -106,7 +106,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
             refs=[(5, "under 5 h: take it easy")])),
         ("Load ratio (7-day vs 28-day)", charts.line_chart(
             [{"name": "Load ratio", "points": rs["acwr"], "slot": 1}], **small, fmt="{:.1f}",
-            refs=[(1.3, "1.3 jump"), (1.5, "1.5 injury risk")])),
+            refs=[(0.8, "0.8 light week"), (1.5, "1.5 injury risk")])),
     ]
 
     # word-sized trends for the tiles, from the same series as the full charts
