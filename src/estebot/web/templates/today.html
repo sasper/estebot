@@ -24,7 +24,7 @@
 <div class="wrap">
 <div class="main">
   {% set here = "/?day=" ~ day ~ "&" if not is_today else "/?" %}
-  <header class="top">
+  <header class="top" id="top">
     <h1><svg class="logo" viewBox="0 0 64 64" aria-hidden="true">{# the tab icon's mark, in the theme's colours #}
       <rect width="64" height="64" rx="14" class="logo-bg"/>
       <polyline points="12,27 23,20 32,23 47,12" class="logo-trend"/><polyline points="40,11 48,11.5 47.5,19.5" class="logo-trend"/>
@@ -81,56 +81,16 @@
   </p>
   {% endif %}
 
-  {# Wide screens: what to do today on the left, the trends behind it on the right.
-     Phones stack the two in this order. #}
-  <div class="dash">
-  <div class="col-today">
-  {% set AREA = {"load": "Training load", "effort": "Effort (RPE)", "sleep": "Sleep", "recovery": "HRV & resting HR",
-                 "feel": "How you feel", "nutrition": "Nutrition", "pace": "Weight-loss pace"} %}
-  {% set LEVEL = {"green": "good", "amber": "watch", "red": "strain", None: "no data"} %}
-  {% set flagged = r.signals|selectattr("level", "in", ["red", "amber"])|list %}
-  {% set counted = flagged|selectattr("area", "in", r.voting)|list %}
-  <div class="card readiness" id="readiness" data-verdict="{{ r.verdict }}">
-    <h2>How should you train today?</h2>
-    <div class="rhero">
-      {{ ring|safe }}
-      <div>
-        <div class="vbadge v-{{ r.verdict }}">{{ verdict_text }}</div>
-        <p class="why">{% if r.holds %}Held by a safety rule: {{ r.holds|join(", ") }}.
-          {% elif counted %}Held back by
-          {% for x in counted %}<b class="lv-{{ x.level }}">{{ AREA[x.area]|lower }}</b>{{ " and " if loop.revindex == 2 else (", " if not loop.last) }}{% endfor %}.
-          {% elif r.positive %}Reason to go hard: {{ r.positive }}.
-          {% elif r.voting %}Nothing that has earned a vote is flagged.
-          {% else %}No signal has a record of mattering for you yet, so the plan stands.{% endif %}</p>
-      </div>
-    </div>
-    <div class="contrib">
-      {% for x in r.signals %}
-      {% set votes = x.area in r.voting %}
-      <details class="lv-{{ x.level or 'none' }}{{ '' if votes else ' ctx' }}"{{ " open" if x.level == "red" and votes }}>
-        <summary><span class="dot"></span><span class="area">{{ AREA[x.area] }}</span><span class="vote{{ ' on' if votes }}">{{ "votes" if votes else "context" }}</span><span class="state">{{ LEVEL[x.level] }}</span></summary>
-        <p>{{ x.reasons|join("; ") }}</p>
-      </details>
-      {% endfor %}
-    </div>
-    {% call info() %}<p>Only areas with a record vote: an area votes once your sessions on its flagged days have gone worse than on its clear days (see <b>Is the call working?</b>). The rest are shown as context. Take it easy with one voting area in strain or two to watch, rest with two in strain. Going hard needs a reason that has itself gone with better sessions, never just nothing flagged. A safety rule (a health note, or coming back from a near-idle stretch) makes it a take-it-easy day whatever the record says.
-      The score sits inside the call's band (rest 0–24, take it easy 25–49, as planned 50–74, go hard 75–100), higher the more areas are clear.</p>{% endcall %}
-    {% if r.ramp %}<div class="ramp"><b>Ramp cap.</b> {{ r.ramp }}</div>{% endif %}
-    {% if r.subjective_review %}<div class="ramp review"><b>Check this.</b>
-      Your note for today carries conflicting signals, so nothing was inferred from it.
-      Answer below to resolve it.</div>{% endif %}
-    {% if pattern %}<div class="ramp pattern"><b>{{ "Rest" if pattern[0]=="rest" else pattern[0]|title ~ " day." }}</b> {{ pattern[1] }}</div>{% endif %}
-  </div>
-
   {# The tap check-in: today's, or a past day's that a note left unresolved. Radios and
-     checkboxes styled as buttons, so it needs no JavaScript. Folded once saved. #}
-  {% if (is_today or r.subjective_review) and not present and not demo %}
+     checkboxes styled as buttons, so it needs no JavaScript. Until today's is saved it is the
+     first thing on the page, open and not foldable, and the call waits for it, so it is
+     answered before the verdict is seen. Saved, it folds to one line under the call. #}
   {% set ci = day_ci or {} %}
   {% set saved = ci.source == "manual" %}
+  {% set has_card = (is_today or r.subjective_review) and not present and not demo %}
+  {% set ask_first = has_card and is_today and not saved %}
   {% set when = " today" if is_today else "" %}
-  <details class="card tapcheck" id="checkin"{{ "" if saved else " open" }}>
-    <summary><h2>Check-in{{ "" if is_today else ", " ~ day|shortdate }}</h2>
-      <span class="small muted">{{ ("saved, and today's call uses it" if is_today else "saved, tap to change") if saved else "read from what you wrote, check and save" if ci.source == "draft" else "from your notes, check and save" if ci else ("before you train: how do you feel?" if is_today else "how did you feel?") }}</span></summary>
+  {% set tapform %}
     {% if chat_on %}
     <form method="post" action="/checkin/text" class="tapsay">{% if csrf %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endif %}
       <input type="hidden" name="day" value="{{ day }}">
@@ -159,10 +119,81 @@
         <button type="submit">Save</button>
       </div>
     </form>
-  </details>
+  {% endset %}
+  {% if ask_first %}
+  <section class="card tapcheck first" id="checkin">
+    <div class="taphead"><h2>Check-in</h2>
+      <span class="small muted">{{ "read from what you wrote, check and save" if ci.source == "draft" else "from your notes, check and save" if ci else "before you train: how do you feel?" }}</span></div>
+    {{ tapform }}
+  </section>
   {% endif %}
+  {% set checkin_below %}{% if has_card and not ask_first %}
+  {% set cparts = [] %}
+  {% if ci.energy is not none %}{% set _ = cparts.append("energy " ~ ci.energy ~ "/3") %}{% endif %}
+  {% if ci.back_reported %}{% set _ = cparts.append("back " ~ ci.back) %}{% endif %}
+  {% if ci.sick %}{% set _ = cparts.append("sick") %}{% endif %}
+  {% if ci.injured %}{% set _ = cparts.append("injured") %}{% endif %}
+  <details class="card tapcheck{{ ' done' if saved and is_today }}" id="checkin"{{ "" if saved else " open" }}>
+    {% if saved and is_today %}
+    <summary><span class="tapline">Checked in{% if ci.saved_at %} {{ ci.saved_at|clock }}{% endif %}{% for x in cparts %} · {{ x }}{% endfor %}</span>
+      <span class="small muted">tap to change</span></summary>
+    {% else %}
+    <summary><h2>Check-in{{ "" if is_today else ", " ~ day|shortdate }}</h2>
+      <span class="small muted">{{ "saved, tap to change" if saved else "read from what you wrote, check and save" if ci.source == "draft" else "from your notes, check and save" if ci else "how did you feel?" }}</span></summary>
+    {% endif %}
+    {{ tapform }}
+  </details>
+  {% endif %}{% endset %}
 
-  {% if plan %}
+  {# Wide screens: what to do today on the left, the trends behind it on the right.
+     Phones stack the two in this order. #}
+  <div class="dash">
+  <div class="col-today">
+  {% set AREA = {"load": "Training load", "effort": "Effort (RPE)", "sleep": "Sleep", "recovery": "HRV & resting HR",
+                 "feel": "How you feel", "nutrition": "Nutrition", "pace": "Weight-loss pace"} %}
+  {% set LEVEL = {"green": "good", "amber": "watch", "red": "strain", None: "no data"} %}
+  {% set flagged = r.signals|selectattr("level", "in", ["red", "amber"])|list %}
+  {% set counted = flagged|selectattr("area", "in", r.voting)|list %}
+  <div class="card readiness" id="readiness" data-verdict="{{ r.verdict }}">
+    <h2>How should you train today?</h2>
+    {% if ask_first %}
+    <p class="why"><a href="#checkin">Check in to finish today's call</a></p>
+    {% else %}
+    <div class="rhero">
+      {{ ring|safe }}
+      <div>
+        <div class="vbadge v-{{ r.verdict }}">{{ verdict_text }}</div>
+        <p class="why">{% if r.holds %}Held by a safety rule: {{ r.holds|join(", ") }}.
+          {% elif counted %}Held back by
+          {% for x in counted %}<b class="lv-{{ x.level }}">{{ AREA[x.area]|lower }}</b>{{ " and " if loop.revindex == 2 else (", " if not loop.last) }}{% endfor %}.
+          {% elif r.positive %}Reason to go hard: {{ r.positive }}.
+          {% elif r.voting %}Nothing that has earned a vote is flagged.
+          {% else %}No signal has a record of mattering for you yet, so the plan stands.{% endif %}</p>
+      </div>
+    </div>
+    <div class="contrib">
+      {% for x in r.signals %}
+      {% set votes = x.area in r.voting %}
+      <details class="lv-{{ x.level or 'none' }}{{ '' if votes else ' ctx' }}"{{ " open" if x.level == "red" and votes }}>
+        <summary><span class="dot"></span><span class="area">{{ AREA[x.area] }}</span><span class="vote{{ ' on' if votes }}">{{ "votes" if votes else "context" }}</span><span class="state">{{ LEVEL[x.level] }}</span></summary>
+        <p>{{ x.reasons|join("; ") }}</p>
+      </details>
+      {% endfor %}
+    </div>
+    {% call info() %}<p>Only areas with a record vote: an area votes once your sessions on its flagged days have gone worse than on its clear days (see <b>Is the call working?</b>). The rest are shown as context. Take it easy with one voting area in strain or two to watch, rest with two in strain. Going hard needs a reason that has itself gone with better sessions, never just nothing flagged. A safety rule (a health note, or coming back from a near-idle stretch) makes it a take-it-easy day whatever the record says.
+      The score sits inside the call's band (rest 0–24, take it easy 25–49, as planned 50–74, go hard 75–100), higher the more areas are clear.</p>{% endcall %}
+    {% if r.ramp %}<div class="ramp"><b>Ramp cap.</b> {{ r.ramp }}</div>{% endif %}
+    {% if r.subjective_review %}<div class="ramp review"><b>Check this.</b>
+      Your note for today carries conflicting signals, so nothing was inferred from it.
+      Answer below to resolve it.</div>{% endif %}
+    {% if pattern %}<div class="ramp pattern"><b>{{ "Rest" if pattern[0]=="rest" else pattern[0]|title ~ " day." }}</b> {{ pattern[1] }}</div>{% endif %}
+    {% endif %}
+  </div>
+
+  {{ checkin_below }}
+
+  {# its targets and a rest day's note would give the call away before the check-in #}
+  {% if plan and not ask_first %}
   <div class="card session">
     <h2>{{ icon("session") }}Today's session{% if plan.rest %}, if you train{% endif %}</h2>
     <div class="verdict"><span class="vbadge">{{ plan.kind|title }} {{ plan.variant }}{% if plan.main %} · {{ plan.main }}{% endif %}</span></div>

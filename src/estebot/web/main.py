@@ -4,7 +4,7 @@ from collections import Counter
 from contextlib import asynccontextmanager, closing
 from dataclasses import replace
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse
@@ -64,6 +64,7 @@ tpl.env.globals["css_v"] = _static_v("app.css")
 tpl.env.globals["icon_v"] = _static_v("icon.svg")       # same reason: a cached old icon
 tpl.env.filters["balance"] = charts.kcal_balance
 tpl.env.filters["shortdate"] = lambda iso: date.fromisoformat(iso).strftime("%a %-d %b")
+tpl.env.filters["clock"] = lambda iso: datetime.fromisoformat(iso).strftime("%-H:%M")
 
 # The public demo (ESTEBOT_DEMO=1) is one page shared by every visitor, so nobody gets to
 # change it: the forms are not rendered and the POST routes refuse.
@@ -354,21 +355,24 @@ def checkin(request: Request, day: str = Form(...), back: str | None = Form(None
     # the question is what resolving it means.
     con.execute("""INSERT INTO checkin
                      (date, back, back_reported, soreness, energy, inter_set_recovery, note,
-                      sick, injured, source, needs_review)
-                   VALUES (?,?,?,?,?,?,?,?,?,'manual',0)
+                      sick, injured, source, needs_review, saved_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,'manual',0,?)
                    ON CONFLICT(date) DO UPDATE SET
                      back=excluded.back, back_reported=excluded.back_reported,
                      soreness=excluded.soreness, energy=excluded.energy,
                      inter_set_recovery=excluded.inter_set_recovery,
                      note=excluded.note, sick=excluded.sick, injured=excluded.injured,
-                     source='manual', needs_review=0""",
+                     source='manual', needs_review=0, saved_at=excluded.saved_at""",
                 (day, back if reported else "ok", int(reported), soreness, energy,
-                 scale(inter_set_recovery), note.strip()[:400] or None, int(sick), int(injured)))
+                 scale(inter_set_recovery), note.strip()[:400] or None, int(sick), int(injured),
+                 datetime.now().isoformat(timespec="seconds")))
     con.execute("DELETE FROM checkin_draft WHERE date=?", (day,))
     con.commit()
     if day == date.today().isoformat():
         _record_call(p)
-    return RedirectResponse(f"/?day={day}", status_code=303)
+    # Back to the top, where the call now is. Without a fragment of its own the redirect
+    # keeps the page's (#checkin, after a sentence was read) and lands on the folded card.
+    return RedirectResponse(f"/?day={day}#top", status_code=303)
 
 
 @app.post("/checkin/text")

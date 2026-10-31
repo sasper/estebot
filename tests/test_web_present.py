@@ -169,7 +169,7 @@ def test_a_tap_check_in_is_saved_prefilled_and_read_by_the_verdict(main, con):
 
     html = today_page(main)
     assert 'value="sore" checked' in card(html) and 'name="energy" value="1" checked' in card(html)
-    assert TAP_NOTE in card(html) and "call uses it" in html
+    assert TAP_NOTE in card(html) and "Checked in" in html
 
 
 def test_a_sick_tap_with_no_energy_reads_as_energy_zero_and_rings_the_calendar(main, con):
@@ -313,7 +313,7 @@ def test_saving_todays_check_in_records_the_call_and_a_past_one_does_not(main, c
     assert len(main.recorded) == 1
     save(main, (date.today() - timedelta(days=3)).isoformat(), "ok", 2)
     assert len(main.recorded) == 1
-    assert "call uses it" in today_page(main)
+    assert "Checked in" in today_page(main)
 
 
 def test_the_scale_example_asks_what_this_week_shows(con):
@@ -355,3 +355,37 @@ def test_the_calendar_steps_a_month_at_a_time_and_stops_at_the_newest_day(main):
     assert main._month_nav("2026-10-05", "2026-10-30") == (("Sep", "2026-09-05"), None)
     html, _ = page(main)
     assert f'href="/?day={main._month_nav(DAY, DAY)[0][1]}#calendar"' in html and 'aria-label="Next month"' not in html
+
+
+def test_todays_check_in_comes_first_and_the_call_waits_for_it(main):
+    # On a phone the card sat below the call: you scrolled past the verdict to answer, so
+    # you answered having seen it. Until today's is saved it is the first card, open with
+    # nothing to fold, and the call (and the session it shapes) holds back.
+    html = today_page(main)
+    assert html.index('id="checkin"') < html.index('id="readiness"')
+    assert '<section class="card tapcheck first" id="checkin">' in html
+    assert '<details class="card tapcheck' not in html
+    assert "Check in to finish today's call" in html and 'class="vbadge v-' not in html
+    assert 'class="card session"' not in html
+
+
+def test_a_saved_check_in_folds_to_one_line_under_the_full_call(main, con):
+    today = date.today().isoformat()
+    resp = save(main, today, "ok", 2)
+    assert resp.headers["location"].endswith("#top")    # back to the top, where the call is
+    html = today_page(main)
+    assert html.index('id="readiness"') < html.index('id="checkin"')
+    assert 'class="vbadge v-' in html and "Check in to finish" not in html
+    assert '<details class="card tapcheck done" id="checkin">' in html      # folded: no open
+    saved_at = con.execute("SELECT saved_at FROM checkin WHERE date=?", (today,)).fetchone()[0]
+    clock = main.datetime.fromisoformat(saved_at).strftime("%-H:%M")
+    assert f"Checked in {clock} · energy 2/3 · back ok" in html
+    assert 'name="energy" value="2" checked' in card(html)                 # tap to change
+
+
+def test_a_past_days_check_in_stays_below_the_call(main):
+    # Only today's waits for the check-in; a past day that needs an answer keeps its call.
+    html, _ = page(main)
+    assert html.index('id="readiness"') < html.index('id="checkin"')
+    assert '<details class="card tapcheck" id="checkin" open>' in html
+    assert 'class="vbadge v-' in html and "Check in to finish" not in html

@@ -75,7 +75,8 @@ CREATE TABLE IF NOT EXISTS checkin (
   -- Tapped on the page. Notes say sick or injured in words, which unwell_days reads from
   -- the annotations; these are the same two facts for someone who never writes a note.
   sick INT NOT NULL DEFAULT 0,
-  injured INT NOT NULL DEFAULT 0);
+  injured INT NOT NULL DEFAULT 0,
+  saved_at TEXT);                        -- local time of the last manual save, for the page
 
 -- A check-in said in a sentence and read onto the tap card (web/checkin_text.py). Only a
 -- draft: it prefills the card, and nothing counts until Save writes the checkin row.
@@ -113,6 +114,7 @@ _ADDED_COLUMNS = {
         ("back_reported", "INT NOT NULL DEFAULT 1"),
         ("sick", "INT NOT NULL DEFAULT 0"),
         ("injured", "INT NOT NULL DEFAULT 0"),
+        ("saved_at", "TEXT"),
     ],
 }
 
