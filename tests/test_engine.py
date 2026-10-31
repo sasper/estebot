@@ -445,3 +445,21 @@ def test_today_with_nothing_logged_yet_is_not_a_rest_day(con):
     assert not r["today_open"] and r["streak_now"] == 4
     # and a past day with nothing logged is a rest day, as before
     assert engine.training_days(con, days[0], days[0], today=days[-1])[days[0]]["kind"] == "rest"
+
+
+def test_monotony_counts_rest_day_walks_as_rest(con):
+    # The demo read "no easy day in the last 7, every day about as long as the next" while
+    # its calendar showed rest days on the 28th and 29th: monotony ran on Apple's exercise
+    # minutes, and a 40-minute walk scored like a lifting session.
+    from estebot.analysis import engine
+    days = [f"2026-10-{n}" for n in range(23, 30)]
+    lifts, walks = days[:5], days[5:]
+    con.executemany("INSERT INTO daily (date, exercise_min) VALUES (?, 40)", [(x,) for x in days])
+    con.executemany("INSERT INTO lift_session (date, n_sets, session_min) VALUES (?, 20, 60)",
+                    [(x,) for x in lifts])
+    con.executemany("INSERT INTO workout VALUES (?,?,?,?)", [(x, "19:00", "Walking", 40.0) for x in walks])
+    load, _ = engine._load_signal(con, days[-1])
+    text = " ".join(load["reasons"])
+    assert "no easy day" not in text and "no rest day" not in text
+    assert "2 rest days in the last 7" in text
+    assert "monotony 1.6" in text                  # five 60s and two zeros; 40s every day was infinite

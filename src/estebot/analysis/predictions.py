@@ -91,10 +91,10 @@ def e1rm_median_change(con, engine, spec, day):
     w = _clip(spec.get("interim_window", final) if interim else final, day)
     med, per = engine.e1rm_median_change(con, tuple(spec["baseline"]), w, spec["lifts"])
     thr = spec["threshold_pct"]
-    return {"value": None if med is None else f"{med:+.1f} %",
+    return {"value": None if med is None else f"{med:+.1f} %", "per": per, "window": w,
             "target": f"not below {thr:+.1f} %", "inside": None if med is None else med >= thr,
             "detail": ("interim: " if interim else "") + f"{w[0]} to {w[1]} vs {spec['baseline'][0]} to "
-                      f"{spec['baseline'][1]}; " + ", ".join(f"{k.replace('Barbell ', '')} {v:+.1f}%"
+                      f"{spec['baseline'][1]}; " + ", ".join(f"{engine.lift_label(k)} {v:+.1f}%"
                                                             for k, v in sorted(per.items()))}
 
 def hrv_vs_baseline(con, engine, spec, day):

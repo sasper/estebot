@@ -53,6 +53,7 @@
       <p>EsteBot turns a lifter's workouts, sleep, food and weight into one call a day: built for one athlete, shown here on a made-up one.</p>
       <p><b>Three rules:</b> no personal data in the code repo; every number comes from EsteBot's own tested code, and the AI only explains it; one implementation per metric.</p>
       <p>Designed and built by Stephen Sper.</p>
+      <p>Process, decisions and what broke along the way: <a href="https://github.com/sasper/estebot/blob/main/HISTORY.md">HISTORY.md</a></p>
       <p class="intro-build-links"><a href="https://github.com/sasper/estebot">GitHub</a> · <a href="https://github.com/sasper/estebot/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a> · <a href="https://github.com/sasper/estebot/blob/main/HISTORY.md">HISTORY.md</a> · <a href="https://www.linkedin.com/in/stephensper">LinkedIn</a></p>
     </details>
     <div class="intro-cards">
@@ -402,7 +403,7 @@
     <summary><div class="thead"><h2>{{ icon("predictions") }}Predictions</h2><div class="tline">{{ preds|length }} open</div></div></summary>
     <div class="tablewrap">
     <table class="preds">
-      <tr><th>Prediction</th><th>Resolves</th><th class="n">So far</th><th>Target</th><th>Data logged</th></tr>
+      <tr><th>Prediction</th><th>Resolves</th><th class="n">So far</th><th>Target</th><th>Data coverage</th></tr>
       {% for p in preds %}
       <tr>
         <td><span class="muted">{{ p.id }}</span> {{ p.title }}
@@ -410,18 +411,18 @@
           {% if p.caveat %}<div class="muted small">{{ p.caveat }}</div>{% endif %}</td>
         <td class="nowrap">{{ p.resolves|shortdate if p.resolves else "–" }}{% if p.days_left is defined %}<div class="muted small">{{ p.days_left }} days</div>{% endif %}</td>
         <td class="n">{% if p.progress and p.progress.value %}{{ p.progress.value }}
-          <div><span class="pill {{ 'pill-ok' if p.progress.inside else 'pill-warn' }}">{{ "inside" if p.progress.inside else "outside" }}</span></div>
+          <div><span class="pill {{ 'pill-ok' if p.progress.inside else 'pill-warn' }}">{{ "currently inside" if p.progress.inside else "currently outside" }}</span></div>
           {% elif p.progress %}<span class="muted">no data yet</span>{% else %}<span class="muted">judged in the ledger</span>{% endif %}</td>
         <td class="small">{{ p.progress.target if p.progress else "–" }}</td>
-        <td class="small">{% if p.coverage %}{% set c = p.coverage %}<span class="pill {{ 'pill-ok' if c.on_track else 'pill-warn' }}">{{ "on track" if c.on_track else "behind" }}</span>
-          <div class="muted">{{ c.label }}: {{ c.logged }} of {{ c.need }}{% if c.excused %}, {{ c.excused }} excused{% endif %}{% if c.gap is not none %}; longest gap {{ c.gap }} (max {{ c.max_gap }}){% endif %}</div>{% else %}<span class="muted">–</span>{% endif %}</td>
+        <td class="small">{% if p.coverage %}{% set c = p.coverage %}<span class="pill {{ 'pill-ok' if c.on_track else 'pill-warn' }}">{{ "enough data" if c.on_track else "data behind" }}</span>
+          <div class="muted">{{ c.label }}: {{ c.logged }} so far ({{ c.need }} needed{% if p.resolves %} by {{ p.resolves|shortdate }}{% endif %}){% if c.excused %}, {{ c.excused }} excused{% endif %}{% if c.gap is not none %}; longest gap {{ c.gap }} (max {{ c.max_gap }}){% endif %}</div>{% else %}<span class="muted">–</span>{% endif %}</td>
       </tr>
       {% else %}
       <tr><td colspan="5" class="muted">No open predictions in ledger.md.</td></tr>
       {% endfor %}
     </table>
     </div>
-    {% call info() %}<p>Interim progress only. Each prediction resolves in ledger.md by its criterion as written, including the judgement calls a number can't make.</p>{% endcall %}
+    {% call info() %}<p>Interim progress only. Each prediction resolves in ledger.md by its criterion as written, including the judgement calls a number can't make.</p><p><b>Data coverage</b> says whether enough days are being logged for the prediction to be judged at all, not whether it is coming true.</p>{% endcall %}
   </details>
 
   {% set STATUS = {"predicts worse sessions": "votes", "no effect seen": "no effect seen", "goes with better sessions": "goes with better days", "not enough data": "not enough data yet"} %}
