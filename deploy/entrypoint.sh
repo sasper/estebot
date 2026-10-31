@@ -15,6 +15,13 @@ for name in ESTEBOT_USERS_TOML DATA_REPO_KEY CRONOMETER_PASSWORD; do
     [ -n "$v" ] && export "$name=$(printf '%s' "$v" | base64 -d)"
 done
 
+# The made-up athlete's last 90 recorded calls, each from the data before its day. A second
+# or two, before the server starts so it never competes with a request; a failure leaves
+# the column empty rather than the site down.
+backfill_demo() {
+    python -m estebot.analysis.calls --backfill 90 >/dev/null || echo "demo backfill failed; serving without it"
+}
+
 rm -rf "$ESTEBOT_DEMO_DIR"
 python -m estebot.demo --out "$ESTEBOT_DEMO_DIR" --end today
 
@@ -37,12 +44,14 @@ if [ -n "${ESTEBOT_USERS_TOML:-}" ]; then
     fi
 
     python -m estebot.web.ingest              # the demo (ESTEBOT_CONFIG points at it)
+    backfill_demo
     for cfg in $(python -c 'import os, tomllib; print(*sorted(set(tomllib.load(open(os.environ["ESTEBOT_USERS"], "rb")).get("users", {}).values())))'); do
         ESTEBOT_CONFIG="$cfg" python -m estebot.web.ingest
     done
     python /app/scheduler.py &
 else
     python -m estebot.web.ingest
+    backfill_demo
 fi
 
 # No access log: the sign-in callback's URL carries a one-time code.

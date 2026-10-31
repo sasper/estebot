@@ -108,6 +108,10 @@ took the verdict from the count. That lasted until 29 Oct (below).
   questions an hour each.
 - Every rate and average on the page now says which days it covers, after three weight
   rates on one page looked like the page disagreeing with itself.
+- Backfilling the demo's recorded calls at startup took the site down for about twenty
+  minutes. It regraded every past session once for each of the 90 days, 24 seconds of CPU,
+  and Fly throttles a small shared CPU hard after a short burst. Now each session is graded
+  once and the backfill takes under two seconds, before the server starts.
 
 ## What I'd tell someone starting the same thing
 
