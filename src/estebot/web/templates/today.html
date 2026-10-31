@@ -222,7 +222,14 @@
   </details>
 
   <div class="card" id="calendar">
-    <h2>{{ icon("calendar") }}Training calendar</h2>
+    <div class="calhead-row">
+      <h2>{{ icon("calendar") }}Training calendar</h2>
+      {% set mp, mn = month_nav %}
+      <nav class="calnav" aria-label="Calendar months">
+        <a href="/?day={{ mp[1] }}#calendar" aria-label="Previous month">&lsaquo; {{ mp[0] }}</a>
+        {% if mn %}<a href="/?day={{ mn[1] }}#calendar" aria-label="Next month">{{ mn[0] }} &rsaquo;</a>{% endif %}
+      </nav>
+    </div>
     <div class="legend">
       <span><i class="swatch cal-train"></i>Training: lifting 5+ sets, or any workout but a walk</span>
       <span><i class="swatch cal-move"></i>Rest-day movement: a walk, nothing else</span>

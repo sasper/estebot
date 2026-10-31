@@ -169,7 +169,8 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         "ORDER BY date DESC LIMIT 5", ((dd - timedelta(days=7)).isoformat(), day))]
     prev_day, next_day = (dd - timedelta(days=1)).isoformat(), (dd + timedelta(days=1)).isoformat()
 
-    calendar = _calendar(con, day)
+    newest = an.default_day(con, date.today().isoformat())
+    calendar, month_nav = _calendar(con, day, newest), _month_nav(day, newest)
     notes = [dict(r) for r in con.execute(
         "SELECT * FROM annotation WHERE start_date >= ? ORDER BY start_date DESC LIMIT 6",
         ((date.fromisoformat(day) - timedelta(days=45)).isoformat(),))]
@@ -198,7 +199,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         pattern=pattern, plan=plan, axial=axial, checkin=checkin,
         day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
         said=request.query_params.get("said"),
-        review_days=review_days, prev_day=prev_day, next_day=next_day,
+        review_days=review_days, prev_day=prev_day, next_day=next_day, month_nav=month_nav,
         is_today=(day == date.today().isoformat()), demo=demo,
         signin=auth.settings() is not None, email=p.email, chat_on=chat_on, chat_resting=resting,
         # The demo opens on the canned conversation, live or not; live, it's the history a
@@ -263,17 +264,39 @@ def _activity_name(a):
     return words[:1].upper() + words[1:]
 
 
-def _calendar(con, day, months=3):
+def _month_nav(day, newest):
+    """(previous, next) month links for the calendar: (label, day) or None. The same day of the
+    month, or the month's last if it has fewer days. Next stops at `newest`: a month with no
+    data yet has nothing to show, so it lands on the newest day, and there is no next from
+    the newest day's month."""
+    viewed = date.fromisoformat(day)
+    def step(n):
+        first = date(viewed.year + (viewed.month - 1 + n) // 12, (viewed.month - 1 + n) % 12 + 1, 1)
+        last = (first.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+        return first, min(viewed.day, last.day)
+    first, n = step(-1)
+    prev = (first.strftime("%b"), first.replace(day=n).isoformat())
+    first, n = step(1)
+    nxt = (None if first.isoformat() > newest
+           else (first.strftime("%b"), min(first.replace(day=n).isoformat(), newest)))
+    return prev, nxt
+
+def _calendar(con, day, newest=None, months=3):
     """Month grids (Mon-Sun) for the `months` months ending with the one holding `day`.
-    Only formats: the training/rest call is engine.training_days."""
-    end = date.fromisoformat(day)
-    first = date(end.year, end.month, 1)
+    Filled through the page's newest day (default_day), not just `day`: looking back at an
+    old day greyed out every day after it, and a greyed day has no link, so the calendar
+    couldn't take you forward again. Only formats: the training/rest call is engine.training_days."""
+    viewed = date.fromisoformat(day)
+    first = date(viewed.year, viewed.month, 1)
     for _ in range(months - 1):
         first = (first - timedelta(days=1)).replace(day=1)
+    month_end = (viewed.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+    newest = max(day, newest or an.default_day(con, date.today().isoformat()))
+    end = min(month_end, date.fromisoformat(newest))
     info = an.training_days(con, first.isoformat(), end.isoformat())
     unwell = an.unwell_days(con, first.isoformat(), end.isoformat())
     out, m = [], first
-    while m <= end:
+    while m <= viewed:
         nxt = (m.replace(day=28) + timedelta(days=4)).replace(day=1)
         cells = [None] * m.weekday()
         x = m

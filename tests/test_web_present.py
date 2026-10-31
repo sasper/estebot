@@ -331,3 +331,27 @@ def test_the_scale_example_asks_what_this_week_shows(con):
     assert "barely" not in q and "more" in q
     con.execute("UPDATE weight SET weight_lb = 200.4 WHERE date > ?", ((day0 + timedelta(days=48)).isoformat(),))
     assert examples._scale(con, day, {}, ws)["q"] == "Why did the scale go up this week?"
+
+
+def test_looking_back_at_an_old_day_still_links_the_days_after_it(main, con):
+    # Viewing an earlier day greyed out every day after it, and a greyed day has no link, so
+    # the calendar couldn't take you forward again. Days up to the newest are linked; only
+    # days with nothing yet stay greyed.
+    from estebot.analysis import engine
+    newest = engine.default_day(con, date.today().isoformat())
+    viewed = (date.fromisoformat(newest) - timedelta(days=1)).isoformat()
+    cells = [c for m in main._calendar(con, viewed) for w in m["weeks"] for c in w if c]
+    by_day = {c["date"]: c for c in cells}
+    assert not by_day[newest]["future"] and by_day[viewed]["today"] and not by_day[newest]["today"]
+    after = (date.fromisoformat(newest) + timedelta(days=1)).isoformat()
+    assert after not in by_day or by_day[after]["future"]
+
+
+def test_the_calendar_steps_a_month_at_a_time_and_stops_at_the_newest_day(main):
+    # Only day-by-day arrows: moving the calendar a month meant thirty clicks. The step keeps
+    # the day of the month where it can, and never goes past the newest data.
+    assert main._month_nav("2026-01-31", "2026-10-30") == (("Dec", "2025-12-31"), ("Feb", "2026-02-28"))
+    assert main._month_nav("2026-09-30", "2026-10-12") == (("Aug", "2026-08-30"), ("Oct", "2026-10-12"))
+    assert main._month_nav("2026-10-05", "2026-10-30") == (("Sep", "2026-09-05"), None)
+    html, _ = page(main)
+    assert f'href="/?day={main._month_nav(DAY, DAY)[0][1]}#calendar"' in html and 'aria-label="Next month"' not in html
