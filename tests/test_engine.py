@@ -392,7 +392,8 @@ def test_the_evidence_tallied_from_sessions_graded_once_matches_grading_afresh(c
 
 def test_sessions_are_graded_once_per_database_change_not_per_day(con):
     # Changing the day on the page regraded every session (~10 s on the server); the grades
-    # don't depend on the day, so they're kept until the database file changes.
+    # don't depend on the day, so they're kept until the database file changes and then
+    # stops changing.
     import os
     from estebot.analysis import engine
     con.execute("INSERT INTO lift_session (date, n_sets) VALUES ('2026-09-01', 5)")
@@ -402,7 +403,12 @@ def test_sessions_are_graded_once_per_database_change_not_per_day(con):
     first = engine.graded_for(con, {})
     assert engine.graded_for(con, {}) is first and engine.stale_graded() == []
     path = con.execute("PRAGMA database_list").fetchone()[2]
-    os.utime(path, (0, os.path.getmtime(path) + 5))           # the sync wrote to it
+    # Written to just now: an upload's sync may still be writing, so the old grades stand.
+    os.utime(path, (0, os.path.getmtime(path) + 1))
+    assert engine.graded_for(con, {}) is first and engine.stale_graded() == []
+    # Quiet for longer than QUIET_S since that change: regraded, once.
+    quiet = os.path.getmtime(path) - engine.QUIET_S - 1
+    os.utime(path, (quiet, quiet))
     assert [p for p, _ in engine.stale_graded()] == [path]
     assert engine.graded_for(con, {}) is not first and engine.stale_graded() == []
 

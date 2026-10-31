@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from estebot import config, core
+from estebot import config, core, daily
 from estebot.analysis import calls, engine as an, nutrition, predictions
 import anthropic
 from starlette.concurrency import run_in_threadpool
@@ -469,6 +469,7 @@ async def health_auto_export(request: Request):
     tmp = folder / f".upload-{day}.tmp"
     tmp.write_bytes(body)
     tmp.replace(folder / f"HealthAutoExport-{day}.json")          # atomic: never half a file
+    (p.cfg.data_dir / daily.PENDING).touch()                        # after the file: a run taking it reads it
     sync_log = open(p.cfg.data_dir / ".sync.log", "a")
     subprocess.Popen([sys.executable, "-m", "estebot.daily", "--feed"], stdout=sync_log, stderr=sync_log,
                      env={**os.environ, "ESTEBOT_CONFIG": str(p.cfg.path)}, start_new_session=True)

@@ -36,6 +36,7 @@ def test_a_server_sync_pulls_runs_the_feed_steps_and_pushes(tmp_path, monkeypatc
                 for d in (5, 1))
     old.write_text("{}"); new.write_text("{}")
 
+    (data / daily.PENDING).touch()                                # as an upload does
     assert daily.run(feed_only=True) == 0
     tidy = sorted(p.name for p in (data / "tidy").iterdir())
     assert tidy == ["apple_health_feed.csv", "lifting_tables.csv", "web_cache.csv"]
@@ -54,3 +55,52 @@ def test_a_server_sync_pulls_runs_the_feed_steps_and_pushes(tmp_path, monkeypatc
     pushed = subprocess.run(["git", "--git-dir", str(remote), "show", "--stat", "--format=%s", "main"],
                             capture_output=True, text=True).stdout
     assert "raw/cronometer/dailysummary-2026-03-10T120000.csv" in pushed
+
+
+def test_a_burst_of_uploads_is_read_once_per_run_not_once_per_upload(tmp_path, monkeypatch, capsys):
+    # Each upload starts a feed run and they queue on the sync lock. The run that gets the
+    # lock reads every file there; the runs queued behind it while it worked find nothing
+    # new and stop, so three uploads during one run cost one more run, not three.
+    from estebot import config, daily
+    data = tmp_path / "data"; data.mkdir()
+    cfg = tmp_path / "estebot.toml"
+    cfg.write_text(f'data_dir = "{data}"\n')
+    monkeypatch.setenv("ESTEBOT_CONFIG", str(cfg))
+    monkeypatch.setattr(config, "_SEARCH", [str(cfg)])
+    runs = []
+    monkeypatch.setattr(daily, "_run", lambda cfg, feed_only: runs.append(feed_only) or 0)
+    (data / daily.PENDING).touch()
+    assert [daily.run(feed_only=True) for _ in range(3)] == [0, 0, 0]
+    assert runs == [True] and not (data / daily.PENDING).exists()
+    assert "already read by the run before" in capsys.readouterr().out
+    (data / daily.PENDING).touch()                                # an upload, then the noon sync
+    daily.run()
+    assert runs == [True, False] and not (data / daily.PENDING).exists()
+
+
+def test_a_feed_run_that_fails_leaves_the_upload_for_the_next_run(tmp_path, monkeypatch):
+    # The run that took the marker failed (a pull on a network blip); the runs queued behind
+    # it skipped as "already read", and the upload waited for the noon sync.
+    from estebot import config, daily
+    data = tmp_path / "data"; data.mkdir()
+    cfg = tmp_path / "estebot.toml"
+    cfg.write_text(f'data_dir = "{data}"\n')
+    monkeypatch.setenv("ESTEBOT_CONFIG", str(cfg))
+    monkeypatch.setattr(config, "_SEARCH", [str(cfg)])
+    results = [1, 0]
+    runs = []
+    monkeypatch.setattr(daily, "_run", lambda cfg, feed_only: runs.append(feed_only) or results.pop(0))
+    (data / daily.PENDING).touch()
+    assert daily.run(feed_only=True) == 1 and (data / daily.PENDING).exists()
+    assert daily.run(feed_only=True) == 0 and not (data / daily.PENDING).exists()
+    assert runs == [True, True]
+
+    def boom(cfg, feed_only):
+        raise RuntimeError("step crashed")
+    monkeypatch.setattr(daily, "_run", boom)
+    (data / daily.PENDING).touch()
+    try:
+        daily.run(feed_only=True)
+    except RuntimeError:
+        pass
+    assert (data / daily.PENDING).exists()

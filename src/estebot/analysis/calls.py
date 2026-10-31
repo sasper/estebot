@@ -132,6 +132,11 @@ def main(argv):
         return 0
     now = datetime.now()
     day = now.date().isoformat()
+    # Before making the call, which grades every session: every upload runs this, and only
+    # the day's first call is kept.
+    if any(c["date"] == day for c in load(path)):
+        print(f"{day}: already recorded today; kept the first")
+        return 0
     if missing := waiting_for(con, now):
         print(f"{day}: waiting for {' and '.join(missing)} before recording the call")
         return 0

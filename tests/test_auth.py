@@ -182,6 +182,7 @@ def test_a_phone_upload_needs_its_token_and_lands_where_the_feed_parser_reads(si
     assert _json.loads(saved.read_text())["data"]["metrics"][0]["name"] == "step_count"
     assert not (feed / "workouts").exists()
     assert saved.read_bytes() == _json.dumps(payload).encode()        # stored as sent
+    assert (tmp_path / "me" / ".feed-pending").exists()                # for the run it starts (daily.PENDING)
     workouts = {"data": {"workouts": [{"id": "w1", "start": "2026-03-10 07:00:00 -0400"}]}}
     assert _upload(main, token, workouts).status_code == 202
     assert (feed / "workouts" / "HealthAutoExport-2026-03-10.json").exists()

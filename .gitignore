@@ -29,3 +29,6 @@ build/
 
 # Local-only Claude Code settings (points at the private data repo)
 .claude/settings.local.json
+
+# Vim swap files
+.*.sw?

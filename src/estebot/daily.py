@@ -63,6 +63,7 @@ STEPS = [
 # After a phone upload: the feed, the tables that read its weigh-ins, and the page's cache.
 # The call too: the morning's first upload brings the night's sleep, so that is when it's made.
 FEED_STEPS = ("apple health feed", "lifting tables", "web cache", "readiness call")
+PENDING = ".feed-pending"      # written by each upload (web/main.py), taken by the run that reads it
 
 
 def _notify(msg):
@@ -99,7 +100,25 @@ def run(feed_only=False):
     # and two runs rewriting the same CSVs would interleave.
     with open(data / ".sync.lock", "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        return _run(cfg, feed_only)
+        # Each upload leaves PENDING and starts a feed run, and the runs queue on the lock; a
+        # burst of uploads would parse the same files once per upload. The run that gets the
+        # lock takes the marker before reading anything, so a later run finding none has
+        # nothing an earlier one didn't read. A full sync runs the feed step too. A run that
+        # fails puts the marker back, so the next one in the queue tries again (a pull that
+        # failed on a network blip used to be retried by the next upload's run).
+        pending = data / PENDING
+        if feed_only and not pending.exists():
+            print(f"== {datetime.now().isoformat(sep=' ', timespec='minutes')} feed upload: "
+                  "already read by the run before")
+            return 0
+        pending.unlink(missing_ok=True)
+        rc = 1
+        try:
+            rc = _run(cfg, feed_only)
+            return rc
+        finally:
+            if rc != 0:
+                pending.touch()
 
 
 def _run(cfg, feed_only):
