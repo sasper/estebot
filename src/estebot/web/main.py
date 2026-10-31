@@ -265,15 +265,20 @@ def _activity_name(a):
 
 def _calendar(con, day, months=3):
     """Month grids (Mon-Sun) for the `months` months ending with the one holding `day`.
-    Only formats: the training/rest call is engine.training_days."""
-    end = date.fromisoformat(day)
-    first = date(end.year, end.month, 1)
+    Filled through the page's newest day (default_day), not just `day`: looking back at an
+    old day greyed out every day after it, and a greyed day has no link, so the calendar
+    couldn't take you forward again. Only formats: the training/rest call is engine.training_days."""
+    viewed = date.fromisoformat(day)
+    first = date(viewed.year, viewed.month, 1)
     for _ in range(months - 1):
         first = (first - timedelta(days=1)).replace(day=1)
+    month_end = (viewed.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+    newest = max(day, an.default_day(con, date.today().isoformat()))
+    end = min(month_end, date.fromisoformat(newest))
     info = an.training_days(con, first.isoformat(), end.isoformat())
     unwell = an.unwell_days(con, first.isoformat(), end.isoformat())
     out, m = [], first
-    while m <= end:
+    while m <= viewed:
         nxt = (m.replace(day=28) + timedelta(days=4)).replace(day=1)
         cells = [None] * m.weekday()
         x = m

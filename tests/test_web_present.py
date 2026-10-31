@@ -331,3 +331,17 @@ def test_the_scale_example_asks_what_this_week_shows(con):
     assert "barely" not in q and "more" in q
     con.execute("UPDATE weight SET weight_lb = 200.4 WHERE date > ?", ((day0 + timedelta(days=48)).isoformat(),))
     assert examples._scale(con, day, {}, ws)["q"] == "Why did the scale go up this week?"
+
+
+def test_looking_back_at_an_old_day_still_links_the_days_after_it(main, con):
+    # Viewing an earlier day greyed out every day after it, and a greyed day has no link, so
+    # the calendar couldn't take you forward again. Days up to the newest are linked; only
+    # days with nothing yet stay greyed.
+    from estebot.analysis import engine
+    newest = engine.default_day(con, date.today().isoformat())
+    viewed = (date.fromisoformat(newest) - timedelta(days=1)).isoformat()
+    cells = [c for m in main._calendar(con, viewed) for w in m["weeks"] for c in w if c]
+    by_day = {c["date"]: c for c in cells}
+    assert not by_day[newest]["future"] and by_day[viewed]["today"] and not by_day[newest]["today"]
+    after = (date.fromisoformat(newest) + timedelta(days=1)).isoformat()
+    assert after not in by_day or by_day[after]["future"]
