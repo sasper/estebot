@@ -375,6 +375,21 @@ def test_the_evidence_pairs_each_session_with_the_one_before(con):
     assert (c["n_flagged"], c["n_clear"]) == (4, 0) and c["status"] == "not enough data"
 
 
+def test_the_evidence_tallied_from_sessions_graded_once_matches_grading_afresh(con):
+    # The demo backfill regraded every session once per backfilled day (24 s; it took the
+    # site down on a throttled CPU). It now grades them once and tallies each day's window;
+    # a window's tally must not depend on sessions outside it.
+    from datetime import date, timedelta
+    from estebot.analysis import engine
+    days = [(date(2026, 9, 1) + timedelta(days=2 * i)).isoformat() for i in range(8)]
+    con.executemany("INSERT INTO lift_session (date, n_sets) VALUES (?, 5)", [(x,) for x in days])
+    con.executemany("INSERT INTO lift_set (date, exercise, set_idx, weight_lb, reps, rpe, set_type) "
+                    "VALUES (?, 'Barbell Squat', 1, ?, 5, 8, 'normal')",
+                    [(x, 300 + (10 if i % 3 else -10) * i) for i, x in enumerate(days)])
+    graded = engine.graded_sessions(con, days[0], days[-1], {})
+    for end in days[2:]:
+        assert engine.evidence(con, days[0], end, {}, graded=graded) == engine.evidence(con, days[0], end, {})
+
 def test_a_good_check_in_earns_going_hard_only_once_it_has_a_record(con):
     # "Go all out" came too easily: on a day with nothing flagged it was the default. A good
     # check-in is a reason to go hard only when days with one have gone better, and with no

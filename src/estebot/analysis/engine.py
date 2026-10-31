@@ -419,10 +419,11 @@ def _last_session(con, day, min_sets=LIFT_STREAK_MIN_SETS):
                     (day, min_sets)).fetchone()
     return session_outcome(con, r["d"]) if r and r["d"] else None
 
-def readiness(con, day, goals, voting="auto"):
+def readiness(con, day, goals, voting="auto", graded=None):
     """Seven areas, each green/amber/red/no-data with its reasons; the call from those that
     have earned a vote (core.evidence_call). `voting` is "auto" (each area's record over the
-    sessions before `day`, voting_areas) or the areas to count.
+    sessions before `day`, voting_areas) or the areas to count. `graded` passes through to
+    earned() for "auto".
 
     Load is read through YESTERDAY (a morning decision; today's session hasn't happened).
     Recovery and sleep are read through TODAY (measured overnight, there when you wake).
@@ -471,7 +472,7 @@ def readiness(con, day, goals, voting="auto"):
         reasons["last session"] = (last["hit"] >= POSITIVE_LAST_SESSION,
                                    f"your last session met {met} of {len(last['exercises'])} targets")
     if voting == "auto":
-        got = earned(con, day, goals)
+        got = earned(con, day, goals, graded)
         voting, hard_ok = got["voting"], got["hard"]
     else:
         voting, hard_ok = list(voting), []
@@ -491,15 +492,16 @@ def readiness(con, day, goals, voting="auto"):
 
 _earned_cache = {}
 
-def earned(con, day, goals):
+def earned(con, day, goals, graded=None):
     """{"voting": areas whose flagged days went worse, "hard": reasons to go hard whose days
     went better, "evidence": the table they came from}, over every session before `day`. Cached per database
     file and its last change: the evidence regrades every session, about a second on a long
-    history, and the page asks on every load."""
+    history, and the page asks on every load. `graded` (graded_sessions) skips the regrading,
+    for a caller asking about many days."""
     path = con.execute("PRAGMA database_list").fetchone()[2]
     key = (path, day, os.path.getmtime(path)) if path else None
     if key not in _earned_cache:
-        ev = evidence(con, "1900-01-01", s(d(day) - timedelta(days=1)), goals)
+        ev = evidence(con, "1900-01-01", s(d(day) - timedelta(days=1)), goals, graded=graded)
         got = {"voting": ev["voting"], "hard": ev["hard"], "evidence": ev}
         if key is None:
             return got
@@ -766,17 +768,11 @@ def session_outcome(con, day, training=None):
 
 PHASE_DAYS = 45   # a session is compared with the sessions within this many days either side
 
-def evidence(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SETS):
-    """Each readiness area's track record: did sessions go worse on days it was flagged?
-
-    Every session in [start, end] is graded (session_outcome) and paired with the morning
-    call readiness() makes for its day under today's rules. A session's score is its share
-    of targets met less the mean of the sessions within PHASE_DAYS either side, so years
-    that went well or badly as a whole don't read as an input's effect. Per area, flagged
-    (amber or red) against clear (green) goes through core.flag_effect; days with no data
-    for an area count on neither side. Also: how sessions went after each verdict, and
-    candidates: inputs outside the call, found by searching the history and tracked until
-    new sessions confirm them."""
+def graded_sessions(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SETS):
+    """Every session in [start, end] graded (session_outcome) and paired with the morning
+    call readiness() makes for its day under today's rules, before any area votes. The slow
+    part of evidence(); a session's row doesn't depend on the window around it, so rows made
+    once can be tallied over many windows."""
     rows = []
     for r in con.execute("SELECT date FROM lift_session WHERE date BETWEEN ? AND ? AND n_sets >= ? "
                          "ORDER BY date", (start, end, min_sets)):
@@ -786,9 +782,25 @@ def evidence(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SET
         call = readiness(con, r["date"], goals, voting=())
         rows.append({"date": r["date"], "hit": o["hit"], "call": call,
                      "levels": {x["area"]: x["level"] for x in call["signals"]}})
-    for x in rows:
-        near = [y["hit"] for y in rows if y is not x
-                and abs((d(y["date"]) - d(x["date"])).days) <= PHASE_DAYS]
+    return rows
+
+def evidence(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SETS, graded=None):
+    """Each readiness area's track record: did sessions go worse on days it was flagged?
+
+    Every session in [start, end] is graded and paired with its morning call
+    (graded_sessions; pass `graded` to tally rows already made). A session's score is its share
+    of targets met less the mean of the sessions within PHASE_DAYS either side, so years
+    that went well or badly as a whole don't read as an input's effect. Per area, flagged
+    (amber or red) against clear (green) goes through core.flag_effect; days with no data
+    for an area count on neither side. Also: how sessions went after each verdict, and
+    candidates: inputs outside the call, found by searching the history and tracked until
+    new sessions confirm them."""
+    if graded is None:
+        graded = graded_sessions(con, start, end, goals, training, min_sets)
+    rows = [dict(x) for x in graded if start <= x["date"] <= end]   # copies: the tally adds fields
+    n = [d(x["date"]).toordinal() for x in rows]
+    for i, x in enumerate(rows):
+        near = [y["hit"] for j, y in enumerate(rows) if j != i and abs(n[j] - n[i]) <= PHASE_DAYS]
         x["vs_phase"] = x["hit"] - st.mean(near) if near else None
     rows = [x for x in rows if x["vs_phase"] is not None]
     areas = list(rows[0]["levels"]) if rows else []

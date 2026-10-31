@@ -47,15 +47,15 @@ def _code_version():
     return r.stdout.strip() if r.returncode == 0 else ""
 
 
-def make_call(con, day, goals, training=None):
+def make_call(con, day, goals, training=None, graded=None, code=None):
     """Today's call as a calls.csv row: the verdict, every area's level and the plan's targets."""
-    r = engine.readiness(con, day, goals)
+    r = engine.readiness(con, day, goals, graded=graded)
     plan = engine.training_plan(con, day, r["verdict"], r["checkin"], training=training)
     levels = {x["area"]: x["level"] or "" for x in r["signals"]}
     targets = [{"exercise": e["exercise"], "action": e["action"], "target": e["target"], "goal": e["goal"]}
                for e in (plan or {}).get("exercises", [])]
     return {"date": day, "recorded_at": datetime.now().isoformat(timespec="seconds"),
-            "code": _code_version(), "verdict": r["verdict"], "score": r["score"],
+            "code": code or _code_version(), "verdict": r["verdict"], "score": r["score"],
             **{a: levels.get(a, "") for a in AREAS},
             "acwr": "" if r["acwr"] is None else f"{r['acwr']:.3f}",
             "plan": " ".join(x for x in ((plan or {}).get("kind"), (plan or {}).get("variant")) if x),
@@ -89,10 +89,13 @@ def backfill(con, path, goals, days, today=None, training=None):
     the rows say what they are and the same data writes the same file. Never on a real
     person's data: a call written after the session isn't a test of anything. -> rows written."""
     end = date.fromisoformat(today or date.today().isoformat())
+    # Each day's call tallies the sessions before it; grading them once, not once per day,
+    # is what keeps this to a few seconds on a small shared CPU.
+    graded = engine.graded_sessions(con, "1900-01-01", end.isoformat(), goals)
     n = 0
     for k in range(days - 1, -1, -1):
         day = (end - timedelta(days=k)).isoformat()
-        row = dict(make_call(con, day, goals, training), recorded_at=f"{day}T07:00:00", code="backfill")
+        row = dict(make_call(con, day, goals, training, graded, code="backfill"), recorded_at=f"{day}T07:00:00")
         n += record(path, row)
     return n
 
