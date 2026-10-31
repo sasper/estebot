@@ -26,17 +26,23 @@ FIELDS = ("date", "recorded_at", "code", "verdict", "score", *AREAS, "acwr", "pl
 WAIT_UNTIL = 12
 
 
+def waiting(con, now):
+    """{area: what it waits for, in words} for the morning's call; {} when it can be recorded.
+    The page labels the areas from this, so it says the same as the call that gets recorded."""
+    if now.hour >= WAIT_UNTIL:
+        return {}
+    day, night = now.date().isoformat(), (now.date() - timedelta(days=1)).isoformat()
+    missing = {}
+    if not con.execute("SELECT 1 FROM sleep WHERE night=?", (night,)).fetchone():
+        missing["sleep"] = "last night's sleep"
+    if not con.execute("SELECT 1 FROM checkin WHERE date=?", (day,)).fetchone():
+        missing["feel"] = "this morning's check-in"
+    return missing
+
+
 def waiting_for(con, now):
     """What the morning's call still waits for, in words; [] when it can be recorded."""
-    if now.hour >= WAIT_UNTIL:
-        return []
-    day, night = now.date().isoformat(), (now.date() - timedelta(days=1)).isoformat()
-    missing = []
-    if not con.execute("SELECT 1 FROM sleep WHERE night=?", (night,)).fetchone():
-        missing.append("last night's sleep")
-    if not con.execute("SELECT 1 FROM checkin WHERE date=?", (day,)).fetchone():
-        missing.append("this morning's check-in")
-    return missing
+    return list(waiting(con, now).values())
 
 
 def _code_version():

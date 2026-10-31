@@ -250,6 +250,8 @@ table.evidence tr.on td:last-child{color:var(--accent);font-weight:600}
 .tapsay input{flex:1;min-width:0}
 .rscore{font-size:38px;font-weight:700;letter-spacing:-.03em;fill:currentColor;font-variant-numeric:tabular-nums}
 .readiness .vbadge{line-height:1.15}
+.readiness .prov{margin:4px 0 0;font-size:13px;color:var(--text-secondary)}
+.readiness .prov b{color:var(--warn)}
 .why{margin:6px 0 0;font-size:14px;color:var(--text-secondary)}
 .why b{color:var(--lv);font-weight:600}
 .contrib details{border-top:1px solid var(--line)}

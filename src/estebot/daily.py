@@ -2,7 +2,8 @@
 """Daily unattended sync: Hevy, notes, lifting tables, Apple Health feed, web cache, commit.
 
     python -m estebot.daily              run once now
-    python -m estebot.daily --feed       only what a new Health Auto Export upload changes
+    python -m estebot.daily --feed       only what a new Health Auto Export upload changes,
+                                         and the Hevy pull
     python -m estebot.daily --install    schedule it daily via launchd (default 12:00)
                                          and create the runner checkout (below)
     python -m estebot.daily --uninstall
@@ -62,7 +63,11 @@ STEPS = [
 ]
 # After a phone upload: the feed, the tables that read its weigh-ins, and the page's cache.
 # The call too: the morning's first upload brings the night's sleep, so that is when it's made.
-FEED_STEPS = ("apple health feed", "lifting tables", "web cache", "readiness call")
+# Hevy as well, so the morning's first upload brings in yesterday afternoon's workout before
+# the call is made; it used to wait for the noon sync. Optional here: a Hevy outage must not
+# hold up the night's sleep (the full sync still treats it as required).
+FEED_STEPS = ("hevy", "apple health feed", "lifting tables", "web cache", "readiness call")
+FEED_OPTIONAL = ("hevy",)
 PENDING = ".feed-pending"      # written by each upload (web/main.py), taken by the run that reads it
 
 
@@ -151,7 +156,7 @@ def _run(cfg, feed_only):
         print((r.stdout + r.stderr).rstrip())
         if r.returncode != 0:
             _notify(f"{name} failed - see {LOG}")
-            if required:
+            if required and not (feed_only and name in FEED_OPTIONAL):
                 return r.returncode
 
     if cfg.sync.get("keep_feed_days"):

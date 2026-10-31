@@ -163,6 +163,7 @@
       {{ ring|safe }}
       <div>
         <div class="vbadge v-{{ r.verdict }}">{{ verdict_text }}</div>
+        {% if waiting_for %}<p class="prov"><b>Provisional:</b> waiting for {{ waiting_for|join(" and ") }}. The call is kept once {{ "it's" if waiting_for|length == 1 else "they're" }} in, or at noon with what there is.</p>{% endif %}
         <p class="why">{% if r.holds %}Held by a safety rule: {{ r.holds|join(", ") }}.
           {% elif counted %}Held back by
           {% for x in counted %}<b class="lv-{{ x.level }}">{{ AREA[x.area]|lower }}</b>{{ " and " if loop.revindex == 2 else (", " if not loop.last) }}{% endfor %}.
@@ -174,9 +175,10 @@
     <div class="contrib">
       {% for x in r.signals %}
       {% set votes = x.area in r.voting %}
-      <details class="lv-{{ x.level or 'none' }}{{ '' if votes else ' ctx' }}"{{ " open" if x.level == "red" and votes }}>
-        <summary><span class="dot"></span><span class="area">{{ AREA[x.area] }}</span><span class="vote{{ ' on' if votes }}">{{ "votes" if votes else "context" }}</span><span class="state">{{ LEVEL[x.level] }}</span></summary>
-        <p>{{ x.reasons|join("; ") }}</p>
+      {% set wait = waiting.get(x.area) if x.level is none %}
+      <details class="lv-{{ x.level or 'none' }}{{ '' if votes else ' ctx' }}"{{ " open" if (x.level == "red" and votes) or wait }}>
+        <summary><span class="dot"></span><span class="area">{{ AREA[x.area] }}</span><span class="vote{{ ' on' if votes }}">{{ "votes" if votes else "context" }}</span><span class="state">{{ "waiting" if wait else LEVEL[x.level] }}</span></summary>
+        <p>{{ wait or x.reasons|join("; ") }}</p>
       </details>
       {% endfor %}
     </div>
