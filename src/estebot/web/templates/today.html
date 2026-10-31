@@ -271,13 +271,13 @@
   </div>
 
   <details class="card tile" data-tile="weight" open>
-    <summary><div class="thead"><h2>{{ icon("weight") }}Body weight</h2><div class="tline"><b>{{ "%.1f"|format(ws.current) if ws.current is not none else "–" }} lb</b>{% if ws.rate is not none %} · {{ "%+.2f"|format(ws.rate) }} lb a week, 4-week fit{% endif %}</div></div>{{ sparks.weight|safe }}</summary>
+    <summary><div class="thead"><h2>{{ icon("weight") }}Body weight</h2><div class="tline"><b>{{ "%.1f"|format(ws.current) if ws.current is not none else "–" }} lb</b>{% if ws.rate is not none %} · <span class="nowrap">{{ "%+.2f"|format(ws.rate) }} lb a week, 4-week fit</span>{% endif %}</div></div>{{ sparks.weight|safe }}</summary>
     <div class="verdict">
       {# The headline is the 14-day average, not this morning: a day's reading swings ±1.5 lb
          on water, against a real change of ~0.1 lb/day, so a flat morning number says nothing. #}
       <span class="hero">{{ "%.1f"|format(ws.current) if ws.current is not none else "–" }}<span style="font-size:17px;font-weight:500"> lb</span></span>
-      <span class="muted">14-day average{% if latest_w %} · this morning {{ "%.1f"|format(latest_w) }}{% endif %}</span>
-      {% if ws.rate is not none %}<br><span class="muted">{{ "%+.2f"|format(ws.rate) }} lb a week, 4-week fit{% if ws.pct_per_week is not none and ws.pct_per_week > 0 %} · {{ "%.2f"|format(ws.pct_per_week) }}% of body weight{% endif %}</span>{% endif %}
+      <span class="muted"><span class="nowrap">14-day average{% if latest_w %} ·{% endif %}</span>{% if latest_w %} <span class="nowrap">this morning {{ "%.1f"|format(latest_w) }}</span>{% endif %}</span>
+      {% if ws.rate is not none %}<br><span class="muted"><span class="nowrap">{{ "%+.2f"|format(ws.rate) }} lb a week, 4-week fit</span>{% if ws.pct_per_week is not none and ws.pct_per_week > 0 %} · <span class="nowrap">{{ "%.2f"|format(ws.pct_per_week) }}% of body weight</span>{% endif %}</span>{% endif %}
     </div>
     {% set PACE = {"on_pace": ("Within planned pace", "pill-ok"), "slow": ("Slower than planned", "pill-warn"),
                    "fast": ("Faster than planned", "pill-warn"), "gaining": ("Gaining", "pill-warn")} %}
@@ -327,25 +327,23 @@
 
   {% set st = strength %}
   <details class="card tile" data-tile="strength">
-    <summary><div class="thead"><h2>{{ icon("strength") }}Strength</h2><div class="tline">{% if strength.dots %}Squat + bench + deadlift <b>{{ "{:,.0f}".format(strength.total) }} lb</b> · DOTS {{ "%.0f"|format(strength.dots) }}{% else %}Best estimated 1RM, last {{ strength.weeks }} weeks{% endif %}</div></div></summary>
+    <summary><div class="thead"><h2>{{ icon("strength") }}Strength</h2><div class="tline">{% if strength.dots %}Squat + bench + deadlift <b>{{ "{:,.0f}".format(strength.total) }} lb</b> · <span class="nowrap">DOTS {{ "%.0f"|format(strength.dots) }}</span>{% else %}Best estimated 1RM, last {{ strength.weeks }} weeks{% endif %}</div></div></summary>
     {% if st.body_lb %}
-    <div style="overflow-x:auto">
     <table class="gaps">
       <tr><th>Lift</th><th class="n">e1RM</th><th class="n">× body weight</th><th>Level</th><th class="n">Next level at</th>{% if st.goal_lb %}<th>At {{ '%g'|format(st.goal_lb) }} lb</th>{% endif %}</tr>
       {% for x in st.rows %}
       <tr><td>{{ x.label }}</td>
         {% if x.e1rm %}
-        <td class="n">{{ "%.0f"|format(x.e1rm) }} lb</td>
-        <td class="n">{{ "%.2f"|format(x.ratio) }}</td>
-        <td><b>{{ x.level|capitalize }}</b></td>
-        <td class="n">{{ "%.0f"|format(x.next_at) ~ " lb" if x.next_at else "–" }}</td>
-        {% if st.goal_lb %}<td>{{ x.goal_level|capitalize }}</td>{% endif %}
+        <td class="n" data-k="e1RM">{{ "%.0f"|format(x.e1rm) }} lb</td>
+        <td class="n" data-k="× body weight">{{ "%.2f"|format(x.ratio) }}</td>
+        <td data-k="Level"><b>{{ x.level|capitalize }}</b></td>
+        <td class="n" data-k="Next level at">{{ "%.0f"|format(x.next_at) ~ " lb" if x.next_at else "–" }}</td>
+        {% if st.goal_lb %}<td data-k="At {{ '%g'|format(st.goal_lb) }} lb">{{ x.goal_level|capitalize }}</td>{% endif %}
         {% else %}
         <td colspan="{{ 5 if st.goal_lb else 4 }}" class="muted small">not logged in the last {{ st.weeks }} weeks</td>
         {% endif %}</tr>
       {% endfor %}
     </table>
-    </div>
     {% if st.dots %}
     <p style="margin:10px 0 0">Squat + bench + deadlift: <b>{{ "{:,.0f}".format(st.total) }} lb</b>, DOTS <b>{{ "%.0f"|format(st.dots) }}</b>{% if st.goal_dots %} ({{ "%.0f"|format(st.goal_dots) }} at {{ '%g'|format(st.goal_lb) }} lb with the same lifts){% endif %}.</p>
     {% endif %}
@@ -383,11 +381,11 @@
       <tr><th>Nutrient</th><th class="n">Food</th><th class="n">+ Supplements</th><th class="n">Total</th><th class="n">Of reference</th><th>Foods that close it</th></tr>
       {% for g in nut.gaps %}
       <tr><td>{{ g.nutrient }}</td>
-        <td class="n">{{ amt(g, g.food) }}</td>
-        <td class="n">{{ amt(g, g.supplements) if g.supplements else "–" }}</td>
-        <td class="n">{{ amt(g, g.mean) }} {{ g.unit }}</td>
-        <td class="n"><span class="{{ 'behind' if g.pct < 75 else '' }}">{{ "%.0f"|format(g.pct) }}%</span></td>
-        <td class="small">{{ g.foods }}{% if g.note %}<div class="muted">{{ g.note }}</div>{% endif %}</td></tr>
+        <td class="n" data-k="Food">{{ amt(g, g.food) }}</td>
+        <td class="n" data-k="+ Supplements">{{ amt(g, g.supplements) if g.supplements else "–" }}</td>
+        <td class="n" data-k="Total">{{ amt(g, g.mean) }} {{ g.unit }}</td>
+        <td class="n" data-k="Of reference"><span class="{{ 'behind' if g.pct < 75 else '' }}">{{ "%.0f"|format(g.pct) }}%</span></td>
+        <td class="small text">{{ g.foods }}{% if g.note %}<div class="muted">{{ g.note }}</div>{% endif %}</td></tr>
       {% endfor %}
     </table>
     {% else %}<p class="small">No gaps on the days with enough data.</p>{% endif %}
@@ -397,10 +395,10 @@
       <tr><th>Nutrient</th><th class="n">Counted</th><th class="n">Upper limit</th><th class="n">Of limit</th><th>Note</th></tr>
       {% for g in nut.near_limit %}
       <tr><td>{{ g.nutrient }}</td>
-        <td class="n">{{ amt(g, g.amount) }} {{ g.unit }}</td>
-        <td class="n">{{ "{:,.0f}".format(g.limit) if g.limit >= 20 else g.limit }} {{ g.unit }}</td>
-        <td class="n"><span class="{{ 'behind' if g.limit_pct >= 75 else '' }}">{{ "%.0f"|format(g.limit_pct) }}%</span></td>
-        <td class="small muted">{{ "supplements only: the limit applies to supplemental intake" if g.basis == "supplements" else "food + supplements" }}{% if g.note %}. {{ g.note }}{% endif %}</td></tr>
+        <td class="n" data-k="Counted">{{ amt(g, g.amount) }} {{ g.unit }}</td>
+        <td class="n" data-k="Upper limit">{{ "{:,.0f}".format(g.limit) if g.limit >= 20 else g.limit }} {{ g.unit }}</td>
+        <td class="n" data-k="Of limit"><span class="{{ 'behind' if g.limit_pct >= 75 else '' }}">{{ "%.0f"|format(g.limit_pct) }}%</span></td>
+        <td class="small muted text">{{ "supplements only: the limit applies to supplemental intake" if g.basis == "supplements" else "food + supplements" }}{% if g.note %}. {{ g.note }}{% endif %}</td></tr>
       {% endfor %}
     </table>
     {% endif %}
@@ -416,12 +414,12 @@
         <td><span class="muted">{{ p.id }}</span> {{ p.title }}
           {% if p.progress and p.progress.detail %}<div class="muted small">{{ p.progress.detail }}</div>{% endif %}
           {% if p.caveat %}<div class="muted small">{{ p.caveat }}</div>{% endif %}</td>
-        <td class="nowrap">{{ p.resolves|shortdate if p.resolves else "–" }}{% if p.days_left is defined %}<div class="muted small">{{ p.days_left }} days</div>{% endif %}</td>
-        <td class="n">{% if p.progress and p.progress.value %}{{ p.progress.value }}
+        <td class="nowrap" data-k="Resolves">{{ p.resolves|shortdate if p.resolves else "–" }}{% if p.days_left is defined %}<div class="muted small">{{ p.days_left }} days</div>{% endif %}</td>
+        <td class="n" data-k="So far">{% if p.progress and p.progress.value %}{{ p.progress.value }}
           <div><span class="pill {{ 'pill-ok' if p.progress.inside else 'pill-warn' }}">{{ "currently inside" if p.progress.inside else "currently outside" }}</span></div>
           {% elif p.progress %}<span class="muted">no data yet</span>{% else %}<span class="muted">judged in the ledger</span>{% endif %}</td>
-        <td class="small">{{ p.progress.target if p.progress else "–" }}</td>
-        <td class="small">{% if p.coverage %}{% set c = p.coverage %}<span class="pill {{ 'pill-ok' if c.on_track else 'pill-warn' }}">{{ "enough data" if c.on_track else "data behind" }}</span>
+        <td class="small text" data-k="Target">{{ p.progress.target if p.progress else "–" }}</td>
+        <td class="small text" data-k="Data coverage">{% if p.coverage %}{% set c = p.coverage %}<span class="pill {{ 'pill-ok' if c.on_track else 'pill-warn' }}">{{ "enough data" if c.on_track else "data behind" }}</span>
           <div class="muted">{{ c.label }}: {{ c.logged }} so far ({{ c.need }} needed{% if p.resolves %} by {{ p.resolves|shortdate }}{% endif %}){% if c.excused %}, {{ c.excused }} excused{% endif %}{% if c.gap is not none %}; longest gap {{ c.gap }} (max {{ c.max_gap }}){% endif %}</div>{% else %}<span class="muted">–</span>{% endif %}</td>
       </tr>
       {% else %}
@@ -462,7 +460,7 @@
   </details>
 
   <details class="card tile" data-tile="load">
-    <summary><div class="thead"><h2>{{ icon("load") }}Training load</h2><div class="tline">Last 7 days at {{ "%.2f"|format(r.acwr) ~ "×" if r.acwr is not none else "–" }} your 4-week norm</div></div>{{ sparks.load|safe }}</summary>
+    <summary><div class="thead"><h2>{{ icon("load") }}Training load</h2><div class="tline">Last 7 days at {{ "%.2f"|format(r.acwr) ~ "×" if r.acwr is not none else "–" }} your <span class="nowrap">4-week norm</span></div></div>{{ sparks.load|safe }}</summary>
     {% for title, svg in load_charts %}<h3 class="charttitle">{{ title }}</h3>{{ svg|safe }}{% endfor %}
     {% call info() %}<p><b>Exercise minutes</b> are Apple's, from all activity. <b>Hard sets</b> are sets at RPE 7 or more, or every working set where no RPE was logged. <b>Tonnage</b> is logged weight &times; reps; pull-ups add sets, not pounds.</p><p><b>Load ratio</b> is exercise minutes a day over the last 7 days divided by the same over the last 4 weeks, through yesterday. 1.0 is a normal week. Over 1.3 is a sharp jump and over 1.5 is where injury risk climbs; under 0.8 is a light week, flagged because a big session straight after one is the classic way to get hurt.</p>{% endcall %}
   </details>
