@@ -23,3 +23,16 @@ def test_a_morning_call_waits_for_sleep_and_the_check_in_until_noon(con):
     assert calls.waiting_for(con, morning) == []
     con.execute("DELETE FROM checkin")
     assert calls.waiting_for(con, datetime(2026, 10, 30, 12, 0)) == []   # noon: record what there is
+
+
+def test_an_upload_after_the_days_call_doesnt_make_another(con, monkeypatch, capsys):
+    # Every upload's sync ends with this step, and making a call grades every session (~10 s
+    # on the server); only the day's first is kept, so the rest were thrown away.
+    from datetime import date
+    from estebot import config
+    from estebot.analysis import calls
+    path = config.load().data_file("calls.csv")
+    calls.record(path, {"date": date.today().isoformat(), "verdict": "normal"})
+    monkeypatch.setattr(calls, "make_call", lambda *a, **k: (_ for _ in ()).throw(AssertionError("made")))
+    assert calls.main([]) == 0
+    assert "already recorded today" in capsys.readouterr().out
