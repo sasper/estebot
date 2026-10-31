@@ -130,6 +130,23 @@ def _load_series(con, end, days):
         "SELECT date, exercise_min FROM daily WHERE date BETWEEN ? AND ?", (start, end))}
     return [got.get(s(x), 0.0) for x in daterange(start, end)]
 
+def _training_series(con, end, days):
+    """Training minutes a day over `days` days ending `end`, for monotony: 0 on a day the
+    calendar calls rest (is_training_day), else the longer of the lifting session and the
+    non-walk workouts. Monotony on Apple's exercise minutes counted a rest-day walk like a
+    lifting session and said "no easy day in the last 7" over a calendar showing two rest
+    days. The ratio (acwr) stays on exercise minutes: it asks how much moving, not training."""
+    start = s(d(end) - timedelta(days=days-1))
+    lift = {r["date"]: r["session_min"] or 0.0 for r in con.execute(
+        "SELECT date, session_min FROM lift_session WHERE date BETWEEN ? AND ?", (start, end))}
+    work = {}
+    q = (f"SELECT date, SUM(duration_min) m FROM workout WHERE date BETWEEN ? AND ? "
+         f"AND activity NOT IN ({','.join('?' * len(NOT_TRAINING))}) GROUP BY date")
+    for r in con.execute(q, (start, end, *NOT_TRAINING)):
+        work[r["date"]] = r["m"] or 0.0
+    return [max(lift.get(k, 0.0), work.get(k, 0.0)) if is_training_day(con, k) else 0.0
+            for k in map(s, daterange(start, end))]
+
 def acwr(con, day):
     """Acute:chronic workload ratio - 7-day mean load over 28-day mean load.
 
@@ -286,7 +303,9 @@ def _signal(area, level, reasons):
 
 def _load_signal(con, prior):
     r = acwr(con, prior)
-    mono = core.monotony(_load_series(con, prior, 7))
+    week = _training_series(con, prior, 7)
+    mono = core.monotony(week)
+    rest = sum(1 for x in week if x == 0)
     # Low is amber too: a spike straight off a layoff week is the setup that once preceded
     # an injury the next day.
     lv_r = None if r is None else ("red" if r > 1.5 else "amber" if (r > 1.3 or r < 0.8) else "green")
@@ -297,11 +316,15 @@ def _load_signal(con, prior):
                else ": within the normal range")
     ratio = r is not None and (f"last 7 days averaged {acute:.0f} exercise min a day vs {chronic:.0f} "
                                f"over the last 4 weeks ({r:.2f}×){meaning}")
-    alike = (None if mono is None else "no easy day in the last 7, the same exercise minutes every day"
+    # The words say what the calendar shows: the rest days in the week, then whether the
+    # training days were alike. "No easy day" over two rest days read as a contradiction.
+    rests = ("no rest day" if rest == 0 else "1 rest day" if rest == 1 else f"{rest} rest days") + " in the last 7"
+    alike = (None if mono is None else f"{rests}, the same training minutes every day"
              if mono == float("inf")
-             else f"no easy day in the last 7, every day about as long as the next (monotony {mono:.1f})"
+             else f"{rests}, " + ("every session about as long as the next" if rest == 0 else
+                                 "but the training days all about the same length") + f" (monotony {mono:.1f})"
              if lv_m != "green"
-             else f"a mix of harder and easier days in the last 7 (monotony {mono:.1f})")
+             else f"{rests}, with a mix of longer and shorter sessions (monotony {mono:.1f})")
     return _signal("load", core.worst(lv_r, lv_m), [(lv_r, ratio), (lv_m, alike)]), r
 
 def _effort_signal(con, prior):
@@ -409,8 +432,12 @@ def _pace_signal(con, day, goals):
     if m.get("pct") is None:
         return _signal("pace", None, ["not enough weigh-ins for a 4-week comparison"])
     lv = "red" if m["pct"] > 1.5 * hi else "amber" if m["pct"] > hi else "green"
+    # Readiness only asks whether the loss is fast enough to cost recovery. Said as a bare
+    # "good" beside the weight card's "slower than planned", it read as a contradiction.
     return _signal("pace", lv, [f"losing {m['pct']:.2f}% of body weight a week (last 4 weeks vs the 4 before)"
-                                + (", fast enough to cost recovery" if lv != "green" else "")])
+                                + (", fast enough to cost recovery" if lv != "green" else
+                                   f": not fast enough to cost recovery (above {hi:g}% a week); "
+                                   "this checks too fast, not too slow")])
 
 POSITIVE_LAST_SESSION = 0.8   # share of targets met that makes a strong last session
 
@@ -680,6 +707,12 @@ STANDARD_LIFTS = (("squat", "Squat", "Barbell Squat"),
                   ("bench", "Bench press", "Barbell Bench Press"),
                   ("deadlift", "Deadlift", "Barbell Deadlift"),
                   ("press", "Overhead press", "Barbell Military Press"))
+
+def lift_label(exercise):
+    """The name the page uses for a lift: the strength table's for a standard lift, so the
+    press is "Overhead press" there and in the predictions, not "Military Press" in one."""
+    return next((label for _, label, ex in STANDARD_LIFTS if ex == exercise),
+                exercise.removeprefix("Barbell "))
 
 def strength_standards(con, day, body_lb, goal_lb=None, weeks=8):
     """Each main lift's best e1RM over the last `weeks` against bodyweight-scaled standards,

@@ -245,6 +245,7 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
     tweak, back_days = None, {}
 
     trends = []                                    # the weight trend each morning
+    lifted, walked, slept = {}, set(), {}          # what each day held, for the notes
     for i in range(days):
         trends.append(trend)
         day = start + timedelta(days=i)
@@ -291,9 +292,11 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
                                           mins * rng.uniform(5.5, 7), "", rng.gauss(112, 6),
                                           rng.gauss(152, 6), "1", "Apple Watch"))
             sets += [(iso(i), *x) for x in session]
+            lifted[i] = {n for n, *_ in session}
         walk = None
         if not lift_day and not sick and not last and rng.random() < (0.7 if what == "travel" else 0.45):
             walk = rng.uniform(26, 42)
+            walked.add(i)
             indoor = what != "travel"
             hh = 19 if dow < 5 else 11
             workouts.append(T.workout_row(f"{iso(i)} {hh:02d}:{rng.randrange(0, 40):02d}:00 -0500",
@@ -384,12 +387,15 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
             if i <= busy_until: hours = rng.gauss(5.5, 0.35)
             bed = datetime(day.year, day.month, day.day, 22, 15) + timedelta(
                 minutes=rng.randrange(0, 75) + (50 if dow in (4, 5) else 0))
-            segments.extend(_night(rng, bed, hours))
+            night = _night(rng, bed, hours)
+            segments.extend(night)
+            # asleep as sleep.csv will measure it, so a note can't disagree with the table
+            slept[i] = sum((b - a).total_seconds() for a, b, stage in night if stage != "awake") / 3600
             sleep_prev = hours
             nights.append(hours)
         heavy_prev = heavy
 
-    _write_notes(rng, notes, days, iso, ev, tweak)
+    _write_notes(rng, notes, days, iso, ev, tweak, lifted, walked, slept)
     _write(out, start, end, days, weights, daily, workouts, segments, sets, sess_min,
            nutrition, nutrients, notes, trends)
     return out
@@ -415,10 +421,23 @@ def _night(rng, bed, hours):
     return segs
 
 
-FEEL_GOOD = ["felt strong today", "good session, felt good", "felt great, slept well",
-             "strong session, everything moved fast", "feeling good, appetite under control"]
-FEEL_LOW = ["low energy all day, the cut is catching up", "rough night, woke at 3 and lay awake",
-            "legs heavy and low energy, cut the last set", "wiped after work, trained anyway"]
+# How-I-feel notes, each with what the day has to hold for it to be true: a note saying it
+# slept badly over a 7-hour night, or felt strong on bench on a rest day, contradicted the page
+# beside it. day(i) is {"lift": exercise names or None, "walk", "night": hours slept before}.
+FEEL_GOOD = [("felt strong today", lambda x: x["lift"]),
+             ("good session, felt good", lambda x: x["lift"]),
+             ("felt great, slept well", lambda x: x["night"] >= 7),
+             ("strong session, everything moved fast", lambda x: x["lift"]),
+             ("feeling good, appetite under control", lambda x: True),
+             ("rest day, legs feel fresh", lambda x: not x["lift"]),
+             ("nice easy walk, feeling good", lambda x: x["walk"])]
+FEEL_LOW = [("low energy all day, the cut is catching up", lambda x: True),
+            ("rough night, woke at 3 and lay awake", lambda x: x["night"] < 6.3),
+            ("legs heavy and low energy, cut the last set", lambda x: x["lift"]),
+            ("wiped after work, trained anyway", lambda x: x["lift"]),
+            ("hungry all evening, the cut is catching up", lambda x: True)]
+NOTE_GAP = 60   # days before a feel note's wording comes round again, so none repeats on the page
+BENCH = ("Barbell Bench Press", "Dumbbell Bench Press")
 
 
 def _runs(ev, what):
@@ -432,36 +451,55 @@ def _runs(ev, what):
     return out
 
 
-def _write_notes(rng, notes, days, iso, ev, tweak):
-    """health-context.txt lines: events, the back, and a scatter of how-I-feel notes."""
+def _write_notes(rng, notes, days, iso, ev, tweak, lifted, walked, slept):
+    """health-context.txt lines: events, the back, and a scatter of how-I-feel notes, each
+    one true of its day (the session, the walk, the night before)."""
+    day = lambda i: {"lift": lifted.get(i), "walk": i in walked, "night": slept.get(i - 1, 7.0)}
     for a, b in _runs(ev, "sick"):
         notes.append((iso(a), f"{iso(a)}..{iso(b)} | sick, head cold and a fever, no training"))
         notes.append((iso(a), f"{iso(a)} | sore throat, slept badly"))
-        notes += [(iso(i), f"{iso(i)} | low energy, stayed home") for i in range(a + 1, b + 1)]
+        later = ["still sick, stayed home", "cold easing, stayed home anyway", "still sniffling, rested"]
+        notes += [(iso(i), f"{iso(i)} | {later[(i - a - 1) % len(later)]}") for i in range(a + 1, b + 1)]
     for a, b in _runs(ev, "stomach"):
         notes.append((iso(a), f"{iso(a)}..{iso(b)} | stomach bug, sick for two days, barely ate"))
-        notes += [(iso(i), f"{iso(i)} | wiped out, nothing stays down") for i in range(a, b + 1)]
+        later = ["wiped out, nothing stays down", "a bit better, kept some toast down"]
+        notes += [(iso(i), f"{iso(i)} | {later[min(i - a, len(later) - 1)]}") for i in range(a, b + 1)]
     for a, b in _runs(ev, "travel"):
         notes.append((iso(a), f"{iso(a)}..{iso(b)} | work travel, hotel gym was a treadmill only"))
     for a, _ in _runs(ev, "deload"):
         notes.append((iso(a), f"{iso(a)} | deload week, everything light on purpose"))
     if tweak is not None:
+        squat = bool({"Barbell Squat", "Barbell Front Squat"} & (lifted.get(tweak + 4) or set()))
         notes += [(iso(tweak), f"{iso(tweak)} | tweaked my lower back on the last deadlift set, stopped there"),
                   (iso(tweak + 1), f"{iso(tweak + 1)} | lower back sore this morning, resting it"),
-                  (iso(tweak + 2), f"{iso(tweak + 2)} | back is tired but moving better, walked instead"),
-                  (iso(tweak + 4), f"{iso(tweak + 4)} | back fine again, kept the squats light")]
+                  (iso(tweak + 2), f"{iso(tweak + 2)} | back is tired but moving better, "
+                                   + ("walked instead" if tweak + 2 in walked else "rested it one more day")),
+                  (iso(tweak + 4), f"{iso(tweak + 4)} | back fine again"
+                                   + (", kept the squats light" if squat else
+                                      ", trained as normal" if lifted.get(tweak + 4) else ""))]
     busy = {i for i in ev} | ({tweak + k for k in range(5)} if tweak is not None else set())
-    # the note that needs an answer: recent, so the page's "needs an answer" points at it
-    mid = next(i for i in range(days - 3, 0, -1) if i not in busy)
-    notes.append((iso(mid), f"{iso(mid)} | poor sleep but felt strong on bench"))
-    rec = int(days * 0.2)
+    # The note that needs an answer (a low and a high cue together): recent, on a bench day,
+    # so the page's "needs an answer" points at it. "Poor sleep" only after a short night.
+    mid = next((i for i in range(days - 3, 0, -1) if i not in busy and BENCH[0] in (lifted.get(i) or ())),
+               next(i for i in range(days - 3, 0, -1) if i not in busy and lifted.get(i)))
+    notes.append((iso(mid), f"{iso(mid)} | " + ("poor sleep" if day(mid)["night"] < 6.3 else "low energy this morning")
+                  + (" but felt strong on bench" if lifted[mid] & set(BENCH) else " but the session felt strong")))
+    rec = next(i for i in range(int(days * 0.2), days) if "Barbell Squat" in (lifted.get(i) or ()))
     notes.append((iso(rec), f"{iso(rec)} | needed extra time between sets on squats"))
+    used = {}                                      # text -> the last day it was written
     for i in range(3, days - 2):
         if i in busy or i == mid or i == rec or rng.random() > 0.14:
             continue
-        text = rng.choice(FEEL_LOW if rng.random() < 0.3 else FEEL_GOOD)
+        pool = FEEL_LOW if rng.random() < 0.3 else FEEL_GOOD
+        fits = [text for text, ok in pool if ok(day(i)) and i - used.get(text, -NOTE_GAP) >= NOTE_GAP]
+        if not fits:
+            continue
+        text = rng.choice(fits)
+        used[text] = i
         notes.append((iso(i), f"{iso(i)} | {text}"))
-    notes.append((iso(days - 1), f"{iso(days - 1)} | slept well, felt good this morning"))
+    last = day(days - 1)["night"]
+    notes.append((iso(days - 1), f"{iso(days - 1)} | " + ("slept well, felt good this morning" if last >= 7 else
+                  "slept OK, feeling fine this morning" if last >= 6.3 else "short night, a bit flat this morning")))
 
 
 def _csv(path, header, rows):
@@ -529,28 +567,32 @@ def _write_lifting(tidy, weights, sets, sess_min):
 
 def _write_ledger(out, start, end, days, trends):
     """Three open predictions and one resolved, dated relative to the span so they stay
-    open when --end moves."""
+    open when --end moves. The cut starts on the first day of the data, and every
+    prediction measures from that one start: P-001 used to fit its line from mid-span while
+    P-002 and P-003 took their baselines from the first four weeks, so the page gave the
+    cut two start dates."""
     a = lambda k: (start + timedelta(days=k)).isoformat()
     resolves = (end + timedelta(days=60)).isoformat()
-    base = (a(0), a(27))
-    mid = a(days // 2)
+    cut = a(0)
+    base = (cut, a(27))
     # P-001 is the planned pace (MIN_PCT to MAX_PCT of body weight a week) in pounds, at the
-    # trend the day it was registered.
-    at = trends[days // 2]
+    # trend the day the cut started.
+    at = trends[0]
     lo, hi = -round(MAX_PCT / 100 * at, 1), -round(MIN_PCT / 100 * at, 1)
     (out / "ledger.md").write_text(f"""# Prediction ledger
 
-Each prediction is written down before the data that settles it exists.
+Each prediction is written down before the data that settles it exists. The cut started
+{cut}.
 
 ### P-001 - The cut keeps the planned pace, {MIN_PCT:g} to {MAX_PCT:g}% of body weight a week, until it ends
-- **Registered:** {mid}
+- **Registered:** {cut}
 - **Resolves:** {resolves}
 - **Status:** open
-- **Criterion:** least-squares slope of every weigh-in from registration to resolution,
+- **Criterion:** least-squares slope of every weigh-in from the start of the cut to resolution,
   between {lo:.1f} and {hi:.1f} lb/week ({MIN_PCT:g} to {MAX_PCT:g}% of the {at:.0f} lb trend at
-  registration), with weigh-ins on at least 75% of days.
+  the start), with weigh-ins on at least 75% of days.
 
-### P-002 - Squat, bench, deadlift and press stay within 5% of their pre-cut best
+### P-002 - Squat, bench, deadlift and press stay within 5% of their best at the start of the cut
 - **Registered:** {a(14)}
 - **Resolves:** {resolves}
 - **Status:** open
@@ -571,9 +613,9 @@ Each prediction is written down before the data that settles it exists.
 
 [P-001]
 metric = "weight_slope"
-window = ["{mid}", "{resolves}"]
+window = ["{cut}", "{resolves}"]
 band = [{lo:.1f}, {hi:.1f}]
-coverage = {{ table = "weight", window = ["{mid}", "{resolves}"], need = {int(0.75 * (end + timedelta(days=60) - date.fromisoformat(mid)).days)}, max_gap = 7, label = "weigh-ins" }}
+coverage = {{ table = "weight", window = ["{cut}", "{resolves}"], need = {int(0.75 * (days + 60))}, max_gap = 7, label = "weigh-ins" }}
 
 [P-002]
 metric = "e1rm_median_change"

@@ -314,3 +314,20 @@ def test_saving_todays_check_in_records_the_call_and_a_past_one_does_not(main, c
     save(main, (date.today() - timedelta(days=3)).isoformat(), "ok", 2)
     assert len(main.recorded) == 1
     assert "call uses it" in today_page(main)
+
+
+def test_the_scale_example_asks_what_this_week_shows(con):
+    # The example asked "Why did the scale barely move this week?" beside a weight card
+    # saying the last 7 days lost more than the 4-week pace.
+    from datetime import date, timedelta
+    from estebot.web import examples
+    day0 = date(2026, 9, 1)
+    # flat for seven weeks, then three pounds off in the last week
+    rows = [((day0 + timedelta(days=i)).isoformat(), 200.0 if i < 49 else 197.0) for i in range(56)]
+    con.executemany("INSERT INTO weight (date, weight_lb) VALUES (?, ?)", rows)
+    day = rows[-1][0]
+    ws = {"rate": 0.0, "current": 199.0}
+    q = examples._scale(con, day, {}, ws)["q"]
+    assert "barely" not in q and "more" in q
+    con.execute("UPDATE weight SET weight_lb = 200.4 WHERE date > ?", ((day0 + timedelta(days=48)).isoformat(),))
+    assert examples._scale(con, day, {}, ws)["q"] == "Why did the scale go up this week?"

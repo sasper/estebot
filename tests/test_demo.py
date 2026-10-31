@@ -1,5 +1,5 @@
 import importlib
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -74,3 +74,45 @@ def test_the_goal_is_ahead_of_the_trend_and_p001_is_the_planned_pace(tmp_path):
     k = cfg["max_loss_pct_per_week"] / cfg["min_loss_pct_per_week"]
     assert hi < 0 and lo == pytest.approx(k * hi, abs=0.15)
     assert "0.5 to 1% of body weight" in (out / "ledger.md").read_text()
+
+
+def test_the_notes_are_true_of_their_days(tmp_path):
+    # The demo's notes were drawn without looking at the day: "poor sleep but felt strong on
+    # bench" sat on a rest day after a 7.3-hour night, and one wording came round three times
+    # in a month of notes on the page.
+    import csv, re
+    from collections import defaultdict
+    from datetime import timedelta
+    out = demo.generate(tmp_path / "d", end=END)
+    slept = {r["night"]: float(r["asleep_hr"]) for r in csv.DictReader(open(out / "tidy" / "sleep.csv"))}
+    lifted = defaultdict(set)
+    for r in csv.DictReader(open(out / "tidy" / "sets.csv")):
+        lifted[r["date"]].add(r["exercise"])
+    seen = {}
+    for line in (out / "health-context.txt").read_text().splitlines()[1:]:
+        key, text = line.split(" | ", 1)
+        day = key[:10]
+        night = slept.get((date.fromisoformat(day) - timedelta(days=1)).isoformat(), 7.0)
+        if re.search(r"slept well|felt great", text):
+            assert night >= 7, line
+        if re.search(r"poor sleep|rough night", text):
+            assert night < 6.5, line
+        if re.search(r"bench|session|felt strong today|trained anyway|squats", text):
+            assert lifted.get(day), line
+        if "bench" in text:
+            assert any("Bench" in x for x in lifted[day]), line
+        if ".." not in key and text in seen:
+            assert (date.fromisoformat(day) - date.fromisoformat(seen[text])).days >= 60, line
+        seen[text] = day
+
+
+def test_every_prediction_starts_at_the_one_cut_start(tmp_path):
+    # P-001 fitted its line from mid-span while P-002 and P-003 took baselines from the
+    # first four weeks: the page gave the cut two start dates.
+    import tomllib
+    out = demo.generate(tmp_path / "d", end=END, days=200)
+    specs = tomllib.loads((out / "predictions.toml").read_text())
+    start = (END - timedelta(days=199)).isoformat()
+    assert specs["P-001"]["window"][0] == start
+    assert specs["P-002"]["baseline"][0] == specs["P-003"]["baseline"][0] == start
+    assert f"The cut started\n{start}" in (out / "ledger.md").read_text()
