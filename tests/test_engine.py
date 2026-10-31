@@ -390,6 +390,22 @@ def test_the_evidence_tallied_from_sessions_graded_once_matches_grading_afresh(c
     for end in days[2:]:
         assert engine.evidence(con, days[0], end, {}, graded=graded) == engine.evidence(con, days[0], end, {})
 
+def test_sessions_are_graded_once_per_database_change_not_per_day(con):
+    # Changing the day on the page regraded every session (~10 s on the server); the grades
+    # don't depend on the day, so they're kept until the database file changes.
+    import os
+    from estebot.analysis import engine
+    con.execute("INSERT INTO lift_session (date, n_sets) VALUES ('2026-09-01', 5)")
+    con.execute("INSERT INTO lift_set (date, exercise, set_idx, weight_lb, reps, rpe, set_type) "
+                "VALUES ('2026-09-01', 'Barbell Squat', 1, 300, 5, 8, 'normal')")
+    con.commit()
+    first = engine.graded_for(con, {})
+    assert engine.graded_for(con, {}) is first and engine.stale_graded() == []
+    path = con.execute("PRAGMA database_list").fetchone()[2]
+    os.utime(path, (0, os.path.getmtime(path) + 5))           # the sync wrote to it
+    assert [p for p, _ in engine.stale_graded()] == [path]
+    assert engine.graded_for(con, {}) is not first and engine.stale_graded() == []
+
 def test_a_good_check_in_earns_going_hard_only_once_it_has_a_record(con):
     # "Go all out" came too easily: on a day with nothing flagged it was the default. A good
     # check-in is a reason to go hard only when days with one have gone better, and with no
