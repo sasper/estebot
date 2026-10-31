@@ -3,7 +3,7 @@
 Every number the app shows or acts on is produced here, in plain arithmetic, so it can
 be checked by hand. The LLM layer explains these outputs; it never produces them.
 """
-import os, re, statistics as st
+import os, re, statistics as st, threading
 from dataclasses import dataclass
 from datetime import date, timedelta
 from estebot import config, core
@@ -491,20 +491,45 @@ def readiness(con, day, goals, voting="auto", graded=None):
     }
 
 _earned_cache = {}
+_graded_cache = {}    # database file -> (its mtime when graded, graded_sessions rows, goals)
+_graded_lock = threading.Lock()
+
+def graded_for(con, goals):
+    """Every session in the database graded (graded_sessions), cached per database file until
+    it changes. A row doesn't depend on the day being viewed, so changing the day costs only
+    the tally; regrading 1,100 sessions took ~10 s on the server, on every day not yet
+    viewed. One at a time, so the warmer (web/main.py) and a request don't both grade."""
+    path = con.execute("PRAGMA database_list").fetchone()[2]
+    if not path:
+        return graded_sessions(con, "1900-01-01", "9999-12-31", goals)
+    with _graded_lock:
+        mtime = os.path.getmtime(path)
+        hit = _graded_cache.get(path)
+        if not (hit and hit[0] == mtime):
+            hit = _graded_cache[path] = (mtime, graded_sessions(con, "1900-01-01", "9999-12-31", goals), goals)
+        return hit[1]
+
+def stale_graded():
+    """[(database file, goals)] graded before and changed since: what the warmer regrades."""
+    return [(path, goals) for path, (mtime, _, goals) in list(_graded_cache.items())
+            if os.path.exists(path) and os.path.getmtime(path) != mtime]
 
 def earned(con, day, goals, graded=None):
     """{"voting": areas whose flagged days went worse, "hard": reasons to go hard whose days
     went better, "evidence": the table they came from}, over every session before `day`. Cached per database
-    file and its last change: the evidence regrades every session, about a second on a long
-    history, and the page asks on every load. `graded` (graded_sessions) skips the regrading,
-    for a caller asking about many days."""
+    file, day and the file's last change; the sessions are graded once per change (graded_for)
+    and only tallied per day. `graded` passes rows already made, for a caller asking about
+    many days."""
     path = con.execute("PRAGMA database_list").fetchone()[2]
     key = (path, day, os.path.getmtime(path)) if path else None
     if key not in _earned_cache:
-        ev = evidence(con, "1900-01-01", s(d(day) - timedelta(days=1)), goals, graded=graded)
+        ev = evidence(con, "1900-01-01", s(d(day) - timedelta(days=1)), goals,
+                      graded=graded if graded is not None else graded_for(con, goals))
         got = {"voting": ev["voting"], "hard": ev["hard"], "evidence": ev}
         if key is None:
             return got
+        for k in [k for k in _earned_cache if k[0] == path and k[2] != key[2]]:
+            del _earned_cache[k]                      # a changed file's old tallies
         _earned_cache[key] = got
     return _earned_cache[key]
 

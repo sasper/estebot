@@ -1,6 +1,7 @@
 """FastAPI app. Thin layer over analysis/engine.py - it formats, it does not compute."""
-import os, re, statistics as st, subprocess, sys
+import os, re, statistics as st, subprocess, sys, threading, time
 from collections import Counter
+from contextlib import asynccontextmanager, closing
 from dataclasses import replace
 import logging
 from datetime import date, timedelta
@@ -20,7 +21,37 @@ from estebot.web import auth, chat, checkin_text, db, charts, examples, people
 
 log = logging.getLogger("estebot")
 HERE = os.path.dirname(__file__)
-app = FastAPI(title="health")
+WARM_EVERY = 30   # seconds
+
+def _warm():
+    """Regrade a database soon after it changes (an upload's sync, a check-in, the noon sync),
+    in the background, so the next page load finds the morning call's evidence ready
+    instead of grading every session while someone waits. Everyone once at start: a deploy
+    restarts the server with nothing graded."""
+    try:
+        s = auth.settings()
+        configs = ([s.demo_config] if s.demo_config else []) + sorted(set(s.users.values())) if s else [None]
+        everyone = [people.load(c) for c in configs]
+        todo = [(p.db_path, p.goals) for p in everyone if os.path.exists(p.db_path)]
+    except Exception:
+        log.exception("listing people to warm")
+        todo = []
+    while True:
+        for path, goals in todo:
+            try:
+                with closing(db.connect(path)) as con:
+                    an.graded_for(con, goals)
+            except Exception:
+                log.exception("warming %s", path)
+        time.sleep(WARM_EVERY)
+        todo = an.stale_graded()
+
+@asynccontextmanager
+async def _lifespan(app):
+    threading.Thread(target=_warm, daemon=True, name="warm").start()
+    yield
+
+app = FastAPI(title="health", lifespan=_lifespan)
 app.mount("/static", StaticFiles(directory=os.path.join(HERE, "static")), name="static")
 tpl = Jinja2Templates(directory=os.path.join(HERE, "templates"))
 # The stylesheet URL carries a hash of its content, so a browser never pairs new markup with
