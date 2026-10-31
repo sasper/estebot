@@ -39,14 +39,15 @@ def test_a_server_sync_pulls_runs_the_feed_steps_and_pushes(tmp_path, monkeypatc
     (data / daily.PENDING).touch()                                # as an upload does
     assert daily.run(feed_only=True) == 0
     tidy = sorted(p.name for p in (data / "tidy").iterdir())
-    assert tidy == ["apple_health_feed.csv", "lifting_tables.csv", "web_cache.csv"]
+    # Hevy too: the morning's first upload brings in yesterday afternoon's workout.
+    assert tidy == ["apple_health_feed.csv", "hevy.csv", "lifting_tables.csv", "web_cache.csv"]
     pushed = subprocess.run(["git", "--git-dir", str(remote), "show", "--stat", "--format=%s", "main"],
                             capture_output=True, text=True).stdout
     assert pushed.startswith("Feed upload") and "tidy/web_cache.csv" in pushed
     assert "HealthAutoExport" not in pushed                       # never committed
     assert new.exists() and not old.exists()                      # older than 3 days: pruned
 
-    # A full sync runs hevy too, still not notes (no source), and commits the Cronometer pull
+    # A full sync runs hevy as well, still not notes (no source), and commits the Cronometer pull
     # the nutrition table was rebuilt from, so a clone rebuilds the same table.
     (data / "raw" / "cronometer").mkdir(parents=True)
     (data / "raw" / "cronometer" / "dailysummary-2026-03-10T120000.csv").write_text("x")
@@ -104,3 +105,24 @@ def test_a_feed_run_that_fails_leaves_the_upload_for_the_next_run(tmp_path, monk
     except RuntimeError:
         pass
     assert (data / daily.PENDING).exists()
+
+
+def test_a_hevy_outage_doesnt_hold_up_an_uploads_sleep(tmp_path, monkeypatch):
+    # The feed run pulls Hevy first, so the morning call has yesterday's workout. If Hevy is
+    # down, the night's sleep still goes through; the full sync still stops on it.
+    from estebot import config, daily
+    data = tmp_path / "data"; data.mkdir()
+    cfg = tmp_path / "estebot.toml"
+    cfg.write_text(f'data_dir = "{data}"\n')
+    monkeypatch.setenv("ESTEBOT_CONFIG", str(cfg))
+    monkeypatch.setattr(config, "_SEARCH", [str(cfg)])
+    ok = lambda n: ["-c", f"open(r'{data}/{n}','w')"]
+    monkeypatch.setattr(daily, "STEPS", [("hevy", ["-c", "raise SystemExit(1)"], True),
+                                         ("apple health feed", ok("feed"), True),
+                                         ("nutrition", ok("nutrition"), True)])
+    subprocess.run(["git", "init", "-q", str(data)], check=True)
+    (data / daily.PENDING).touch()
+    assert daily.run(feed_only=True) == 0
+    assert (data / "feed").exists() and not (data / "nutrition").exists()
+    (data / "feed").unlink()
+    assert daily.run() == 1 and not (data / "feed").exists()

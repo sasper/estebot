@@ -1,6 +1,5 @@
 """FastAPI app. Thin layer over analysis/engine.py - it formats, it does not compute."""
-import os, re, statistics as st, subprocess, sys, threading, time
-from collections import Counter
+import glob, os, re, statistics as st, subprocess, sys, threading, time
 from contextlib import asynccontextmanager, closing
 from dataclasses import replace
 import logging
@@ -190,6 +189,11 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     ev = an.earned(con, day, goals)["evidence"]
     recorded = calls.graded(con, calls.load(cfg.data_file("calls.csv")))
     demo = demo_mode() or p.read_only
+    is_today = day == date.today().isoformat()
+    # This morning's call before what it waits for is in: from calls.waiting, the rule the
+    # recorded call follows, so the page doesn't call the day settled while the call isn't.
+    now = datetime.now()
+    waits = calls.waiting(con, now) if is_today and not demo else {}
     resting = _chat_resting(request, p) if chat_enabled(p) else None
     chat_on = chat_enabled(p) and not resting
     ctx = dict(verdict_text=verdict_text, verdict_words=VERDICT_TEXT, ev=ev, recorded=recorded,
@@ -201,7 +205,8 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
         said=request.query_params.get("said"),
         review_days=review_days, prev_day=prev_day, next_day=next_day, month_nav=month_nav,
-        is_today=(day == date.today().isoformat()), demo=demo,
+        is_today=is_today, waiting=_waiting_lines(waits, cfg, now), waiting_for=list(waits.values()),
+        demo=demo,
         signin=auth.settings() is not None, email=p.email, chat_on=chat_on, chat_resting=resting,
         # The demo opens on the canned conversation, live or not; live, it's the history a
         # visitor's follow-up is asked in.
@@ -281,6 +286,29 @@ def _month_nav(day, newest):
     nxt = (None if first.isoformat() > newest
            else (first.strftime("%b"), min(first.replace(day=n).isoformat(), newest)))
     return prev, nxt
+
+def last_upload(cfg):
+    """When the phone last sent anything: the newest Health Auto Export file's time, or None.
+    Each upload rewrites its day's file, so its modified time is the upload's."""
+    src = cfg.sources.get("health_auto_export", {})
+    times = [os.path.getmtime(f) for k in ("metrics_glob", "workouts_glob") if src.get(k)
+             for f in glob.glob(os.path.expanduser(src[k]))]
+    return datetime.fromtimestamp(max(times)) if times else None
+
+def _clock(t, now):
+    """9:41 pm; a clock time is only ambiguous after a day, so older ones get the day too."""
+    clock = t.strftime("%-I:%M %p").lower()
+    return clock if now - t < timedelta(days=1) else f"{t:%a %-d %b} {clock}"
+
+def _waiting_lines(waits, cfg, now):
+    """calls.waiting -> {area: the line its readiness row shows while the call waits for it}."""
+    out = {}
+    for area, what in waits.items():
+        if area == "sleep":
+            t = last_upload(cfg)
+            what += f" from your phone ({'last upload ' + _clock(t, now) if t else 'nothing uploaded yet'})"
+        out[area] = f"Waiting for {what}."
+    return out
 
 def _calendar(con, day, newest=None, months=3):
     """Month grids (Mon-Sun) for the `months` months ending with the one holding `day`.
@@ -452,10 +480,12 @@ _DAY = re.compile(rb'"(?:date|start)"\s*:\s*"(\d{4}-\d{2}-\d{2})')
 
 def _feed_day(body):
     """The day an upload is for, from its own timestamps ("2026-10-28 00:04:06 -0400"), so
-    the file is named for the phone's day and not the server's UTC one. A day's export can
-    also hold the previous night's sleep, so it's the most common day, not the first."""
-    days = Counter(m.group(1).decode() for m in _DAY.finditer(body))
-    return days.most_common(1)[0][0] if days else date.today().isoformat()
+    the file is named for the phone's day and not the server's UTC one. A "Today" export
+    also holds last night's sleep, its segments dated the evening before, so it's the latest
+    day in it. Not the most common: an upload soon after waking has few records of its own
+    day against the night's segments (each dated twice, "date" and "start"), and saving it
+    under yesterday's name would replace yesterday's complete file with part of it."""
+    return max((m.group(1).decode() for m in _DAY.finditer(body)), default=date.today().isoformat())
 
 @app.post("/api/health-auto-export")
 async def health_auto_export(request: Request):

@@ -189,3 +189,50 @@ def test_a_phone_upload_needs_its_token_and_lands_where_the_feed_parser_reads(si
     assert _upload(main, token, {"not": "a feed"}).status_code == 400
     (args, env), _ = started
     assert args[-2:] == ["estebot.daily", "--feed"] and env["ESTEBOT_CONFIG"] == str(cfg)
+
+
+def _early_morning_upload(today_points):
+    """A Health Auto Export "Today" upload sent at 6:40 a.m. on 31 Oct, shaped like a real one:
+    last night's sleep segments start the evening before and carry that date twice ("date"
+    and "start", as the app writes them), and the day's own records run from midnight."""
+    def seg(start, end, value):
+        return {"date": start, "start": start, "startDate": start, "end": end, "endDate": end,
+                "qty": 0.5, "value": value, "source": "Watch"}
+    night = [seg(f"2026-10-30 {h}:{m:02d}:00 -0400", f"2026-10-30 {h}:{m + 9:02d}:00 -0400", v)
+             for h in (21, 22, 23) for m, v in ((2, "Core"), (12, "REM"), (25, "Deep"), (40, "Core"))]
+    night += [seg(f"2026-10-31 0{h}:10:00 -0400", f"2026-10-31 0{h}:50:00 -0400", "Core") for h in range(7)]
+    beats = [{"date": f"2026-10-31 0{6 - k // 60}:{59 - k % 60:02d}:00 -0400", "Avg": 54, "Min": 50,
+              "Max": 60, "source": "Watch"} for k in range(today_points)]
+    return {"data": {"metrics": [{"name": "sleep_analysis", "units": "hr", "data": night},
+                                 {"name": "heart_rate", "units": "count/min", "data": beats}]}}
+
+
+@pytest.mark.parametrize("today_points", [400, 3])
+def test_an_early_morning_upload_is_saved_as_today_and_leaves_yesterdays_file_alone(
+        site, tmp_path, monkeypatch, today_points):
+    # The first upload of the day lands around 6-8 a.m. with period "Today". Its sleep starts
+    # the evening before. Saved under yesterday's name it would replace yesterday's complete
+    # file with a night's sleep and a few minutes of today, and the feed would rebuild
+    # yesterday from that. 3 points: an upload so soon after waking that the night's
+    # segments outnumber the day's own records (the most-common-day rule got this wrong).
+    import hashlib, json as _json
+    main, auth, _ = site
+    body = _json.dumps(_early_morning_upload(today_points)).encode()
+    assert main._feed_day(body) == "2026-10-31"
+
+    token = "e" * 40
+    cfg = tmp_path / "me.toml"
+    feed = tmp_path / "me" / "raw" / "hae" / "metrics"
+    cfg.write_text(cfg.read_text() + f'[sources.health_auto_export]\nfrom_date = "2026-01-01"\n'
+                   f'metrics_glob = "{feed}/*.json"\n')
+    users = tmp_path / "users.toml"
+    users.write_text(users.read_text() + f'[uploads]\n"{hashlib.sha256(token.encode()).hexdigest()}" = "{cfg}"\n')
+    auth._settings.cache_clear()
+    monkeypatch.setattr(main.subprocess, "Popen", lambda args, **kw: None)
+    feed.mkdir(parents=True)
+    yesterday = feed / "HealthAutoExport-2026-10-30.json"
+    yesterday.write_text('{"data": {"metrics": "all of the 30th"}}')
+
+    assert _upload(main, token, _early_morning_upload(today_points)).status_code == 202
+    assert yesterday.read_text() == '{"data": {"metrics": "all of the 30th"}}'
+    assert (feed / "HealthAutoExport-2026-10-31.json").read_bytes() == body

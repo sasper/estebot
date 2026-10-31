@@ -6,7 +6,7 @@
 #
 # Private (ESTEBOT_USERS_TOML set, as a Fly secret, base64-encoded like the other multi-line ones): the same demo for visitors, plus the
 # signed-in people's own pages. Their data repo is cloned onto the volume over SSH with a
-# deploy key, each config is loaded, and the daily sync runs at SYNC_AT and pushes back.
+# deploy key, each config is loaded, and the daily sync runs at each SYNC_AT time and pushes back.
 set -eu
 
 # Secrets that span lines or may hold any character arrive base64-encoded (NAME_B64).

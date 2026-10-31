@@ -389,3 +389,57 @@ def test_a_past_days_check_in_stays_below_the_call(main):
     assert html.index('id="readiness"') < html.index('id="checkin"')
     assert '<details class="card tapcheck" id="checkin" open>' in html
     assert 'class="vbadge v-' in html and "Check in to finish" not in html
+
+
+def test_before_the_morning_upload_the_page_says_what_the_call_waits_for(main, con, tmp_path, monkeypatch):
+    # At 7 a.m., before the phone has sent last night's sleep, the sleep row used to say
+    # "no data" as if there were none to come, and the call read as settled. The rows and
+    # the label come from calls.waiting, the rule the recorded call follows.
+    import os
+    from datetime import datetime
+    from estebot import config
+    from estebot.analysis import calls
+    today = date.today()
+    seven = datetime.combine(today, datetime.min.time()).replace(hour=7)
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return seven
+    monkeypatch.setattr(main, "datetime", Clock)
+    feed = tmp_path / "data" / "raw" / "hae" / "metrics"
+    feed.mkdir(parents=True)
+    cfg = config.load().path
+    cfg.write_text(cfg.read_text() + f'[sources.health_auto_export]\nmetrics_glob = "{feed}/*.json"\n')
+    last = feed / f"HealthAutoExport-{(today - timedelta(days=1)).isoformat()}.json"
+    last.write_text("{}")
+    sent = (seven - timedelta(hours=9, minutes=19)).timestamp()        # 9:41 pm last night
+    os.utime(last, (sent, sent))
+
+    assert calls.waiting_for(con, seven) == ["last night's sleep", "this morning's check-in"]
+    # The call itself stays behind the check-in until it's saved; once it is, the night's
+    # sleep is still to come.
+    save(main, today.isoformat(), "ok", 2, 2)
+    assert calls.waiting_for(con, seven) == ["last night's sleep"]
+    html = today_page(main)
+    contrib = html.split('class="contrib"')[1].split("</div>")[0]
+    sleep = contrib.split('class="area">Sleep</span>')[1].split("</details>")[0]
+    assert "waiting" in sleep and "no data" not in sleep
+    assert "Waiting for last night&#39;s sleep from your phone (last upload 9:41 pm)." in sleep
+    assert "<b>Provisional:</b> waiting for last night&#39;s sleep. The call is kept once it&#39;s in" in html
+
+    # The night's sleep arrives: nothing waits, nothing provisional.
+    con.execute("INSERT INTO sleep (night, asleep_hr) VALUES (?, 7.2)", ((today - timedelta(days=1)).isoformat(),))
+    con.commit()
+    html = today_page(main)
+    assert "Provisional" not in html and "Waiting for" not in html
+
+    # A day looked back on never waits: there's no morning call left to make.
+    assert "Provisional" not in page(main)[0]
+
+
+def test_an_upload_time_more_than_a_day_old_says_which_day():
+    from datetime import datetime
+    from estebot.web import main
+    now = datetime(2026, 10, 31, 7, 0)
+    assert main._clock(datetime(2026, 10, 30, 21, 41), now) == "9:41 pm"
+    assert main._clock(datetime(2026, 10, 29, 21, 41), now) == "Thu 29 Oct 9:41 pm"

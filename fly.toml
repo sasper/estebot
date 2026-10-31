@@ -12,7 +12,8 @@ primary_region = "iad"
 [env]
   ESTEBOT_BASE_URL = "https://estebot.app"
   TZ = "America/New_York"
-  SYNC_AT = "12:00"
+  # 04:30 brings yesterday's food and workouts in before the morning's call; noon is the backstop.
+  SYNC_AT = "04:30,12:00"
 
 [mounts]
   source = "estebot_data"
