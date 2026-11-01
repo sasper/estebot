@@ -113,3 +113,36 @@ def test_a_cached_parse_is_reused_until_the_file_changes(tmp_path, monkeypatch):
     assert len(reads) == 2 and again[0]["2000-01-02"][0]["steps"] == 507
     H._metric_parses([], cache)                                  # file pruned: its cache goes too
     assert not list(cache.glob("*.pickle"))
+
+
+def _cfg(tmp_path):
+    from types import SimpleNamespace
+    tidy = tmp_path / "tidy"; tidy.mkdir()
+    feed = tmp_path / "feed"; feed.mkdir()
+    return SimpleNamespace(data_dir=tmp_path, tidy=tidy, sources={"health_auto_export": {
+        "metrics_glob": str(feed / "HealthAutoExport-*.json"), "from_date": "2000-01-01"}}), feed
+
+
+def test_a_day_whose_file_is_gone_keeps_its_row(tmp_path):
+    # Issue #62, and 27 Oct 2026 on the server: the next day's file carries a few late records
+    # for the day before. With that day's own file pruned (or never uploaded) its committed row
+    # was replaced by those records alone, steps and energy blank.
+    import csv
+    cfg, feed = _cfg(tmp_path)
+    T_ = __import__("estebot.parsers.health_tables", fromlist=["x"])
+    with open(cfg.tidy / "daily.csv", "w", newline="") as f:
+        w = csv.writer(f); w.writerow(T_.DAILY_COLS)
+        w.writerow(T_.daily_row("2000-01-02", {"steps": 9000.0}, {}, None, "apple_merged"))
+    late = [{"date": "2000-01-02 23:00:00 -0500", "qty": 97.1}]
+    night = [{"date": "2000-01-03 06:00:00 -0500", "start": "2000-01-02 23:00:00 -0500",
+              "end": "2000-01-03 06:00:00 -0500", "value": "Core", "source": ""}]
+    _write(feed, "HealthAutoExport-2000-01-03.json",
+           doc(("apple_sleeping_wrist_temperature", "degF", late),
+               ("step_count", "count", [{"date": "2000-01-03 09:00:00 -0500", "qty": 100}]),
+               ("sleep_analysis", "hr", night)))
+    H.apply(cfg)
+    rows = {r["date"]: r for r in csv.DictReader(open(cfg.tidy / "daily.csv"))}
+    assert rows["2000-01-02"]["steps"] == "9000.0"          # untouched, not blanked
+    assert rows["2000-01-03"]["steps"] not in ("", None)
+    nights = {r[0] for r in csv.reader(open(cfg.tidy / "sleep.csv"))}
+    assert "2000-01-02" in nights                            # the night before the file's morning

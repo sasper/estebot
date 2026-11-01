@@ -21,7 +21,7 @@ full export exactly on the same check.
 import csv, glob, hashlib, json, os, pickle, re, subprocess, time
 from array import array
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from estebot.parsers import health_tables as T
 
@@ -452,6 +452,10 @@ def _rewrite(path, header, keep, new_rows, key=lambda r: r[0]):
         w = csv.writer(f); w.writerow(header); w.writerows(rows)
     return len(new_rows)
 
+def _file_days(paths):
+    """The day each feed file is named for (HealthAutoExport-YYYY-MM-DD.json)."""
+    return {os.path.basename(p)[len("HealthAutoExport-"):-len(".json")] for p in paths}
+
 def apply(cfg):
     src = cfg.sources.get("health_auto_export")
     if not src:
@@ -463,17 +467,26 @@ def apply(cfg):
     days, segments, weights = combine(_metric_parses(mpaths, cfg.data_dir / CACHE_DIR))
     tidy = cfg.tidy
 
-    dd = {d for d in days if d >= start}
+    # A day is rebuilt only while its own file is here. The next day's file carries a few late
+    # records for it (that evening's wrist temperature), so without this a day whose file was
+    # pruned, or never uploaded, came back as those few records with steps and energy blank.
+    # 27 Oct 2026 was blanked that way on the server's first sync (issue #62).
+    own = _file_days(mpaths)
+    dd = {d for d in days if d >= start and d in own}
     n = _rewrite(tidy / "daily.csv", T.DAILY_COLS, lambda r: r[0] not in dd,
                  [T.daily_row(d, *days[d], "apple_merged") for d in sorted(dd)])
-    nights = {k: v for k, v in T.sleep_rows(segments).items() if k >= start}
+    # A night is keyed by its evening and arrives in the next morning's file.
+    nights = {k: v for k, v in T.sleep_rows(segments).items()
+              if k >= start and (date.fromisoformat(k) + timedelta(days=1)).isoformat() in own}
     s = _rewrite(tidy / "sleep.csv", T.SLEEP_COLS, lambda r: r[0] not in nights,
                  [nights[k] for k in sorted(nights)])
-    wd = {d for d in weights if d >= start}
+    wd = {d for d in weights if d >= start and d in own}
     b = _rewrite(tidy / "body_mass.csv", ["date", "weight_lb", "source"], lambda r: r[0] not in wd,
                  [[d, f"{round(lb, 3)}", srcname] for d in sorted(wd)
                   for _, lb, srcname in sorted(weights[d])])
-    wk = [(st_, row) for st_, row in parse_workouts(_docs(wpaths)) if row[0] >= start]
+    # Workouts arrive whole (deduplicated on id), so only days before the oldest file are at risk.
+    wfrom = max(start, min(_file_days(wpaths), default=start))
+    wk = [(st_, row) for st_, row in parse_workouts(_docs(wpaths)) if row[0] >= wfrom]
     wkd = {row[0] for _, row in wk}
     k = _rewrite(tidy / "workouts.csv", T.WORKOUT_COLS, lambda r: r[0] not in wkd,
                  [row for _, row in wk], key=lambda r: (r[0], r[1]))
