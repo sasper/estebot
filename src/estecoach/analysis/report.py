@@ -23,17 +23,6 @@ RECENT = TODAY - timedelta(days=27)
 YEAR, PRIOR = date(TODAY.year, 1, 1), TODAY.year - 1
 def wk(a, b): return max((b - a).days, 1) / 7
 
-# ---------- combined daily ----------
-D = {r["date"]: dict(r) for r in daily}
-for r in sleep: D.setdefault(r["night"], {"date": r["night"]}).update(
-    {"sleep_hr": r["asleep_hr"], "deep_hr": r["deep_hr"], "rem_hr": r["rem_hr"], "sleep_eff": r["efficiency_pct"]})
-for r in sess: D.setdefault(r["date"], {"date": r["date"]}).update(
-    {"lift_sets": r["n_sets"], "lift_volume": r["total_volume_lb"], "lift_groups": r["muscle_groups"]})
-cols = ["date","steps","active_kcal","exercise_min","resting_hr","hrv_sdnn","hr_max","sleep_hr","deep_hr","rem_hr","sleep_eff","lift_sets","lift_volume","lift_groups"]
-with open(f"{T}/daily_combined.csv","w",newline="") as fh:
-    w = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore"); w.writeheader()
-    for k in sorted(D): w.writerow({**{c:"" for c in cols}, **D[k]})
-
 def window(rows, key, a, b):
     return [r for r in rows if a <= d(r[key]) <= b]
 def avg(rows, col):
@@ -82,18 +71,21 @@ print(f"  total records ever: {len(allw)}   in {YEAR.year}: {len([x for x in all
 
 # ---------- strength progression ----------
 print("\n" + "-"*78); print("STRENGTH — lifts trained in the last 4 weeks, best e1RM by period")
-prog = load("exercise_progression.csv")
-recent_ex = {r["exercise"] for r in prog if d(r["date"]) >= RECENT}
+# Best e1RM in a period is the engine's (e1rm_window_best), read from the app's database, so
+# the report, blocks.py and the page can't compute it three ways.
+from estecoach.analysis import engine
+from estecoach.web import db
+con = db.connect()
+recent_ex = {r["exercise"] for r in con.execute("SELECT DISTINCT exercise FROM e1rm WHERE date >= ?", (RECENT.isoformat(),))}
 def best(ex, a, b):
-    v = [f(r["best_e1rm_lb"]) for r in prog if r["exercise"]==ex and a <= d(r["date"]) <= b]
-    return max(v) if v else None
+    return engine.e1rm_window_best(con, a.isoformat(), b.isoformat(), [ex]).get(ex)
 print(f"  {'exercise':<34}{PRIOR:>8}{f'{YEAR.year} pre':>10}{'last4wk':>9}{'chg':>8}")
 out=[]
 for ex in recent_ex:
     y25, pre, post = best(ex, date(PRIOR,1,1), date(PRIOR,12,31)), best(ex, YEAR, RECENT - timedelta(days=1)), best(ex, RECENT, TODAY)
     base = pre or y25
     out.append((ex, y25, pre, post, (round(100*(post-base)/base,1) if base and post else None)))
-for ex,y25,pre,post,chg in sorted(out, key=lambda r: -(r[3] or 0)):
+for ex,y25,pre,post,chg in sorted(out, key=lambda r: (-(r[3] or 0), r[0])):   # ties by name, so runs agree
     fm=lambda v: f"{v:.0f}" if v else "-"
     print(f"  {ex[:33]:<34}{fm(y25):>8}{fm(pre):>10}{fm(post):>9}{(f'{chg:+.1f}%' if chg is not None else '-'):>8}")
 

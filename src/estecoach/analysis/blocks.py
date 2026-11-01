@@ -22,9 +22,12 @@ for s in sets: by_day[s["date_o"]].append(s)
 days=sorted(by_day)
 WIN, EDGE = 70, 28    # 10-week window, 4-week edges for early/late comparison
 
+# Best e1RM over a run of days is the engine's (e1rm_window_best), from the app's database.
+from estecoach.analysis import engine
+from estecoach.web import db
+con = db.connect()
 def e1rm(lift, ds):
-    v=[s["e1rm_lb"] for dd in ds for s in by_day[dd] if s["exercise"]==lift and s["reps"]<=10]
-    return max(v) if v else None
+    return engine.e1rm_window_best(con, ds[0].isoformat(), ds[-1].isoformat(), [lift]).get(lift) if ds else None
 
 start=days[0]; wins=[]
 while start <= days[-1]:
