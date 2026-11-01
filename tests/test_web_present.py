@@ -490,3 +490,11 @@ def test_the_old_address_sends_pages_to_estecoach_app_but_answers_uploads(main):
     assert TestClient(main.app, base_url="https://www.estecoach.app").get("/", follow_redirects=False).status_code == 301
     assert old.post("/api/health-auto-export", content=b"{}").status_code != 301
     assert TestClient(main.app, base_url="http://172.16.0.2:8080").get("/", follow_redirects=False).status_code == 200
+
+
+def test_a_shared_link_shows_the_card(main):
+    html = today_page(main)
+    assert 'property="og:image" content="https://estecoach.app/static/social-card.png"' in html
+    assert 'name="twitter:card" content="summary_large_image"' in html
+    from pathlib import Path
+    assert (Path(main.__file__).parent / "static" / "social-card.png").stat().st_size > 100_000
