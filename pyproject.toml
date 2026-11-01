@@ -3,6 +3,7 @@ name = "estecoach"
 version = "0.1.0"
 description = "Single-subject training and bodyweight analysis over your own exported health data"
 requires-python = ">=3.11"
+license = { file = "LICENSE" }
 dependencies = []
 
 [project.optional-dependencies]

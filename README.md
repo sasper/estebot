@@ -206,4 +206,7 @@ with its noon sync. It also runs on a Mac with launchd.
 
 ## License
 
-MIT
+[Functional Source License 1.1, Apache 2.0 future license](LICENSE) (FSL-1.1-ALv2).
+Use it, change it, run it for yourself; just don't offer it as a competing commercial
+service. Each release becomes Apache 2.0 two years after it is published. Commits before
+this change remain under MIT.
