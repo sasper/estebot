@@ -20,11 +20,11 @@ OLD_CHECKIN = """CREATE TABLE checkin (
 @pytest.fixture
 def db(tmp_path, monkeypatch):
     data = tmp_path / "data"; data.mkdir()
-    cfg = tmp_path / "estebot.toml"
+    cfg = tmp_path / "estecoach.toml"
     cfg.write_text(f'data_dir = "{data}"\n')
-    from estebot import config
+    from estecoach import config
     monkeypatch.setattr(config, "_SEARCH", [str(cfg)])   # read once at import, not per load
-    from estebot.web import db as mod
+    from estecoach.web import db as mod
     mod = importlib.reload(mod)          # module resolves its DB path at import
     monkeypatch.setattr(mod, "DB", str(data / "app.sqlite"))
     return mod
@@ -76,7 +76,7 @@ def test_an_old_checkin_table_gains_the_sick_and_injured_columns(db):
                                   "back injury, took the day off",
                                   "tweaked my back"])
 def test_back_sore_vocabulary(db, text):
-    from estebot.web import ingest
+    from estecoach.web import ingest
     ingest = importlib.reload(ingest)    # needs the fixture's config at import
     assert ingest.BACK_SORE.search(text)
 
@@ -93,6 +93,6 @@ def test_back_sore_vocabulary(db, text):
 def test_a_negated_strong_note_is_low_energy_not_a_conflict(db, text, cues):
     # "feeling strong" matched inside "not feeling strong", so a plainly tired note read
     # as both low and high and was sent to review as conflicting.
-    from estebot.web import ingest
+    from estecoach.web import ingest
     ingest = importlib.reload(ingest)    # needs the fixture's config at import
     assert ingest.energy_cues(text) == cues

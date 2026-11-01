@@ -1,7 +1,7 @@
 import pytest
 
-from estebot import hevy_import as I
-from estebot.parsers import hevy
+from estecoach import hevy_import as I
+from estecoach.parsers import hevy
 
 KG = I.LB_TO_KG
 

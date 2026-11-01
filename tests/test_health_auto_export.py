@@ -1,6 +1,6 @@
 import pytest
 
-from estebot.parsers import health_auto_export as H
+from estecoach.parsers import health_auto_export as H
 
 T0 = "2000-01-02 08:00:00 -0500"
 
@@ -129,7 +129,7 @@ def test_a_day_whose_file_is_gone_keeps_its_row(tmp_path):
     # was replaced by those records alone, steps and energy blank.
     import csv
     cfg, feed = _cfg(tmp_path)
-    T_ = __import__("estebot.parsers.health_tables", fromlist=["x"])
+    T_ = __import__("estecoach.parsers.health_tables", fromlist=["x"])
     with open(cfg.tidy / "daily.csv", "w", newline="") as f:
         w = csv.writer(f); w.writerow(T_.DAILY_COLS)
         w.writerow(T_.daily_row("2000-01-02", {"steps": 9000.0}, {}, None, "apple_merged"))

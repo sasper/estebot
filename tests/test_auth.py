@@ -24,12 +24,12 @@ def site(con, tmp_path, monkeypatch):
     users = tmp_path / "users.toml"
     users.write_text(f'demo_config = "{_config(tmp_path, "demo", 200)}"\n'
                      f'[users]\n"{ME}" = "{_config(tmp_path, "me", 150)}"\n')
-    monkeypatch.setenv("ESTEBOT_USERS", str(users))
-    monkeypatch.setenv("ESTEBOT_SESSION_KEY", "k" * 40)
-    monkeypatch.setenv("ESTEBOT_GOOGLE_CLIENT_ID", CLIENT_ID)
-    monkeypatch.setenv("ESTEBOT_GOOGLE_CLIENT_SECRET", "secret")
-    monkeypatch.setenv("ESTEBOT_BASE_URL", "https://estebot.example")
-    from estebot.web import auth, main
+    monkeypatch.setenv("ESTECOACH_USERS", str(users))
+    monkeypatch.setenv("ESTECOACH_SESSION_KEY", "k" * 40)
+    monkeypatch.setenv("ESTECOACH_GOOGLE_CLIENT_ID", CLIENT_ID)
+    monkeypatch.setenv("ESTECOACH_GOOGLE_CLIENT_SECRET", "secret")
+    monkeypatch.setenv("ESTECOACH_BASE_URL", "https://estecoach.example")
+    from estecoach.web import auth, main
     auth._settings.cache_clear()
     main = importlib.reload(main)
     google = {}                            # what the fake token endpoint will claim
@@ -70,7 +70,7 @@ def test_the_login_redirect_carries_state_nonce_and_a_pkce_challenge(site):
     resp = main.login()
     q = urllib.parse.parse_qs(urllib.parse.urlparse(resp.headers["location"]).query)
     assert q["client_id"] == [CLIENT_ID]
-    assert q["redirect_uri"] == ["https://estebot.example/auth/callback"]
+    assert q["redirect_uri"] == ["https://estecoach.example/auth/callback"]
     assert q["code_challenge_method"] == ["S256"] and q["state"] and q["nonce"]
     assert "Secure" in resp.headers["set-cookie"] and "HttpOnly" in resp.headers["set-cookie"]
 
@@ -189,7 +189,7 @@ def test_a_phone_upload_needs_its_token_and_lands_where_the_feed_parser_reads(si
     assert (feed / "workouts" / "HealthAutoExport-2026-03-10.json").exists()
     assert _upload(main, token, {"not": "a feed"}).status_code == 400
     (args, env), _ = started
-    assert args[-2:] == ["estebot.daily", "--feed"] and env["ESTEBOT_CONFIG"] == str(cfg)
+    assert args[-2:] == ["estecoach.daily", "--feed"] and env["ESTECOACH_CONFIG"] == str(cfg)
 
 
 def _early_morning_upload(today_points):

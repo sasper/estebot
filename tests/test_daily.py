@@ -10,7 +10,7 @@ def test_a_server_sync_pulls_runs_the_feed_steps_and_pushes(tmp_path, monkeypatc
     # tables and pushes, so the Mac only ever pulls. After an upload it runs only the steps
     # the feed affects, and never the iCloud notes step. Phone uploads are ~30 MB a day, so
     # they stay out of git and old ones are deleted once the tidy tables hold them.
-    from estebot import config, daily
+    from estecoach import config, daily
     remote, data = tmp_path / "remote.git", tmp_path / "data"
     _git("init", "-q", "--bare", "-b", "main", str(remote), cwd=tmp_path)
     _git("clone", "-q", str(remote), str(data), cwd=tmp_path)
@@ -19,10 +19,10 @@ def test_a_server_sync_pulls_runs_the_feed_steps_and_pushes(tmp_path, monkeypatc
     (data / "README").write_text("data\n")
     _git("add", "README", cwd=data); _git("commit", "-qm", "start", cwd=data); _git("push", "-q", "origin", "HEAD", cwd=data)
 
-    cfg = tmp_path / "estebot.toml"
+    cfg = tmp_path / "estecoach.toml"
     cfg.write_text(f'data_dir = "{data}"\n[sync]\npull = true\npush = true\nkeep_feed_days = 3\n'
                    f'[sources.health_auto_export]\nmetrics_glob = "{data}/raw/hae/metrics/*.json"\n')
-    monkeypatch.setenv("ESTEBOT_CONFIG", str(cfg))
+    monkeypatch.setenv("ESTECOACH_CONFIG", str(cfg))
     monkeypatch.setattr(config, "_SEARCH", [str(cfg)])
     ran = []
     def step(name):                      # each fake step writes a tidy file and records itself
@@ -62,11 +62,11 @@ def test_a_burst_of_uploads_is_read_once_per_run_not_once_per_upload(tmp_path, m
     # Each upload starts a feed run and they queue on the sync lock. The run that gets the
     # lock reads every file there; the runs queued behind it while it worked find nothing
     # new and stop, so three uploads during one run cost one more run, not three.
-    from estebot import config, daily
+    from estecoach import config, daily
     data = tmp_path / "data"; data.mkdir()
-    cfg = tmp_path / "estebot.toml"
+    cfg = tmp_path / "estecoach.toml"
     cfg.write_text(f'data_dir = "{data}"\n')
-    monkeypatch.setenv("ESTEBOT_CONFIG", str(cfg))
+    monkeypatch.setenv("ESTECOACH_CONFIG", str(cfg))
     monkeypatch.setattr(config, "_SEARCH", [str(cfg)])
     runs = []
     monkeypatch.setattr(daily, "_run", lambda cfg, feed_only: runs.append(feed_only) or 0)
@@ -82,11 +82,11 @@ def test_a_burst_of_uploads_is_read_once_per_run_not_once_per_upload(tmp_path, m
 def test_a_feed_run_that_fails_leaves_the_upload_for_the_next_run(tmp_path, monkeypatch):
     # The run that took the marker failed (a pull on a network blip); the runs queued behind
     # it skipped as "already read", and the upload waited for the noon sync.
-    from estebot import config, daily
+    from estecoach import config, daily
     data = tmp_path / "data"; data.mkdir()
-    cfg = tmp_path / "estebot.toml"
+    cfg = tmp_path / "estecoach.toml"
     cfg.write_text(f'data_dir = "{data}"\n')
-    monkeypatch.setenv("ESTEBOT_CONFIG", str(cfg))
+    monkeypatch.setenv("ESTECOACH_CONFIG", str(cfg))
     monkeypatch.setattr(config, "_SEARCH", [str(cfg)])
     results = [1, 0]
     runs = []
@@ -110,11 +110,11 @@ def test_a_feed_run_that_fails_leaves_the_upload_for_the_next_run(tmp_path, monk
 def test_a_hevy_outage_doesnt_hold_up_an_uploads_sleep(tmp_path, monkeypatch):
     # The feed run pulls Hevy first, so the morning call has yesterday's workout. If Hevy is
     # down, the night's sleep still goes through; the full sync still stops on it.
-    from estebot import config, daily
+    from estecoach import config, daily
     data = tmp_path / "data"; data.mkdir()
-    cfg = tmp_path / "estebot.toml"
+    cfg = tmp_path / "estecoach.toml"
     cfg.write_text(f'data_dir = "{data}"\n')
-    monkeypatch.setenv("ESTEBOT_CONFIG", str(cfg))
+    monkeypatch.setenv("ESTECOACH_CONFIG", str(cfg))
     monkeypatch.setattr(config, "_SEARCH", [str(cfg)])
     ok = lambda n: ["-c", f"open(r'{data}/{n}','w')"]
     monkeypatch.setattr(daily, "STEPS", [("hevy", ["-c", "raise SystemExit(1)"], True),

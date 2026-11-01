@@ -1,6 +1,6 @@
 import pytest
 
-from estebot.parsers import cronometer_pull as C
+from estecoach.parsers import cronometer_pull as C
 
 
 def test_the_login_token_is_read_from_the_form():

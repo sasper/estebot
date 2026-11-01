@@ -1,14 +1,14 @@
 # Architecture
 
-How EsteBot is put together, the rules it holds itself to, and the mistakes that shaped it.
+How EsteCoach is put together, the rules it holds itself to, and the mistakes that shaped it.
 The README covers what it is and how to run it.
 
 ## Three rules
 
 1. **No personal data in the code repo.** Not in code, tests, comments or commit messages.
-   My data lives in a separate private repo and is reached only through `estebot.toml`.
+   My data lives in a separate private repo and is reached only through `estecoach.toml`.
    `.gitignore` blocks the data filenames, and CI fails the build if one is tracked.
-2. **Every number comes from EsteBot's own tested code.** No model produces a figure that
+2. **Every number comes from EsteCoach's own tested code.** No model produces a figure that
    gets acted on. Claude explains computed outputs and never generates them; when it reads a
    check-in typed as a sentence, it only picks the tap card's own words, and saving is mine.
    If I'm about to have a model estimate a value, the design is wrong.
@@ -41,7 +41,7 @@ against how sessions went on days it was taken, like the other candidates, and h
 One thing flows back out. `hevy_routines.py` writes the day's targets into the matching
 Hevy routine, right after the morning call is recorded, or from a Send to Hevy button on
 the page. It writes routines only: each planned exercise's top set (target weight and rep
-range, reps left empty), one `EsteBot:` line in its note, and on a take-it-easy day the
+range, reps left empty), one `EsteCoach:` line in its note, and on a take-it-easy day the
 deloaded sets, put back on the next write. It never creates, edits or deletes a workout,
 since workouts are the logged history everything is graded against, and never touches
 exercise order, supersets, rest times, set types, or the routine's title or folder. Every
@@ -53,7 +53,7 @@ presentation mode or the chat.
 ## Layout
 
 ```
-src/estebot/
+src/estecoach/
   config.py        TOML config: the data directory, export globs, goals, [training]
   core.py          pure functions, no I/O. Most of them exist because of a bug that happened
   daily.py         the unattended daily sync: pull, parse, ingest, record the call, commit
@@ -74,7 +74,7 @@ src/estebot/
     report.py      text report
     blocks.py      long-history correlation
   web/             FastAPI page, inline SVG charts, the SQLite cache and its loader, Google
-                   sign-in (auth, people), Ask EsteBot (chat), a check-in said in a
+                   sign-in (auth, people), Ask EsteCoach (chat), a check-in said in a
                    sentence (checkin_text)
 deploy/            the Fly.io entrypoint and the noon scheduler
 tests/             pytest; most tests pin a failure that really happened
@@ -108,8 +108,8 @@ The parsers are deterministic over fixed inputs, so a refactor has a hard test:
 
 ```bash
 git -C <data_dir> status --porcelain tidy/     # must be clean before you start
-python -m estebot.parsers.jefit
-python -m estebot.parsers.cronometer
+python -m estecoach.parsers.jefit
+python -m estecoach.parsers.cronometer
 git -C <data_dir> diff --quiet tidy/ && echo IDENTICAL || echo "CHANGED - investigate"
 ```
 

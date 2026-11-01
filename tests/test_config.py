@@ -1,10 +1,10 @@
 import pytest
 
-from estebot import config
+from estecoach import config
 
 
 def write(tmp_path, body, data_dir):
-    cfg = tmp_path / "estebot.toml"
+    cfg = tmp_path / "estecoach.toml"
     cfg.write_text(f'data_dir = "{data_dir}"\n' + body)
     return cfg
 
@@ -25,7 +25,7 @@ def test_missing_data_dir_is_an_error(tmp_path):
 
 
 def test_missing_data_dir_key_is_an_error(tmp_path):
-    cfg = tmp_path / "estebot.toml"
+    cfg = tmp_path / "estecoach.toml"
     cfg.write_text("[profile]\nheight_in = 70\n")
     with pytest.raises(config.ConfigError, match="missing the required"):
         config.load(cfg)

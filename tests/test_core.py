@@ -4,7 +4,7 @@ from datetime import datetime as dt
 
 import pytest
 
-from estebot.core import (
+from estecoach.core import (
     dedupe_daily_total,
     drop_subset_duplicates,
     epley_e1rm,
@@ -140,7 +140,7 @@ class TestDropSubsetDuplicates:
 def test_exports_order_by_filename_date_not_mtime():
     # A git clone gives every archived export the same fresh mtime, so the incoming
     # (mtime) order is arbitrary. The date in the name must decide.
-    from estebot.core import order_by_name_date
+    from estecoach.core import order_by_name_date
     shuffled = ["/a/x_20261012.csv", "/a/x_20260902.csv", "/a/x_20261005.csv"]
     assert order_by_name_date(shuffled) == ["/a/x_20260902.csv", "/a/x_20261005.csv",
                                             "/a/x_20261012.csv"]
@@ -210,10 +210,10 @@ class TestHardSet:
 
 
 class TestPace:
-    """Weight change against the planned loss range (estebot.toml, % of body weight/week)."""
+    """Weight change against the planned loss range (estecoach.toml, % of body weight/week)."""
 
     def test_a_real_loss_can_still_be_too_slow(self):
-        from estebot.core import pace
+        from estecoach.core import pace
         # -0.62 lb at 200 lb is 0.31 %/week: under the 0.5 floor -> losing less than expected
         assert pace(-0.62, 200.0, 0.5, 1.0)[0] == "slow"
         assert pace(-1.62, 200.0, 0.5, 1.0)[0] == "on_pace"
@@ -226,7 +226,7 @@ class TestCombineSignals:
     """The readiness call counts signals across areas; no single input decides."""
 
     def test_the_counting_rule(self):
-        from estebot.core import combine_signals
+        from estecoach.core import combine_signals
         g = {"load": "green", "sleep": "green", "recovery": "green"}
         assert combine_signals({**g, "feel": "amber"}) == "normal"          # a sore back
         assert combine_signals({**g, "sleep": "amber", "nutrition": "amber"}) == "light"
@@ -236,14 +236,14 @@ class TestCombineSignals:
         assert combine_signals({**g, "feel": "red"}, forced_rest=True) == "rest"   # back spasm
 
     def test_go_all_out_needs_recovery_sleep_and_load_actually_measured(self):
-        from estebot.core import combine_signals
+        from estecoach.core import combine_signals
         assert combine_signals({"load": "green", "sleep": None, "recovery": "green"}) == "normal"
 
     def test_the_score_never_contradicts_the_verdict(self):
         # An average of the levels put six good areas and one strained at 86 beside "take it
         # easy". Every combination of seven areas has to land inside its verdict's band.
         from itertools import product
-        from estebot.core import combine_signals, readiness_score, SCORE_BANDS
+        from estecoach.core import combine_signals, readiness_score, SCORE_BANDS
         areas = ("load", "effort", "sleep", "recovery", "feel", "nutrition", "pace")
         for combo in product(("green", "amber", "red", None), repeat=len(areas)):
             levels = dict(zip(areas, combo))
@@ -256,7 +256,7 @@ class TestCombineSignals:
 
 class TestMonotony:
     def test_a_week_of_alike_days_is_monotonous_and_a_light_day_breaks_it(self):
-        from estebot.core import monotony
+        from estecoach.core import monotony
         # a run of training days, ~120 exercise minutes each
         assert monotony([118, 121, 125, 119, 120, 122, 120]) > 2.5
         # a near-idle day, then six varied days
@@ -264,14 +264,14 @@ class TestMonotony:
         assert monotony([60] * 6) is None                  # needs a full week
 
     def test_seven_identical_days_are_the_most_monotonous_not_unmeasured(self):
-        from estebot.core import monotony
+        from estecoach.core import monotony
         assert monotony([120] * 7) == float("inf")
         assert monotony([0] * 7) is None                   # no training: no monotony
 
 
 class TestWeeklyShift:
     def test_a_week_of_low_nights_registers_against_a_noisy_baseline(self):
-        from estebot.core import weekly_shift_z
+        from estecoach.core import weekly_shift_z
         base = [52, 61, 45, 58, 49, 63, 50, 56, 47, 60, 54, 44, 59, 51, 57]   # sd ~5.6
         week = [49, 50, 47, 51, 48, 50, 49]          # every night ~5 ms under the mean
         # -0.8 against single-night spread, never amber; as a week's mean it is -2.1
@@ -279,7 +279,7 @@ class TestWeeklyShift:
         assert abs(weekly_shift_z([55, 53, 56, 54], base)) < 1   # an ordinary week
 
     def test_too_few_readings_is_no_data(self):
-        from estebot.core import weekly_shift_z
+        from estecoach.core import weekly_shift_z
         assert weekly_shift_z([50, 51], [50] * 10) is None
         assert weekly_shift_z([50, 51, 52], [50, 51, 52, 53]) is None
         assert weekly_shift_z([50, 51, 52], [50] * 10) is None    # flat baseline
@@ -289,7 +289,7 @@ class TestGoalMet:
     def test_heavier_for_the_same_reps_beats_the_plan(self):
         # A session is graded on what was lifted against the plan's target; going up in
         # load for the same reps did more than asked and must not read as a miss.
-        from estebot.core import goal_met, progression
+        from estecoach.core import goal_met, progression
         goal = progression("Barbell Squat", [(405, 3, 8.5)])["goal"]        # 405 x 4
         assert goal == {"weight_lb": 405, "reps": 4}
         assert goal_met(goal, [(225, 5, None), (405, 4, 9)])
@@ -297,7 +297,7 @@ class TestGoalMet:
         assert not goal_met(goal, [(405, 3, 9), (405, 3, 9)])
 
     def test_bodyweight_work_is_graded_on_total_reps(self):
-        from estebot.core import goal_met, progression
+        from estecoach.core import goal_met, progression
         goal = progression("Pull Up", [(0, 8, 8), (0, 7, 8), (0, 6, 9)])["goal"]
         assert goal == {"total_reps": 22}
         assert goal_met(goal, [(0, 9, None), (0, 7, None), (0, 6, None)])
@@ -308,7 +308,7 @@ class TestFlagEffect:
     def test_only_a_band_wholly_below_zero_votes(self):
         # Readiness inputs voted for years without ever being checked against sessions; on
         # 689 of them none predicted anything. An input earns a vote by showing an effect.
-        from estebot.core import flag_effect
+        from estecoach.core import flag_effect
         worse = flag_effect([-0.2, -0.1, -0.15, -0.25] * 5, [0.0, 0.05, -0.05, 0.02] * 5)
         assert worse["status"] == "predicts worse sessions" and worse["votes"]
         noise = flag_effect([-0.3, 0.2, 0.1, -0.2] * 5, [0.25, -0.3, -0.1, 0.2] * 5)
@@ -317,7 +317,7 @@ class TestFlagEffect:
         assert better["status"] == "goes with better sessions" and not better["votes"]
 
     def test_a_handful_of_sessions_is_not_judged(self):
-        from estebot.core import flag_effect
+        from estecoach.core import flag_effect
         e = flag_effect([-0.5] * 10, [0.1] * 40)
         assert e["status"] == "not enough data" and not e["votes"] and e["diff"] is None
 
@@ -326,21 +326,21 @@ class TestEvidenceCall:
     # Every area used to vote, and over 689 sessions the calls didn't separate outcomes:
     # 78% of targets met after "go all out", 77% after "take it easy".
     def test_only_areas_that_earned_a_vote_count(self):
-        from estebot.core import evidence_call
+        from estecoach.core import evidence_call
         levels = {"sleep": "red", "load": "red", "recovery": "green"}
         assert evidence_call(levels, voting=[]) == "normal"
         assert evidence_call(levels, voting=["sleep"]) == "light"
         assert evidence_call(levels, voting=["sleep", "load"]) == "rest"
 
     def test_nothing_flagged_is_not_a_reason_to_go_hard(self):
-        from estebot.core import evidence_call
+        from estecoach.core import evidence_call
         green = {"sleep": "green", "recovery": "green"}
         assert evidence_call(green, voting=["sleep"]) == "normal"
         assert evidence_call(green, voting=["sleep"], positive="a strong last session") == "hard"
         assert evidence_call({"sleep": "amber"}, voting=["sleep"], positive="a strong last session") == "normal"
 
     def test_safety_rules_hold_whatever_the_evidence(self):
-        from estebot.core import evidence_call
+        from estecoach.core import evidence_call
         assert evidence_call({}, voting=[], holds=["sick today or yesterday"], positive="x") == "light"
         assert evidence_call({}, voting=[], forced_rest=True) == "rest"
 
@@ -349,19 +349,19 @@ class TestStrengthStandards:
     def test_a_heavy_lifter_is_not_underrated_by_a_plain_ratio(self):
         # A 470 lb squat at 260 lb is 1.8x, which plain ratio bands call intermediate
         # (advanced at 2.0x). Scaled by bodyweight^(2/3) it is advanced.
-        from estebot.core import strength_level, strength_thresholds
+        from estecoach.core import strength_level, strength_thresholds
         assert 470 / 260 < 2.0
         assert strength_level("squat", 470, 260)[0] == "advanced"
         # at the reference bodyweight the bands are the plain ratios
         assert [round(t) for t in strength_thresholds("squat", 180)] == [180, 270, 360, 450]
 
     def test_levels_run_from_beginner_to_elite_with_the_next_threshold(self):
-        from estebot.core import strength_level
+        from estecoach.core import strength_level
         assert strength_level("bench", 100, 180) == ("beginner", 135.0)
         assert strength_level("bench", 400, 180) == ("elite", None)
 
     def test_dots_rewards_the_same_total_at_a_lower_bodyweight(self):
-        from estebot.core import dots
+        from estecoach.core import dots
         assert round(dots(1200, 300)) == 301
         assert round(dots(1200, 240)) == 324
         assert dots(1200, 600) == dots(1200, 500)     # clamped above 210 kg
@@ -371,7 +371,7 @@ class TestProgression:
     def test_a_grinder_holds_the_load(self):
         # A press triple at RPE 10. The advice given by hand was to hold the load and make it
         # cleaner; the page must say the same, not add weight.
-        from estebot.core import progression
+        from estecoach.core import progression
         p = progression("Barbell Military Press", [(135, 8, 8), (155, 6, 8.5), (175, 4, 9),
                                                    (185, 3, 10), (135, 10, 10)])
         assert p["action"] == "hold" and p["target"] == "185 × 3 at RPE 9"
@@ -379,37 +379,37 @@ class TestProgression:
     def test_strength_work_reads_the_best_set_at_the_top_weight(self):
         # A single then a triple at the same weight, both RPE 9. The first draft read the
         # single and prescribed a double, below what had already been done.
-        from estebot.core import progression
+        from estecoach.core import progression
         p = progression("Sumo Deadlift", [(185, 8, 6), (275, 6, 7.5), (315, 1, 9), (315, 3, 9)])
         assert p["target"] == "315 × 4"
 
     def test_high_rep_work_keeps_its_reps_when_load_goes_up(self):
         # Dumbbell rows for 20, done high-rep on purpose. The first draft read 20 as past
         # the 8-12 range and prescribed 5 lb more for 8.
-        from estebot.core import progression
+        from estecoach.core import progression
         p = progression("Dumbbell Row", [(60, 20, 7), (60, 20, 7.5), (60, 20, 8)])
         assert p["action"] == "add load" and p["target"] == "65 × 20"
 
     def test_accessories_add_a_rep_then_load_at_the_top_of_the_range(self):
-        from estebot.core import progression
+        from estecoach.core import progression
         assert progression("Dumbbell Bench Press", [(70, 10, 7.5), (80, 6, 9)])["target"] == "80 × 7"
         assert progression("Dumbbell Tricep Extension", [(40, 12, 8)] * 3)["target"] == "45 × 8"
 
     def test_unknown_effort_is_repeated_not_progressed(self):
         # Carries carry no RPE, and their reps column is yards.
-        from estebot.core import progression
+        from estecoach.core import progression
         p = progression("Trap Bar Carry (flat)", [(135, 90, None), (225, 45, None)])
         assert p["action"] == "repeat" and p["target"].startswith("225 × 45 yd")
 
     def test_bodyweight_work_progresses_total_reps(self):
-        from estebot.core import progression
+        from estecoach.core import progression
         p = progression("Pull-Up", [(0, 6, 7)] * 4 + [(0, 6, 9)] * 3)
         assert p["target"] == "7 sets, 43–44 reps in total"
 
 
 # 1 Nov 2026: after bench 275 x 6 @ 9.5 and 295 x 4 @ 10 on 31 Oct the old rule said
 # 295 x 4 again. Main lifts now go up 5 lb with the reps that land at RPE 8-9.5.
-from estebot import core  # noqa: E402
+from estecoach import core  # noqa: E402
 
 BENCH_31_OCT = [(135, 20, 6), (225, 10, 7), (275, 6, 9.5), (295, 4, 10), (225, 8, 8)]
 
@@ -443,3 +443,18 @@ def test_a_light_set_does_not_inflate_the_estimated_max():
     # 29 Oct hang clean: 205 x 8 @ 6 alone reads as a 287 max; the near-max sets say 280.
     p = core.main_progression("Barbell Hang Clean", [(205, 8, 6), (225, 5, 9), (255, 2, 9)])
     assert "from 255 × 2 at RPE 9" in p["why"] and p["target"] == "260 × 1–2"
+
+
+def test_config_reads_the_old_name_until_the_new_one_is_set(tmp_path, monkeypatch):
+    # The project was EsteBot until 1 Nov 2026: Fly secrets and the users file (which names
+    # each person's estebot.toml) keep working while they move to the new names.
+    from estecoach import config
+    monkeypatch.delenv("ESTECOACH_BASE_URL", raising=False)
+    monkeypatch.setenv("ESTEBOT_BASE_URL", "old")
+    assert config.env("BASE_URL") == "old"
+    monkeypatch.setenv("ESTECOACH_BASE_URL", "new")
+    assert config.env("BASE_URL") == "new"
+    (tmp_path / "estecoach.toml").write_text(f'data_dir = "{tmp_path}"\n')
+    assert config.load(tmp_path / "estebot.toml").path.name == "estecoach.toml"
+    (tmp_path / ".estebot-demo").write_text("")
+    assert config.load(tmp_path / "estecoach.toml").is_demo

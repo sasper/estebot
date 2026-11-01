@@ -1,4 +1,4 @@
-from estebot.parsers import lift_tables as L
+from estecoach.parsers import lift_tables as L
 
 
 def _set(d, ex, group, wt, reps, e1rm, rpe="", set_type="normal"):

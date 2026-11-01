@@ -3,7 +3,7 @@ from datetime import date
 
 import pytest
 
-from estebot import demo
+from estecoach import demo
 
 sync_api = pytest.importorskip("playwright.sync_api")
 
@@ -16,16 +16,16 @@ def demo_app(tmp_path_factory):
     # is no server to start and no port to pick.
     mp = pytest.MonkeyPatch()
     out = demo.generate(tmp_path_factory.mktemp("demo") / "demo", seed=7, end=END, days=200)
-    from estebot import config
-    mp.setattr(config, "_SEARCH", [str(out / "estebot.toml")])
-    mp.setenv("ESTEBOT_DEMO", "1")
-    from estebot.web import db, ingest
+    from estecoach import config
+    mp.setattr(config, "_SEARCH", [str(out / "estecoach.toml")])
+    mp.setenv("ESTECOACH_DEMO", "1")
+    from estecoach.web import db, ingest
     importlib.reload(db)
     importlib.reload(ingest)
-    from estebot.analysis import engine
+    from estecoach.analysis import engine
     importlib.reload(engine)
     ingest.run()
-    from estebot.web import main
+    from estecoach.web import main
     importlib.reload(main)
     from fastapi.testclient import TestClient
     yield TestClient(main.app)
@@ -46,9 +46,9 @@ def browser():
 def _serve(client):
     def handle(route):
         url = route.request.url
-        if not url.startswith("http://estebot.test/"):
+        if not url.startswith("http://estecoach.test/"):
             return route.abort()         # web fonts: the fallback font is wider, so a stricter test
-        r = client.get(url.removeprefix("http://estebot.test"))
+        r = client.get(url.removeprefix("http://estecoach.test"))
         route.fulfill(status=r.status_code, body=r.content,
                       headers={"content-type": r.headers.get("content-type", "text/html")})
     return handle
@@ -60,7 +60,7 @@ def test_the_demo_fits_a_phone_with_every_tile_open(demo_app, browser, scheme):
     # so it scrolled sideways.
     page = browser.new_page(viewport={"width": 390, "height": 844}, color_scheme=scheme)
     page.route("**/*", _serve(demo_app))
-    page.goto(f"http://estebot.test/?day={END.isoformat()}")
+    page.goto(f"http://estecoach.test/?day={END.isoformat()}")
     tiles = page.locator("details.tile")
     assert tiles.count() >= 5
     page.evaluate("document.querySelectorAll('details.tile').forEach(d => d.open = true)")

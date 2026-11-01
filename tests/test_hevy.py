@@ -1,6 +1,6 @@
 from datetime import timedelta, timezone
 
-from estebot.parsers.hevy import hevy_sets, kg_to_lb, local_date
+from estecoach.parsers.hevy import hevy_sets, kg_to_lb, local_date
 
 EST = timezone(timedelta(hours=-5))
 
@@ -75,8 +75,8 @@ def test_lifting_stops_rather_than_drop_hevy_when_its_snapshot_is_missing(tmp_pa
     # were rebuilt from Jefit alone, so every session since the switch vanished, and that
     # was committed and pushed.
     import pytest
-    from estebot.parsers import hevy
-    from estebot import config
+    from estecoach.parsers import hevy
+    from estecoach import config
     (tmp_path / "d").mkdir()
     with_hevy, without = tmp_path / "a.toml", tmp_path / "b.toml"
     with_hevy.write_text(f'data_dir = "{tmp_path / "d"}"\n[sources.hevy]\n')

@@ -1,4 +1,4 @@
-from estebot.parsers.jefit_raw import correct, load_corrections
+from estecoach.parsers.jefit_raw import correct, load_corrections
 
 
 def test_a_ranged_rule_removes_jefits_default_pull_up_load(tmp_path):
