@@ -7,9 +7,33 @@ expensive part of a page, and the demo only changes once a day, so it is kept fo
 minutes: a link shared on LinkedIn shouldn't rebuild every chart for every visitor.
 """
 import time
-from datetime import date
+from datetime import date, timedelta
 
+from estecoach.analysis import engine
 from estecoach.web import people, signups
+
+LOOK_BACK = 90
+
+
+def pick_day(con, goals, today=None):
+    """The demo day the hero shows: the most recent one whose call is to train (anything but
+    rest) with a real mix behind it, at least two areas flagged and two clear. Failing that,
+    one flagged; failing that, today. An all-green card says nothing about how the call
+    weighs things; a made-up one would break the rule that every number is computed."""
+    today = date.fromisoformat(today or date.today().isoformat())
+    days = [(today - timedelta(days=k)).isoformat() for k in range(LOOK_BACK)]
+    loose = None
+    for d in days:
+        r = engine.readiness(con, d, goals)
+        if r["verdict"] == "rest":
+            continue
+        lv = [x["level"] for x in r["signals"]]
+        flagged, clear = sum(l in ("amber", "red") for l in lv), sum(l == "green" for l in lv)
+        if flagged >= 2 and clear >= 2:
+            return d
+        if flagged >= 1 and loose is None:
+            loose = d
+    return loose or days[0]
 
 CACHE_S = 600
 _cache = {}
@@ -21,7 +45,7 @@ def demo_context(request, context_fn):
     if hit and time.time() - hit[0] < CACHE_S:
         return hit[1]
     p = people.demo()
-    ctx = context_fn(request, p) if p else None
+    ctx = context_fn(request, p, pick_day(p.connect(), p.goals)) if p else None
     _cache.clear()
     _cache[key] = (time.time(), ctx)
     return ctx

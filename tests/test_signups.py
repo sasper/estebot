@@ -117,3 +117,21 @@ def test_old_demo_links_go_to_demo_and_visits_are_counted(main, store, monkeypat
     assert r.status_code == 301 and r.headers["location"] == "/demo?day=2026-10-01"
     main.today(Request({"type": "http", "method": "GET", "path": "/", "query_string": b"", "headers": []}), None, None)
     assert signups.visits()[0]["n"] == 1
+
+
+def test_the_hero_shows_a_training_day_with_a_mix_of_signals(monkeypatch):
+    # 1 Nov 2026: the demo's call was all green that day, which says nothing about how the
+    # call weighs things. The hero takes the latest day that is still a training call with
+    # some areas flagged, and never makes a signal up.
+    from estecoach.web import landing
+    calls = {"2026-11-01": ("normal", ["green"] * 7),
+             "2026-10-31": ("rest", ["red", "red", "amber", "green", "green", "green", "green"]),
+             "2026-10-30": ("normal", ["amber", "green", "green", "green", "green", "green", "green"]),
+             "2026-10-29": ("light", ["amber", "red", "green", "green", "green", "green", "green"])}
+    def readiness(con, d, goals):
+        v, lv = calls.get(d, ("normal", ["green"] * 7))
+        return {"verdict": v, "signals": [{"level": l} for l in lv]}
+    monkeypatch.setattr(landing.engine, "readiness", readiness)
+    assert landing.pick_day(None, {}, "2026-11-01") == "2026-10-29"      # not the rest day, not all green
+    calls.pop("2026-10-29")
+    assert landing.pick_day(None, {}, "2026-11-01") == "2026-10-30"      # one flagged is the fallback

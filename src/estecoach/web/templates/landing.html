@@ -37,9 +37,9 @@
       <p class="land-origin">I had four apps tracking everything and none of them told me what to do this morning. So I built the one that does.</p>
     </div>
     {% if r %}
-    <div class="land-cards" aria-label="Today's call, from the demo">
+    <div class="land-cards" aria-label="A morning call from the demo">
       {% include "_call.html" %}
-      <p class="small muted land-note">Today's call in the demo, on a made-up lifter. <a href="/demo">Open it</a></p>
+      <p class="small muted land-note">The demo's call for {{ day_label }}, on a made-up lifter. <a href="/demo?day={{ day }}">Open that day</a></p>
     </div>
     {% endif %}
   </section>
