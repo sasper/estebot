@@ -55,6 +55,11 @@ def _code_version():
 
 def make_call(con, day, goals, training=None, graded=None, code=None):
     """Today's call as a calls.csv row: the verdict, every area's level and the plan's targets."""
+    return call_and_plan(con, day, goals, training, graded, code)[0]
+
+
+def call_and_plan(con, day, goals, training=None, graded=None, code=None):
+    """-> (calls.csv row, the plan it was made with)."""
     r = engine.readiness(con, day, goals, graded=graded)
     plan = engine.training_plan(con, day, r["verdict"], r["checkin"], training=training)
     levels = {x["area"]: x["level"] or "" for x in r["signals"]}
@@ -65,7 +70,7 @@ def make_call(con, day, goals, training=None, graded=None, code=None):
             **{a: levels.get(a, "") for a in AREAS},
             "acwr": "" if r["acwr"] is None else f"{r['acwr']:.3f}",
             "plan": " ".join(x for x in ((plan or {}).get("kind"), (plan or {}).get("variant")) if x),
-            "targets": json.dumps(targets, separators=(",", ":"), ensure_ascii=False)}
+            "targets": json.dumps(targets, separators=(",", ":"), ensure_ascii=False)}, plan
 
 
 def load(path):
@@ -150,7 +155,7 @@ def main(argv):
     if missing := waiting_for(con, now):
         print(f"{day}: waiting for {' and '.join(missing)} before recording the call")
         return 0
-    row = make_call(con, day, cfg.goals)
+    row, plan = call_and_plan(con, day, cfg.goals)
     wrote = record(path, row)
     if wrote:   # the engine reads deload days and given targets from here until the next ingest
         con.execute("INSERT OR IGNORE INTO call_record VALUES (?,?,?,?)",
@@ -158,7 +163,24 @@ def main(argv):
         con.commit()
     print(f"{day}: {row['verdict']} {row['score']}"
           + (" recorded" if wrote else ", already recorded today; kept the first"))
+    if wrote:
+        _prefill_hevy(cfg, plan, row["verdict"])
     return 0
+
+
+def _prefill_hevy(cfg, plan, verdict):
+    """Today's targets into the Hevy routine, once, carrying the call just recorded. A failure
+    is logged and passed over: the call is recorded either way."""
+    from estebot import hevy_routines
+    from estebot.parsers import hevy
+    if not hevy_routines.enabled(cfg):
+        return
+    try:
+        done = hevy_routines.auto(cfg, plan, verdict, hevy.api_key(cfg))
+        if done:
+            print(f"hevy: {done}")
+    except (hevy_routines.Refused, OSError, ValueError, SystemExit) as e:
+        print(f"hevy: not written: {e}")
 
 
 if __name__ == "__main__":

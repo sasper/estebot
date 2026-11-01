@@ -32,6 +32,18 @@ the same inputs always give byte-identical CSVs, which is what makes refactoring
 `web/ingest.py` loads the CSVs, plus notes and authored state, into a SQLite cache. The
 analysis engine reads from SQLite. The web layer only formats what the engine returns.
 
+One thing flows back out. `hevy_routines.py` writes the day's targets into the matching
+Hevy routine, right after the morning call is recorded, or from a Send to Hevy button on
+the page. It writes routines only: each planned exercise's top set (target weight and rep
+range, reps left empty), one `EsteBot:` line in its note, and on a take-it-easy day the
+deloaded sets, put back on the next write. It never creates, edits or deletes a workout,
+since workouts are the logged history everything is graded against, and never touches
+exercise order, supersets, rest times, set types, or the routine's title or folder. Every
+request goes through one function that allows reading routines and updating one and
+raises on anything else. Every write is logged with the routine as it was, in the data
+repo's `hevy_writes.csv`. Only a config that names its routines writes: never the demo,
+presentation mode or the chat.
+
 ## Layout
 
 ```
@@ -41,6 +53,7 @@ src/estebot/
   daily.py         the unattended daily sync: pull, parse, ingest, record the call, commit
                    the data repo (at noon on the server, deploy/scheduler.py)
   demo.py          writes a complete data directory for a made-up person, from one seed
+  hevy_routines.py the day's targets -> the Hevy routine (the one write to an outside app)
   parsers/         one module per source, plus shared table layouts (health_tables,
                    lift_tables) so two sources can't drift apart
   analysis/

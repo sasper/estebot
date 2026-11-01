@@ -11,7 +11,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from estebot import config, core, daily
+from estebot import config, core, daily, hevy_routines
+from estebot.parsers import hevy
 from estebot.analysis import calls, engine as an, nutrition, predictions
 import anthropic
 from starlette.concurrency import run_in_threadpool
@@ -196,6 +197,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
     waits = calls.waiting(con, now) if is_today and not demo else {}
     resting = _chat_resting(request, p) if chat_enabled(p) else None
     chat_on = chat_enabled(p) and not resting
+    hevy_card = _hevy_card(p, plan, r["verdict"]) if is_today and not demo else None
     ctx = dict(verdict_text=verdict_text, verdict_words=VERDICT_TEXT, ev=ev, recorded=recorded,
         ring=charts.signal_ring(r["signals"], r["score"], r["verdict"], voting=r["voting"]),
         day_label=date.fromisoformat(day).strftime("%a %-d %b %Y"),
@@ -206,6 +208,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         said=request.query_params.get("said"),
         review_days=review_days, prev_day=prev_day, next_day=next_day, month_nav=month_nav,
         is_today=is_today, waiting=_waiting_lines(waits, cfg, now), waiting_for=list(waits.values()),
+        hevy=hevy_card,
         demo=demo,
         signin=auth.settings() is not None, email=p.email, chat_on=chat_on, chat_resting=resting,
         # The demo opens on the canned conversation, live or not; live, it's the history a
@@ -360,6 +363,44 @@ def _record_call(p):
     sync_log = open(p.cfg.data_dir / ".sync.log", "a")
     subprocess.Popen([sys.executable, "-m", "estebot.analysis.calls"], stdout=sync_log, stderr=sync_log,
                      env={**os.environ, "ESTEBOT_CONFIG": str(p.cfg.path)}, start_new_session=True)
+
+def _hevy_card(p, plan, verdict):
+    """What Send to Hevy would change, and the last write today. None where this person's
+    config names no Hevy routines (the demo, a second person), or on a rest day."""
+    if not plan or plan.get("rest") or not hevy_routines.enabled(p.cfg) or not hevy_routines.routine_id(p.cfg, plan):
+        return None
+    try:
+        got = hevy_routines.plan_write(p.cfg, plan, verdict, hevy.api_key(p.cfg))
+        line = hevy_routines.preview(got[1]["title"], got[3], got[4])
+    except (hevy_routines.Refused, OSError, ValueError, SystemExit) as e:
+        log.warning("hevy preview failed: %s", e)
+        line = "Couldn't reach Hevy to show what would change."
+    return {"preview": line, "last": hevy_routines.last_write(p.cfg)}
+
+
+@app.post("/hevy/send")
+def hevy_send(request: Request, csrf: str = Form("")):
+    """Today's plan into its Hevy routine, again, after a check-in or a change of mind. Owner
+    only: the demo and read-only people are refused with every other form, and presentation
+    mode drops the button and refuses the post too."""
+    p = people.for_request(request)
+    if refused := _refuse(p, csrf):
+        return refused
+    if request.cookies.get(PRESENT_COOKIE) == "1" or not hevy_routines.enabled(p.cfg):
+        return PlainTextResponse("Sending to Hevy isn't available here.", status_code=403)
+    con = p.connect()
+    day = date.today().isoformat()
+    r = an.readiness(con, day, p.goals)
+    plan = an.training_plan(con, day, r["verdict"], r["checkin"], training=p.training)
+    if not plan or plan.get("rest"):
+        return PlainTextResponse("No session planned today.", status_code=409)
+    try:
+        hevy_routines.send(p.cfg, plan, r["verdict"], hevy.api_key(p.cfg), "button", day)
+    except (hevy_routines.Refused, OSError, ValueError, SystemExit) as e:
+        log.warning("hevy send failed: %s", e)
+        return PlainTextResponse(f"Hevy didn't take it: {e}", status_code=502)
+    return RedirectResponse(f"/?day={day}#session", status_code=303)
+
 
 @app.post("/checkin")
 def checkin(request: Request, day: str = Form(...), back: str | None = Form(None),

@@ -201,13 +201,20 @@
 
   {# its targets and a rest day's note would give the call away before the check-in #}
   {% if plan and not ask_first %}
-  <div class="card session">
+  <div class="card session" id="session">
     <h2>{{ icon("session") }}Today's session{% if plan.rest %}, if you train{% endif %}</h2>
     <div class="verdict"><span class="vbadge">{{ plan.kind|title }} {{ plan.variant }}{% if plan.main %} · {{ plan.main }}{% endif %}</span></div>
     {% call info() %}<p>Next in your push → pull → legs rotation after {{ plan.after.kind }} on {{ plan.after.date|shortdate }}.
       {% if plan.template %}Exercises from your last {{ plan.kind|title }} {{ plan.variant }} ({{ plan.template|shortdate }}); each target comes from the last time you did that exercise.{% endif %}</p><p>Each target comes from the last normal session of that exercise; deload days never set one. Main lifts: an estimated max from that session's sets and their RPEs, 5 lb more, and the reps that would land at RPE 8–9.5. A missed target holds the weight. Accessories: add a rep up to 12 (15 for calves, laterals, shrugs, face pulls, leg extensions, flyes), then add load and drop to the bottom of the range. Bodyweight: beat the last total reps by 1–2. No RPE logged: repeat it. A take-it-easy day is 80% of last time's sets and weight; a flagged back makes it 60%, every lift still in.</p>{% endcall %}
     {% if plan.day_adjust %}<div class="ramp">{{ plan.day_adjust }}</div>{% endif %}
     {% if plan.rest %}<div class="ramp"><b>Rest day.</b> The verdict above says rest; this is what the next session looks like when you do train.</div>{% endif %}
+    {% if hevy and not present %}
+    <form method="post" action="/hevy/send" class="hevysend">{% if csrf %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endif %}
+      <p class="small">{{ hevy.preview }}</p>
+      <button type="submit">Send to Hevy</button>
+      {% if hevy.last %}<span class="small muted">Last sent {{ hevy.last.written_at|clock }}{{ " by the morning call" if hevy.last.source == "auto" else "" }}</span>{% endif %}
+    </form>
+    {% endif %}
     {% if plan.exercises %}
     <table class="plan">
       <thead><tr><th>Exercise</th><th>Today</th><th>Why</th><th>Last time</th></tr></thead>

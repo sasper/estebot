@@ -443,3 +443,23 @@ def test_an_upload_time_more_than_a_day_old_says_which_day():
     now = datetime(2026, 10, 31, 7, 0)
     assert main._clock(datetime(2026, 10, 30, 21, 41), now) == "9:41 pm"
     assert main._clock(datetime(2026, 10, 29, 21, 41), now) == "Thu 29 Oct 9:41 pm"
+
+
+def _post(main, cookie=None):
+    headers = [(b"cookie", f"present={cookie}".encode())] if cookie else []
+    req = Request({"type": "http", "method": "POST", "path": "/hevy/send", "query_string": b"",
+                   "headers": headers})
+    return main.hevy_send(req, "")
+
+
+def test_send_to_hevy_is_refused_to_the_demo_presentation_and_a_config_without_routines(main, monkeypatch):
+    # Writing to Hevy is the owner's: never the demo, never with presentation mode on, and a
+    # config that names no routines (a second person) has no button at all.
+    sent = []
+    monkeypatch.setattr(main.hevy_routines, "send", lambda *a, **k: sent.append(a))
+    assert 'action="/hevy/send"' not in today_page(main)
+    assert _post(main).status_code == 403                       # no routines in this config
+    monkeypatch.setattr(main.hevy_routines, "enabled", lambda cfg: True)
+    assert _post(main, cookie="1").status_code == 403
+    monkeypatch.setenv("ESTEBOT_DEMO", "1")
+    assert _post(main).status_code == 403 and sent == []

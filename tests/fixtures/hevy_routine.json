@@ -1,0 +1,233 @@
+{
+  "routine": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "title": "Push A - Bench",
+    "folder_id": 1000001,
+    "updated_at": "2026-01-10T15:00:00.000Z",
+    "created_at": "2026-01-01T12:00:00.000Z",
+    "exercises": [
+      {
+        "index": 0,
+        "title": "Bench Press (Barbell)",
+        "notes": "Pause the first rep",
+        "exercise_template_id": "TPL00001",
+        "superset_id": null,
+        "rest_seconds": 180,
+        "sets": [
+          {
+            "index": 0,
+            "type": "warmup",
+            "weight_kg": 43.0913,
+            "reps": 15,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 1,
+            "type": "normal",
+            "weight_kg": 70.3068,
+            "reps": 10,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 2,
+            "type": "normal",
+            "weight_kg": 83.9146,
+            "reps": 6,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 3,
+            "type": "normal",
+            "weight_kg": 92.9864,
+            "reps": 4,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 4,
+            "type": "normal",
+            "weight_kg": 70.3068,
+            "reps": 8,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "title": "Arnold Press (Dumbbell)",
+        "notes": "",
+        "exercise_template_id": "TPL00002",
+        "superset_id": 0,
+        "rest_seconds": 120,
+        "sets": [
+          {
+            "index": 0,
+            "type": "normal",
+            "weight_kg": 18.1437,
+            "reps": 10,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 1,
+            "type": "normal",
+            "weight_kg": 20.4117,
+            "reps": 8,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 2,
+            "type": "normal",
+            "weight_kg": 20.4117,
+            "reps": 8,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "title": "Lateral Raise (Dumbbell)",
+        "notes": "",
+        "exercise_template_id": "TPL00003",
+        "superset_id": 0,
+        "rest_seconds": 120,
+        "sets": [
+          {
+            "index": 0,
+            "type": "normal",
+            "weight_kg": 6.8039,
+            "reps": 12,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 1,
+            "type": "normal",
+            "weight_kg": 6.8039,
+            "reps": 12,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 2,
+            "type": "normal",
+            "weight_kg": 6.8039,
+            "reps": 12,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "title": "Triceps Rope Pushdown",
+        "notes": "",
+        "exercise_template_id": "TPL00004",
+        "superset_id": 1,
+        "rest_seconds": 120,
+        "sets": [
+          {
+            "index": 0,
+            "type": "normal",
+            "weight_kg": 18.1437,
+            "reps": 12,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 1,
+            "type": "normal",
+            "weight_kg": 18.1437,
+            "reps": 10,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 2,
+            "type": "normal",
+            "weight_kg": 18.1437,
+            "reps": 10,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "title": "Chest Fly (Machine)",
+        "notes": "",
+        "exercise_template_id": "TPL00005",
+        "superset_id": null,
+        "rest_seconds": 180,
+        "sets": [
+          {
+            "index": 0,
+            "type": "normal",
+            "weight_kg": 40.8233,
+            "reps": 12,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 1,
+            "type": "normal",
+            "weight_kg": 45.3592,
+            "reps": 10,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          },
+          {
+            "index": 2,
+            "type": "normal",
+            "weight_kg": 47.6272,
+            "reps": 8,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          }
+        ]
+      },
+      {
+        "index": 5,
+        "title": "Shrug (Dumbbell)",
+        "notes": "",
+        "exercise_template_id": "TPL00006",
+        "superset_id": null,
+        "rest_seconds": 0,
+        "sets": [
+          {
+            "index": 0,
+            "type": "normal",
+            "weight_kg": 27.2155,
+            "reps": 15,
+            "distance_meters": null,
+            "duration_seconds": null,
+            "custom_metric": null
+          }
+        ]
+      }
+    ]
+  }
+}
