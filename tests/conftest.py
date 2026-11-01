@@ -16,6 +16,15 @@ def _fresh_people():
     clear()
 
 
+@pytest.fixture(autouse=True)
+def _no_desktop_notifications(monkeypatch):
+    # daily._notify shells out to osascript. A test that fakes a failed step would otherwise
+    # post a real "hevy failed" banner on the Mac running pytest, pointing at a log that
+    # never got the failure.
+    from estecoach import daily
+    monkeypatch.setattr(daily, "_notify", lambda msg: None)
+
+
 @pytest.fixture
 def con(tmp_path, monkeypatch):
     data = tmp_path / "data"; data.mkdir()
