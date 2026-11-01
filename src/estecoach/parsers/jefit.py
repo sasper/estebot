@@ -4,7 +4,7 @@ import csv, glob, os, re, sys
 from collections import defaultdict
 from datetime import date as _date, datetime
 
-from estecoach import config
+from estecoach import config, core
 from estecoach.core import order_by_name_date, trailing_mean
 from estecoach.parsers import lift_tables
 from estecoach.parsers.jefit_raw import (merged_sections, load_renames, rename, load_corrections,
@@ -122,11 +122,14 @@ for k, rs in by_key.items():
     keep.extend(kept)
 
 def _set_row(date, name, set_idx, wt, reps, rpe=None, set_type="", source="jefit"):
-    # Epley, restricted to sets of <=10 reps: above that the formula drifts badly
-    # and warm-up / burnout sets add noise. 0.0 means "not a valid e1RM estimate".
-    # Every set from every source goes through here, so volume and e1RM have one definition.
+    # core.e1rm, the one definition; 0.0 here means "not a valid estimate" (over 10 reps, no
+    # load). Every set from every source goes through here.
     load = _load(date, name, wt)
-    e1rm = load * (1 + reps / 30.0) if (load > 0 and reps <= 10) else 0.0
+    try:
+        r = float(rpe) if rpe not in (None, "") else None
+    except ValueError:
+        r = None
+    e1rm = core.e1rm(load, reps, r) or 0.0
     return {
         "date": date, "exercise": name, "muscle_group": group(name),
         "set_idx": set_idx, "weight_lb": round(wt, 1), "reps": int(reps),

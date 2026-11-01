@@ -7,7 +7,7 @@ import pytest
 from estecoach.core import (
     dedupe_daily_total,
     drop_subset_duplicates,
-    epley_e1rm,
+    e1rm,
     is_hard_set,
     night_of,
     ols_slope_per_week,
@@ -88,21 +88,21 @@ class TestDedupeDailyTotal:
 
 class TestEpley:
     def test_known_value(self):
-        assert epley_e1rm(225, 5) == pytest.approx(262.5)
+        assert e1rm(225, 5) == pytest.approx(262.5)
 
     def test_single_rep_is_the_weight(self):
-        assert epley_e1rm(315, 1) == pytest.approx(325.5)
+        assert e1rm(315, 1) == pytest.approx(325.5)
 
     def test_above_rep_cap_returns_none_not_zero(self):
         # returning 0.0 here silently corrupted a median over the column
-        assert epley_e1rm(155, 12) is None
+        assert e1rm(155, 12) is None
 
     def test_cap_boundary_inclusive(self):
-        assert epley_e1rm(155, 10) is not None
+        assert e1rm(155, 10) is not None
 
     @pytest.mark.parametrize("w,r", [(0, 5), (-10, 5), (225, 0), (225, -3)])
     def test_rejects_nonsense(self, w, r):
-        assert epley_e1rm(w, r) is None
+        assert e1rm(w, r) is None
 
 
 class TestParseJefitLogs:
@@ -443,3 +443,12 @@ def test_a_light_set_does_not_inflate_the_estimated_max():
     # 29 Oct hang clean: 205 x 8 @ 6 alone reads as a 287 max; the near-max sets say 280.
     p = core.main_progression("Barbell Hang Clean", [(205, 8, 6), (225, 5, 9), (255, 2, 9)])
     assert "from 255 × 2 at RPE 9" in p["why"] and p["target"] == "260 × 1–2"
+
+
+
+def test_e1rm_counts_reps_left_only_near_failure():
+    # One definition, with RPE (decided 1 Nov 2026). At RPE 8+ the reps left count; below it a
+    # set proves only what was lifted, or light sets would inflate the session's best.
+    assert e1rm(275, 6, 9.5) == pytest.approx(275 * (1 + 6.5 / 30))
+    assert e1rm(205, 8, 6) == e1rm(205, 8) == pytest.approx(205 * (1 + 8 / 30))
+    assert e1rm(255, 2, 9) > e1rm(205, 8, 6)
