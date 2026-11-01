@@ -66,6 +66,21 @@ tpl.env.filters["balance"] = charts.kcal_balance
 tpl.env.filters["shortdate"] = lambda iso: date.fromisoformat(iso).strftime("%a %-d %b")
 tpl.env.filters["clock"] = lambda iso: datetime.fromisoformat(iso).strftime("%-H:%M")
 
+# estecoach.app is the address. Pages asked for at the old one (EsteBot until 1 Nov 2026) or
+# at www go to the same page there; /api/ is answered where it's sent, since the phone's
+# upload automations post to estebot.app and a redirected POST isn't followed.
+CANONICAL = "estecoach.app"
+OTHER_HOSTS = {"estebot.app", "www.estebot.app", "www.estecoach.app"}
+
+@app.middleware("http")
+async def _canonical_host(request: Request, call_next):
+    host = (request.headers.get("host") or "").split(":")[0].lower()
+    if host in OTHER_HOSTS and request.method in ("GET", "HEAD") and not request.url.path.startswith("/api/"):
+        q = request.url.query
+        return RedirectResponse(f"https://{CANONICAL}{request.url.path}{'?' + q if q else ''}", status_code=301)
+    return await call_next(request)
+
+
 # The public demo (ESTECOACH_DEMO=1) is one page shared by every visitor, so nobody gets to
 # change it: the forms are not rendered and the POST routes refuse.
 def demo_mode():

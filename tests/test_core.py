@@ -443,18 +443,3 @@ def test_a_light_set_does_not_inflate_the_estimated_max():
     # 29 Oct hang clean: 205 x 8 @ 6 alone reads as a 287 max; the near-max sets say 280.
     p = core.main_progression("Barbell Hang Clean", [(205, 8, 6), (225, 5, 9), (255, 2, 9)])
     assert "from 255 × 2 at RPE 9" in p["why"] and p["target"] == "260 × 1–2"
-
-
-def test_config_reads_the_old_name_until_the_new_one_is_set(tmp_path, monkeypatch):
-    # The project was EsteBot until 1 Nov 2026: Fly secrets and the users file (which names
-    # each person's estebot.toml) keep working while they move to the new names.
-    from estecoach import config
-    monkeypatch.delenv("ESTECOACH_BASE_URL", raising=False)
-    monkeypatch.setenv("ESTEBOT_BASE_URL", "old")
-    assert config.env("BASE_URL") == "old"
-    monkeypatch.setenv("ESTECOACH_BASE_URL", "new")
-    assert config.env("BASE_URL") == "new"
-    (tmp_path / "estecoach.toml").write_text(f'data_dir = "{tmp_path}"\n')
-    assert config.load(tmp_path / "estebot.toml").path.name == "estecoach.toml"
-    (tmp_path / ".estebot-demo").write_text("")
-    assert config.load(tmp_path / "estecoach.toml").is_demo

@@ -10,7 +10,7 @@ primary_region = "iad"
   dockerfile = "Dockerfile"
 
 [env]
-  ESTECOACH_BASE_URL = "https://estebot.app"   # until estecoach.app has its certificate and sign-in redirect
+  ESTECOACH_BASE_URL = "https://estecoach.app"
   TZ = "America/New_York"
   # 04:30 brings yesterday's food and workouts in before the morning's call; noon is the backstop.
   SYNC_AT = "04:30,12:00"

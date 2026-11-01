@@ -478,3 +478,15 @@ def test_presentation_mode_leaves_every_medication_name_out_of_the_html(main, co
     shown = today_page(main, "present=1")
     for name in ("Fictozole", "Examprofen"):
         assert name not in shown
+
+
+def test_the_old_address_sends_pages_to_estecoach_app_but_answers_uploads(main):
+    # EsteBot was renamed EsteCoach on 1 Nov 2026. The phone's automations still post to
+    # estebot.app, and a redirected POST isn't followed, so /api/ is answered where it lands.
+    from fastapi.testclient import TestClient
+    old = TestClient(main.app, base_url="https://estebot.app")
+    r = old.get("/?day=2026-10-01", follow_redirects=False)
+    assert r.status_code == 301 and r.headers["location"] == "https://estecoach.app/?day=2026-10-01"
+    assert TestClient(main.app, base_url="https://www.estecoach.app").get("/", follow_redirects=False).status_code == 301
+    assert old.post("/api/health-auto-export", content=b"{}").status_code != 301
+    assert TestClient(main.app, base_url="http://172.16.0.2:8080").get("/", follow_redirects=False).status_code == 200

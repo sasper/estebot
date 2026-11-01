@@ -31,8 +31,7 @@ def credentials(cfg):
     if os.environ.get("CRONOMETER_EMAIL") and os.environ.get("CRONOMETER_PASSWORD"):
         return os.environ["CRONOMETER_EMAIL"], os.environ["CRONOMETER_PASSWORD"]
     src = cfg.sources.get("cronometer", {})
-    # estebot-cronometer was the entry's name before the project became EsteCoach (1 Nov 2026).
-    for service in [src["keychain_service"]] if "keychain_service" in src else ["estecoach-cronometer", "estebot-cronometer"]:
+    for service in [src.get("keychain_service", "estecoach-cronometer")]:
         try:
             attrs = subprocess.run(["security", "find-generic-password", "-s", service],
                                    capture_output=True, text=True, check=True).stdout
