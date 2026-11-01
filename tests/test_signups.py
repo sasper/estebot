@@ -133,5 +133,7 @@ def test_the_hero_shows_a_training_day_with_a_mix_of_signals(monkeypatch):
         return {"verdict": v, "signals": [{"level": l} for l in lv]}
     monkeypatch.setattr(landing.engine, "readiness", readiness)
     assert landing.pick_day(None, {}, "2026-11-01") == "2026-10-29"      # not the rest day, not all green
-    calls.pop("2026-10-29")
+    calls["2026-10-20"] = ("normal", ["amber", "amber", "green", "green", "green", "green", "green"])
+    assert landing.pick_day(None, {}, "2026-11-01") == "2026-10-20"      # as planned beats take it easy
+    calls.pop("2026-10-29"); calls.pop("2026-10-20")
     assert landing.pick_day(None, {}, "2026-11-01") == "2026-10-30"      # one flagged is the fallback

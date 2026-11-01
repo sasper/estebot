@@ -16,24 +16,28 @@ LOOK_BACK = 90
 
 
 def pick_day(con, goals, today=None):
-    """The demo day the hero shows: the most recent one whose call is to train (anything but
-    rest) with a real mix behind it, at least two areas flagged and two clear. Failing that,
-    one flagged; failing that, today. An all-green card says nothing about how the call
-    weighs things; a made-up one would break the rule that every number is computed."""
+    """The demo day the hero shows: the most recent one whose call is to train with a real mix
+    behind it, at least two areas flagged and two clear. Go hard or go as planned first, take
+    it easy only if there's none; then one flagged; then today. An all-green card says
+    nothing about how the call weighs things, and a made-up one would break the rule that
+    every number is computed."""
     today = date.fromisoformat(today or date.today().isoformat())
     days = [(today - timedelta(days=k)).isoformat() for k in range(LOOK_BACK)]
-    loose = None
+    best = {}                       # rank -> the most recent day reaching it
     for d in days:
         r = engine.readiness(con, d, goals)
         if r["verdict"] == "rest":
             continue
         lv = [x["level"] for x in r["signals"]]
         flagged, clear = sum(l in ("amber", "red") for l in lv), sum(l == "green" for l in lv)
-        if flagged >= 2 and clear >= 2:
-            return d
-        if flagged >= 1 and loose is None:
-            loose = d
-    return loose or days[0]
+        mixed = flagged >= 2 and clear >= 2
+        rank = (0 if mixed and r["verdict"] in ("hard", "normal") else 1 if mixed
+                else 2 if flagged >= 1 else None)
+        if rank is not None:
+            best.setdefault(rank, d)
+        if 0 in best:
+            break
+    return best[min(best)] if best else days[0]
 
 CACHE_S = 600
 _cache = {}
