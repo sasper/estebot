@@ -15,7 +15,17 @@ from pathlib import Path
 
 from estecoach import config
 
-TRACKS = ("Apple Watch", "Hevy", "Cronometer", "Other")
+# What people track with today, by kind: the form's checkboxes. Names only, no logos.
+TRACK_GROUPS = (
+    ("Watch, ring and sleep", ("Apple Watch", "Whoop", "Oura Ring", "Garmin", "Fitbit", "Polar",
+                               "Coros", "Samsung Galaxy Watch", "Eight Sleep")),
+    ("Lifting", ("Hevy", "Strong", "Jefit", "Fitbod", "Boostcamp", "TrainHeroic", "RP Hypertrophy",
+                 "Notes app or spreadsheet", "Paper log")),
+    ("Food", ("Cronometer", "MyFitnessPal", "MacroFactor", "Lose It", "Carbon Diet Coach", "Noom")),
+    ("Body weight", ("Smart scale", "Regular scale")),
+    ("Something else", ("Other",)),
+)
+TRACKS = tuple(t for _, ts in TRACK_GROUPS for t in ts)
 LIMITS = {"name": 80, "email": 120, "note": 300}
 MAX_BODY = 8 * 1024                # a filled-in form is well under 1 KB
 PER_HOUR = 5                       # requests from one address; a person needs one

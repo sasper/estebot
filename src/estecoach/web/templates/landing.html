@@ -18,6 +18,7 @@
 <link rel="icon" type="image/svg+xml" href="/static/icon.svg?v={{ icon_v }}">
 <link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png?v={{ icon_v }}">
 {% import "brand.html" as brand %}
+{% from "macros.html" import icon %}
 <div class="land">
 
   <header class="land-top"><a href="/" class="home" aria-label="EsteCoach home"><h1>{{ brand.wordmark() }}</h1></a>
@@ -46,29 +47,32 @@
 
   {# 3. How it works #}
   <section class="land-sec">
-    <h2 class="land-h2">How it works</h2>
+    <h2 class="land-h2">{{ icon("steps") }}How it works</h2>
     <ol class="land-steps">
-      <li><b>Connect what you already use.</b> Apple Health for sleep, HRV, resting heart rate and weight. Hevy for lifting. Cronometer for food. Pulled in automatically.</li>
-      <li><b>Check in, get one call.</b> Thirty seconds of taps after you wake up. Then one call: go hard, go as planned, take it easy, or rest, with the reasons written out.</li>
-      <li><b>Open Hevy and lift.</b> Today's session is already in your routine, with a target for every exercise.</li>
+      <li class="land-panel"><span class="land-num">1</span><h3>{{ icon("connect") }}Connect what you already use</h3>
+        <p>Apple Health for sleep, HRV, resting heart rate and weight. Hevy for lifting. Cronometer for food. Pulled in automatically.</p></li>
+      <li class="land-panel"><span class="land-num">2</span><h3>{{ icon("checkin") }}Check in, get one call</h3>
+        <p>Thirty seconds of taps after you wake up. Then one call: go hard, go as planned, take it easy, or rest, with the reasons written out.</p></li>
+      <li class="land-panel"><span class="land-num">3</span><h3>{{ icon("session") }}Open Hevy and lift</h3>
+        <p>Today's session is already in your routine, with a target for every exercise.</p></li>
     </ol>
   </section>
 
   {# 4. Why it's different #}
   <section class="land-sec">
-    <h2 class="land-h2">Why it's different</h2>
+    <h2 class="land-h2">{{ icon("spark") }}Why it's different</h2>
     <div class="land-grid">
-      <div><b>Numbers from math, not guesses.</b> Every figure comes from tested algorithms. The AI explains them. It never makes one up.</div>
-      <div><b>It grades itself.</b> Every call is checked against how the session went. A signal only gets a say once your own history shows it matters for you.</div>
-      <div><b>Messy data, fixed at the source.</b> Unit switches, renamed exercises, double-counted sleep: fixed by rules, so years of history rebuild the same way every time.</div>
-      <div><b>Ask it anything about your data.</b> Plain-English answers from your own numbers.</div>
+      <div class="land-panel"><h3>{{ icon("math") }}Numbers from math, not guesses</h3><p>Every figure comes from tested algorithms. The AI explains them. It never makes one up.</p></div>
+      <div class="land-panel"><h3>{{ icon("grade") }}It grades itself</h3><p>Every call is checked against how the session went. A signal only gets a say once your own history shows it matters for you.</p></div>
+      <div class="land-panel"><h3>{{ icon("fix") }}Messy data, fixed at the source</h3><p>Unit switches, renamed exercises, double-counted sleep: fixed by rules, so years of history rebuild the same way every time.</p></div>
+      <div class="land-panel"><h3>{{ icon("ask") }}Ask it anything about your data</h3><p>Plain-English answers from your own numbers.</p></div>
     </div>
   </section>
 
   {# 5. A morning with EsteCoach: real views, scaled down. Swipe on a phone, a row on desktop. #}
   {% if r %}
   <section class="land-sec">
-    <h2 class="land-h2">A morning with EsteCoach</h2>
+    <h2 class="land-h2">{{ icon("sun") }}A morning with EsteCoach</h2>
     <div class="land-strip">
       <figure><div class="land-shot">
         <section class="card tapcheck"><div class="taphead"><h2>Check-in</h2></div>
@@ -89,16 +93,16 @@
 
   {# 6. Who it's for #}
   <section class="land-sec">
-    <h2 class="land-h2">Who it's for</h2>
+    <h2 class="land-h2">{{ icon("who") }}Who it's for</h2>
     <div class="land-who">
-      <div><b>For</b> people who lift with a plan, wear an Apple Watch, and already log in Hevy. Cronometer is optional.</div>
-      <div><b>Not yet</b> for Android, sports other than lifting, or metric units on the page.</div>
+      <div class="land-panel yes"><h3>{{ icon("yes") }}For</h3><p>People who lift with a plan, wear an Apple Watch, and already log in Hevy. Cronometer is optional.</p></div>
+      <div class="land-panel no"><h3>{{ icon("no") }}Not yet</h3><p>Android, sports other than lifting, or metric units on the page.</p></div>
     </div>
   </section>
 
   {# 7. Early access #}
-  <section class="land-sec land-form" id="early-access">
-    <h2 class="land-h2">Want to try it?</h2>
+  <section class="land-sec land-form land-panel" id="early-access">
+    <h2 class="land-h2">{{ icon("mail") }}Want to try it?</h2>
     {% if done %}
     <p class="land-done" role="status">Got it. I'll be in touch.</p>
     {% else %}
@@ -109,11 +113,14 @@
       <input type="text" id="name" name="name" maxlength="{{ limits.name }}" value="{{ (form.name or [''])[0] }}" autocomplete="name">
       <label for="email">Email</label>
       <input type="email" id="email" name="email" maxlength="{{ limits.email }}" required value="{{ (form.email or [''])[0] }}" autocomplete="email">
-      <fieldset class="land-tracks"><legend>What do you track today?</legend>
-        {% for t in tracks %}<label class="flag"><input type="checkbox" name="tracks" value="{{ t }}"{{ " checked" if t in (form.tracks or []) }}><span>{{ t }}</span></label>{% endfor %}
+      <p class="land-q">What do you track with today? <span class="muted">Tick all that apply.</span></p>
+      {% for group, names in track_groups %}
+      <fieldset class="land-tracks"><legend>{{ group }}</legend>
+        {% for t in names %}<label class="flag"><input type="checkbox" name="tracks" value="{{ t }}"{{ " checked" if t in (form.tracks or []) }}><span>{{ t }}</span></label>{% endfor %}
       </fieldset>
+      {% endfor %}
       <label for="note">Anything else? <span class="muted" style="font-weight:400">(optional)</span></label>
-      <textarea id="note" name="note" maxlength="{{ limits.note }}">{{ (form.note or [''])[0] }}</textarea>
+      <textarea id="note" name="note" maxlength="{{ limits.note }}" placeholder="Something not on the list, or what you're training for">{{ (form.note or [''])[0] }}</textarea>
       {# Left empty by people; filled in by form-filling bots, whose requests are dropped. #}
       <div class="hp" aria-hidden="true"><label for="website">Website</label><input type="text" id="website" name="website" tabindex="-1" autocomplete="off"></div>
       <button type="submit" class="intro-btn">Get early access</button>
@@ -123,7 +130,8 @@
   </section>
 
   {# 8. Built by #}
-  <section class="land-sec land-built">
+  <section class="land-sec land-built land-panel">
+    <h3>{{ icon("build") }}Built by</h3>
     <p>Designed and built by Stephen Sper, an engineering leader in Ann Arbor. I wrote the requirements and design docs and used Claude Code for implementation. How it's built, and what broke along the way, is on GitHub.</p>
     <p class="small"><a href="https://github.com/sasper/estecoach">GitHub</a> · <a href="https://github.com/sasper/estecoach/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a> · <a href="https://github.com/sasper/estecoach/blob/main/HISTORY.md">HISTORY.md</a> · <a href="https://www.linkedin.com/in/stephensper">LinkedIn</a></p>
   </section>

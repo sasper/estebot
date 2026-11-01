@@ -546,3 +546,35 @@ html{scroll-behavior:smooth}
 .land-form form > label:not(.flag){display:block;font-weight:600;margin:16px 0 6px}
 .land-form .land-tracks + label{margin-top:20px}
 @media (min-width:900px){ .land-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* landing: panels and icons (1 Nov 2026 review) */
+.land-hero{align-items:center}
+.land-cards .contrib,.land-cards .info{display:none}          /* the hero shows the call, not its seven rows */
+.land-panel{background:var(--surface-1);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+  box-shadow:0 1px 0 color-mix(in srgb,var(--text-primary) 4%,transparent)}
+.land-panel h3{display:flex;align-items:center;gap:8px;font-size:16px;margin:0 0 6px;color:var(--text-primary)}
+.land-panel p{margin:0;color:var(--text-secondary)}
+.land-panel .ico,.land-h2 .ico{width:20px;height:20px;flex:0 0 auto}
+.land-h2{display:flex;align-items:center;gap:10px}
+.land-h2 .ico{width:24px;height:24px}
+.land-steps{list-style:none;padding:0;margin:0;display:grid;gap:14px;max-width:none;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.land-steps li{position:relative;padding-left:20px}
+.land-num{position:absolute;top:14px;right:16px;font-family:var(--display);font-size:34px;font-weight:700;
+  line-height:1;color:color-mix(in srgb,var(--accent) 35%,transparent)}
+.land-grid{gap:14px}
+.land-grid > .land-panel,.land-who > .land-panel{color:var(--text-secondary)}
+.land-who .yes h3 .ico{stroke:var(--good)}
+.land-who .no h3 .ico{stroke:var(--bad)}
+.land-form.land-panel{max-width:none;padding:24px}
+.land-form form{max-width:640px}
+.land-q{font-weight:600;margin:20px 0 4px;color:var(--text-primary)}
+.land-q .muted{font-weight:400}
+.land-tracks{margin:10px 0 0}
+.land-tracks legend{font-size:13px;color:var(--text-secondary);font-weight:600}
+.land-tracks .flag span{height:38px;font-size:13.5px}
+.land-built.land-panel{border-top:1px solid var(--line);padding-top:18px}
+.land-tracks .flag{margin:0}
+.land-tracks{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.land-tracks legend{width:100%;margin-bottom:6px}
+.land-shot fieldset{border:0;padding:0;margin:0 0 10px}
+.land-shot legend{padding:0;font-weight:600;font-size:13px;margin-bottom:4px}

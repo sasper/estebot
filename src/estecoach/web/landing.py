@@ -35,5 +35,5 @@ def page(request, tpl, context_fn, status=200, form=None, error=None, done=None,
                 if q.get("role") == "user" and a.get("role") != "user"), None)
     return tpl.TemplateResponse(request, "landing.html", dict(
         ctx, base="/demo", present=False, waiting={}, waiting_for=[], hevy=None, csrf="",
-        ask_first=False, ask=ask, tracks=signups.TRACKS, form=form or {}, error=error, done=done,
+        ask_first=False, ask=ask, tracks=signups.TRACKS, track_groups=signups.TRACK_GROUPS, form=form or {}, error=error, done=done,
         limits=signups.LIMITS), status_code=status)
