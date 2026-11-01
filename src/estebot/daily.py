@@ -87,7 +87,7 @@ def _prune_feed(cfg, keep_days):
     from datetime import timedelta
     cutoff = (date.today() - timedelta(days=keep_days)).isoformat()
     src = cfg.sources.get("health_auto_export", {})
-    for key in ("metrics_glob", "workouts_glob"):
+    for key in ("metrics_glob", "workouts_glob", "medications_glob"):
         folder = Path(os.path.expanduser(src.get(key, ""))).parent
         if not src.get(key) or not folder.is_relative_to(cfg.data_dir) or not folder.is_dir():
             continue

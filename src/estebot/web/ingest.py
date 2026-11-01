@@ -76,6 +76,14 @@ EXCUSE_HINTS = re.compile(
     r"travel|away|parents|hospital|surgery|camping|vacation|holiday|wedding|funeral|"
     r"sick|ill|flu|injur|emergency", re.I)
 
+def load_medications(con):
+    rows = _rows("medications.csv") if os.path.exists(os.path.join(TIDY, "medications.csv")) else []
+    con.execute("DELETE FROM medication")
+    con.executemany("INSERT INTO medication VALUES (?,?,?,?,?,?,?,?)",
+                    [(r["date"], r["time"], r["medication"], _f(r["dose"]), r["unit"], r["status"],
+                      int(r["scheduled"] or 0), _f(r["scheduled_dose"])) for r in rows])
+    print(f"   {'medication':14} {len(rows):5} rows")
+
 def load_calls(con):
     from estebot.analysis import calls
     rows = calls.load(_cfg.data_file("calls.csv"))
@@ -158,6 +166,7 @@ def run():
     load_annotations(con)
     parse_subjective(con)
     load_calls(con)
+    load_medications(con)
     con.commit()
     cur = con.execute("SELECT MAX(date) d FROM weight").fetchone()
     print(f"\nlatest weigh-in: {cur['d']}")

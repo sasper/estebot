@@ -15,6 +15,7 @@ ledger.md
 context-log.md
 calls.csv
 hevy_writes.csv
+medications.csv
 
 # Python
 __pycache__/

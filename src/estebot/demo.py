@@ -398,7 +398,30 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
     _write_notes(rng, notes, days, iso, ev, tweak, lifted, walked, slept)
     _write(out, start, end, days, weights, daily, workouts, segments, sets, sess_min,
            nutrition, nutrients, notes, trends)
+    _write_medications(out / "tidy", start, days, seed)
     return out
+
+
+# Made-up names, so the feature shows on the public demo with nothing real in it.
+DEMO_MEDS = (("Fictozole 20 mg tablet", 0.94), ("Examprofen 200 mg tablet", None))
+
+def _write_medications(tidy, start, days, seed):
+    """tidy/medications.csv as health_auto_export writes it: a daily scheduled dose most
+    mornings, and an as-needed one a few times a month. Its own random stream, so adding it
+    left every other demo file byte for byte as it was."""
+    from estebot.parsers.health_auto_export import MED_COLS
+    rng = random.Random(f"medications-{seed}")
+    rows = []
+    for i in range(days):
+        day = (start + timedelta(days=i)).isoformat()
+        for name, adherence in DEMO_MEDS:
+            if adherence is not None and rng.random() < adherence:
+                t = f"07:{rng.randint(5, 55):02d}"
+                rows.append([day, t, name, "1", "count", "Taken", "1", "1"])
+            elif adherence is None and rng.random() < 0.08:
+                t = f"{rng.randint(12, 21):02d}:{rng.randint(0, 59):02d}"
+                rows.append([day, t, name, "1", "count", "Taken", "0", ""])
+    _csv(tidy / "medications.csv", MED_COLS, rows)
 
 
 def _night(rng, bed, hours):
