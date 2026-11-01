@@ -219,11 +219,16 @@ def _events(n):
         a = int(n * frac)
         for i in range(a, min(n - 21, a + length)):
             ev.setdefault(i, what)
+    mark(0.12, 3, "sick")
     mark(0.36, 3, "sick")
+    mark(0.93, 3, "sick")
     mark(0.74, 2, "stomach")
     mark(0.45, 4, "travel")
     mark(0.30, 7, "deload")
     mark(0.84, 7, "deload")
+    # A lower-back spasm, a day each: the check-in's own rule makes those days rest.
+    mark(0.58, 1, "spasm")
+    mark(0.80, 1, "spasm")
     return ev
 
 
@@ -243,6 +248,7 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
     nights, busy_until = [7.0, 7.0, 7.0], -1
     variant = {k: "B" for k in ROTATION}           # so each kind opens on A
     tweak, back_days = None, {}
+    good_days, said = {}, {}                       # good and rough mornings: day -> the note that says so
 
     trends = []                                    # the weight trend each morning
     lifted, walked, slept = {}, set(), {}          # what each day held, for the notes
@@ -264,14 +270,40 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
         if i == 0 or last or rng.random() < p_weigh:
             weights.append((iso(i), round(trend + water, 1)))
 
+        # ---- this morning's recovery, known before the session
+        hrv_base = 41 + 9 * (1 - math.exp(-i / 60))       # fitter as the cut goes on
+        hrv = hrv_base * math.exp(rng.gauss(0, 0.11))
+        hrv *= (0.82 if sleep_prev < 6 else 1) * (0.9 if heavy_prev else 1)
+        hrv *= 0.72 if (sick or ev.get(i - 1) in ("sick", "stomach")) else 0.92 if what == "travel" else 1
+        # Some mornings start well: a full night, nothing going on, and they say so (a note
+        # the check-in reads as high energy). Those sessions go a little better.
+        good_morning = None
+        if not sick and what is None and not back_days.get(i) and sleep_prev >= 7 and rng.random() < 0.3:
+            fresh = [t for t in MORNING_GOOD if i - said.get(t, -NOTE_GAP) >= NOTE_GAP]
+            if fresh:
+                good_morning = rng.choice(fresh)
+                said[good_morning] = i
+                good_days[i] = good_morning
+        # And some start badly after a short night, and they say that too.
+        rough_morning = None
+        if not good_morning and not sick and not back_days.get(i) and sleep_prev < 6.4 and rng.random() < 0.35:
+            fresh = [t for t in MORNING_ROUGH if i - said.get(t, -NOTE_GAP) >= NOTE_GAP]
+            if fresh:
+                rough_morning = rng.choice(fresh)
+                said[rough_morning] = i
+                good_days[i] = rough_morning
+
         # ---- training
-        # The planted signal the evidence table should find: a run of short nights costs
-        # strength, one bad night barely does (as in the sleep-restriction studies).
+        # The planted signals the evidence table should find: a run of short nights costs
+        # strength, one bad night barely does (as in the sleep-restriction studies); a morning
+        # well under the HRV baseline costs a little too; a good morning adds a little.
         run3 = sum(nights[-3:]) / 3
         factor = ((0.97 if run3 < 6.2 else 0.98 if sleep_prev < 6 else 1.0)
-                  * (0.97 if back_days.get(i) else 1.0))
+                  * (0.97 if back_days.get(i) else 1.0)
+                  * (0.96 if hrv < 0.82 * hrv_base else 1.0)
+                  * (1.04 if good_morning else 0.96 if rough_morning else 1.0))
         session = None
-        lift_day = (dow not in (3, 6) and rng.random() > 0.07 and not sick
+        lift_day = (dow not in (3, 6) and rng.random() > 0.07 and not sick and what != "spasm"
                     and what != "travel" and back_days.get(i) not in ("sore", "tired") and not last)
         if lift_day:
             kind = ROTATION[kind_i % 3]
@@ -317,10 +349,6 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
         active = 0.032 * steps * kg / 97 + (sess_min[iso(i)] * 4.2 if session else 0) + rng.gauss(140, 30)
         heavy = bool(session) and any(n in ("Barbell Squat", "Barbell Deadlift", "Barbell Front Squat")
                                       for n, *_ in session)
-        hrv = 41 + 9 * (1 - math.exp(-i / 60))           # fitter as the cut goes on
-        hrv *= math.exp(rng.gauss(0, 0.11))
-        hrv *= (0.82 if sleep_prev < 6 else 1) * (0.9 if heavy_prev else 1)
-        hrv *= 0.72 if (sick or ev.get(i - 1) in ("sick", "stomach")) else 0.92 if what == "travel" else 1
         rhr = 63 - 5 * (1 - math.exp(-i / 75)) + rng.gauss(0, 1.2)
         rhr += (3 if sleep_prev < 6 else 0) + (1.5 if heavy_prev else 0) + (6 if sick else 0)
         worn = rng.random() > 0.03
@@ -379,7 +407,7 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
             hours = rng.gauss(7.05 + (0.35 if dow in (4, 5) else 0), 0.42)
             if rng.random() < 0.07 or ev.get(i + 1) in ("sick", "stomach") or i == tweak:
                 hours = rng.uniform(4.4, 5.8)
-            if sick: hours = rng.gauss(5.7, 0.5)
+            if sick: hours = rng.gauss(5.0, 0.4)          # a fever or a stomach bug wrecks the night
             if what == "travel": hours = rng.gauss(6.3, 0.4)
             # Busy stretches: three to five short nights in a row, every few weeks.
             if busy_until < i and rng.random() < 0.05:
@@ -395,7 +423,7 @@ def generate(out, seed=7, end=DEFAULT_END, days=365):
             nights.append(hours)
         heavy_prev = heavy
 
-    _write_notes(rng, notes, days, iso, ev, tweak, lifted, walked, slept)
+    _write_notes(rng, notes, days, iso, ev, tweak, lifted, walked, slept, good_days)
     _write(out, start, end, days, weights, daily, workouts, segments, sets, sess_min,
            nutrition, nutrients, notes, trends)
     _write_medications(out / "tidy", start, days, seed)
@@ -459,6 +487,17 @@ FEEL_LOW = [("low energy all day, the cut is catching up", lambda x: True),
             ("legs heavy and low energy, cut the last set", lambda x: x["lift"]),
             ("wiped after work, trained anyway", lambda x: x["lift"]),
             ("hungry all evening, the cut is catching up", lambda x: True)]
+# Said on a good morning, before training; each one reads as high energy to the check-in.
+MORNING_GOOD = ["slept well, feeling great this morning", "woke up fresh, feeling strong",
+                "great night's sleep, feeling strong this morning", "up early and feeling great",
+                "felt great waking up, ready to lift", "full night of sleep, feeling good this morning",
+                "feeling strong this morning, slept right through", "rested and feeling great today",
+                "woke before the alarm, feeling good", "feeling good this morning, legs fresh"]
+# Said after a short night; each reads as low energy to the check-in.
+# None of these is in FEEL_LOW: the two lists keep their own gaps, so a shared wording repeats.
+MORNING_ROUGH = ["rough night, up twice and dragging", "poor sleep, dragging this morning",
+                 "bad sleep, groggy this morning", "didn't sleep much, low energy",
+                 "short night, not feeling super strong", "poor sleep again, coffee first"]
 NOTE_GAP = 60   # days before a feel note's wording comes round again, so none repeats on the page
 BENCH = ("Barbell Bench Press", "Dumbbell Bench Press")
 
@@ -474,7 +513,7 @@ def _runs(ev, what):
     return out
 
 
-def _write_notes(rng, notes, days, iso, ev, tweak, lifted, walked, slept):
+def _write_notes(rng, notes, days, iso, ev, tweak, lifted, walked, slept, good_days=None):
     """health-context.txt lines: events, the back, and a scatter of how-I-feel notes, each
     one true of its day (the session, the walk, the night before)."""
     day = lambda i: {"lift": lifted.get(i), "walk": i in walked, "night": slept.get(i - 1, 7.0)}
@@ -491,6 +530,10 @@ def _write_notes(rng, notes, days, iso, ev, tweak, lifted, walked, slept):
         notes.append((iso(a), f"{iso(a)}..{iso(b)} | work travel, hotel gym was a treadmill only"))
     for a, _ in _runs(ev, "deload"):
         notes.append((iso(a), f"{iso(a)} | deload week, everything light on purpose"))
+    for a, _ in _runs(ev, "spasm"):
+        notes.append((iso(a), f"{iso(a)} | lower back spasm this morning, resting it today"))
+    for i, text in (good_days or {}).items():
+        notes.append((iso(i), f"{iso(i)} | {text}"))
     if tweak is not None:
         squat = bool({"Barbell Squat", "Barbell Front Squat"} & (lifted.get(tweak + 4) or set()))
         notes += [(iso(tweak), f"{iso(tweak)} | tweaked my lower back on the last deadlift set, stopped there"),
@@ -500,7 +543,8 @@ def _write_notes(rng, notes, days, iso, ev, tweak, lifted, walked, slept):
                   (iso(tweak + 4), f"{iso(tweak + 4)} | back fine again"
                                    + (", kept the squats light" if squat else
                                       ", trained as normal" if lifted.get(tweak + 4) else ""))]
-    busy = {i for i in ev} | ({tweak + k for k in range(5)} if tweak is not None else set())
+    busy = ({i for i in ev} | ({tweak + k for k in range(5)} if tweak is not None else set())
+            | set(good_days or {}))
     # The note that needs an answer (a low and a high cue together): recent, on a bench day,
     # so the page's "needs an answer" points at it. "Poor sleep" only after a short night.
     mid = next((i for i in range(days - 3, 0, -1) if i not in busy and BENCH[0] in (lifted.get(i) or ())),
@@ -511,7 +555,7 @@ def _write_notes(rng, notes, days, iso, ev, tweak, lifted, walked, slept):
     notes.append((iso(rec), f"{iso(rec)} | needed extra time between sets on squats"))
     used = {}                                      # text -> the last day it was written
     for i in range(3, days - 2):
-        if i in busy or i == mid or i == rec or rng.random() > 0.14:
+        if i in busy or i == mid or i == rec or i in (good_days or {}) or rng.random() > 0.14:
             continue
         pool = FEEL_LOW if rng.random() < 0.3 else FEEL_GOOD
         fits = [text for text, ok in pool if ok(day(i)) and i - used.get(text, -NOTE_GAP) >= NOTE_GAP]
