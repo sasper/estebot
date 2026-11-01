@@ -1,6 +1,7 @@
 # Personal health data never belongs in this repo. It lives in a separate
 # private repo; this one reads it through a configured path.
 *.sqlite
+estecoach.toml
 estebot.toml
 data/
 raw/

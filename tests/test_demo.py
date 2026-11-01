@@ -3,7 +3,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from estebot import demo
+from estecoach import demo
 
 END = date(2026, 10, 24)
 
@@ -36,13 +36,13 @@ def test_it_refuses_a_directory_it_did_not_write(tmp_path):
 
 def test_the_app_runs_on_the_demo(tmp_path, monkeypatch):
     out = demo.generate(tmp_path / "demo", seed=7, end=END, days=60)
-    from estebot import config
-    monkeypatch.setattr(config, "_SEARCH", [str(out / "estebot.toml")])
-    from estebot.web import db
+    from estecoach import config
+    monkeypatch.setattr(config, "_SEARCH", [str(out / "estecoach.toml")])
+    from estecoach.web import db
     importlib.reload(db)                 # both resolve the data dir at import
-    from estebot.web import ingest
+    from estecoach.web import ingest
     importlib.reload(ingest)
-    from estebot.analysis import engine
+    from estecoach.analysis import engine
     importlib.reload(engine)
     con = ingest.run()
 
@@ -64,9 +64,9 @@ def test_the_goal_is_ahead_of_the_trend_and_p001_is_the_planned_pace(tmp_path):
     # The goal was a fixed 175 lb, already passed while the cut went on, and P-001 asked for
     # 1-2 lb a week against a planned 0.5-1.0% of body weight.
     import csv, tomllib
-    from estebot import demo
+    from estecoach import demo
     out = demo.generate(tmp_path / "d")
-    cfg = tomllib.loads((out / "estebot.toml").read_text())["goals"]
+    cfg = tomllib.loads((out / "estecoach.toml").read_text())["goals"]
     last = [float(r["weight_lb"]) for r in csv.DictReader(open(out / "tidy" / "body_mass.csv"))][-14:]
     assert cfg["target_weight_lb"] < sum(last) / len(last) - 3
     lo, hi = tomllib.loads((out / "predictions.toml").read_text())["P-001"]["band"]

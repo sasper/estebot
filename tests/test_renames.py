@@ -1,4 +1,4 @@
-from estebot.parsers.jefit_raw import load_renames, rename
+from estecoach.parsers.jefit_raw import load_renames, rename
 
 
 def test_a_spelling_change_across_the_gap_is_one_series(tmp_path):

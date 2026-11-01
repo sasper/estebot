@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from estebot import hevy_routines as H
-from estebot.parsers import hevy
+from estecoach import hevy_routines as H
+from estecoach.parsers import hevy
 
 # A made-up routine with the shape Hevy returns: a ramp with a warm-up and a back-off set,
 # two supersets, a note, one-set exercise.
@@ -71,7 +71,7 @@ def test_a_normal_day_writes_the_top_set_and_a_note_and_nothing_else():
         (95, 15, None, "warmup"), (155, 10, None, "normal"), (185, 6, None, "normal"),
         (210, None, {"start": 2, "end": 3}, "normal"), (155, 8, None, "normal")]   # ramp and back-off kept
     bench = next(e for e in new["exercises"] if e["title"] == "Bench Press (Barbell)")
-    assert bench["notes"] == "EsteBot: Go hard · 210 × 2–3\nPause the first rep"         # yours kept
+    assert bench["notes"] == "EsteCoach: Go hard · 210 × 2–3\nPause the first rep"         # yours kept
     assert sets_lb(new, "Chest Fly (Machine)")[-1] == (105, None, {"start": 9, "end": 9}, "normal")
     for k in ("rest_seconds", "superset_id", "exercise_template_id"):
         assert [e[k] for e in new["exercises"]] == [e[k] for e in RT["exercises"]]
@@ -84,7 +84,7 @@ def test_a_note_is_replaced_not_stacked():
     once, _, _ = H.changes_for(RT, plan(BENCH), "hard", canon)
     twice, _, _ = H.changes_for(once, plan(dict(BENCH, target="215 × 1–2")), "normal", canon)
     assert next(e for e in twice["exercises"] if e["title"] == "Bench Press (Barbell)")["notes"] == \
-        "EsteBot: Go as planned · 215 × 1–2\nPause the first rep"
+        "EsteCoach: Go as planned · 215 × 1–2\nPause the first rep"
 
 
 def test_a_skipped_lift_and_bodyweight_work_keep_their_sets():
@@ -122,7 +122,7 @@ def test_a_deload_cuts_the_sets_and_the_next_write_puts_them_back():
 @pytest.fixture
 def cfg(tmp_path, monkeypatch):
     c = SimpleNamespace(training={"hevy": {"routines": {"push A": RT["id"]}}}, goals={},
-                        data_file=lambda n: tmp_path / n)
+                        data_file=lambda n: tmp_path / n, is_demo=False)
     writes = []
     monkeypatch.setattr(H, "get_routine", lambda rid, key: copy.deepcopy(RT))
     monkeypatch.setattr(H, "put_routine", lambda rid, body, key: writes.append(body))
@@ -155,9 +155,9 @@ def test_after_a_deload_write_the_next_write_restores_the_sets(cfg, monkeypatch)
 
 
 def test_the_demo_and_a_config_without_routines_never_write(cfg):
-    cfg.data_file(".estebot-demo").write_text("")
+    cfg.is_demo = True
     assert H.auto(cfg, plan(BENCH), "hard", "k", "2026-11-02") is None
-    cfg.data_file(".estebot-demo").unlink()
+    cfg.is_demo = False
     cfg.training = {}
     assert H.auto(cfg, plan(BENCH), "hard", "k", "2026-11-02") is None and cfg.writes == []
 
@@ -172,3 +172,15 @@ def test_adding_a_rep_on_straight_sets_changes_only_the_weakest_set():
     assert [(r, rr) for _, r, rr, _ in sets_lb(new, "Lateral Raise (Dumbbell)")] == [
         (12, None), (11, None), (None, {"start": 11, "end": 11})]
     assert "top set 15 × 10 → 15 × 11" in H.preview(rt["title"], changes, [])
+
+
+def test_a_note_written_under_the_old_name_is_replaced_too():
+    rt = copy.deepcopy(RT)
+    rt["exercises"][0]["notes"] = "EsteBot: Go hard · 205 × 4\nPause the first rep"
+    new, _, _ = H.changes_for(rt, plan(BENCH), "hard", canon)
+    assert new["exercises"][0]["notes"] == "EsteCoach: Go hard · 210 × 2–3\nPause the first rep"
+
+
+def test_the_jefit_import_tag_keeps_the_wording_the_workouts_carry():
+    # The rename changed this string once, and every imported workout stopped being skipped.
+    assert hevy.IMPORT_TAG == "Imported from Jefit by EsteBot"

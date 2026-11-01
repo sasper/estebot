@@ -1,8 +1,8 @@
-# EsteBot at estebot.app: the public demo for visitors, and with the private-mode secrets
+# EsteCoach at estecoach.app: the public demo for visitors, and with the private-mode secrets
 # set (see deploy/entrypoint.sh), each signed-in person's own page. The volume holds the
 # cloned data repo and each person's app.sqlite; the demo is regenerated at every start.
 # Merging to main deploys it (the deploy job in .github/workflows/ci.yml, after the tests).
-# By hand: deploy from a clean `git archive` export, never from a directory with estebot.toml.
+# By hand: deploy from a clean `git archive` export, never from a directory with estecoach.toml.
 app = "estebot"
 primary_region = "iad"
 
@@ -10,7 +10,7 @@ primary_region = "iad"
   dockerfile = "Dockerfile"
 
 [env]
-  ESTEBOT_BASE_URL = "https://estebot.app"
+  ESTECOACH_BASE_URL = "https://estebot.app"   # until estecoach.app has its certificate and sign-in redirect
   TZ = "America/New_York"
   # 04:30 brings yesterday's food and workouts in before the morning's call; noon is the backstop.
   SYNC_AT = "04:30,12:00"

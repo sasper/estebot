@@ -22,7 +22,7 @@ def times(spec):
 AT = times(os.environ.get("SYNC_AT", "12:00"))
 
 def configs():
-    with open(os.environ["ESTEBOT_USERS"], "rb") as fh:
+    with open(os.environ.get("ESTECOACH_USERS") or os.environ["ESTEBOT_USERS"], "rb") as fh:
         return sorted(set(tomllib.load(fh).get("users", {}).values()))
 
 def seconds_until(hhmm, now):
@@ -41,5 +41,5 @@ if __name__ == "__main__":
         time.sleep(seconds_until_next(AT, datetime.now()))
         for cfg in configs():
             print(f"== sync {cfg}", flush=True)
-            subprocess.run([sys.executable, "-m", "estebot.daily"],
-                           env={**os.environ, "ESTEBOT_CONFIG": cfg})
+            subprocess.run([sys.executable, "-m", "estecoach.daily"],
+                           env={**os.environ, "ESTECOACH_CONFIG": cfg})

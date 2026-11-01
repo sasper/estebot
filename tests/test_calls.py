@@ -1,7 +1,7 @@
 def test_the_first_call_of_the_day_is_kept(tmp_path):
     # The call is graded later against the session that followed, so it has to stay as it
     # was made: a later run that day (a phone upload, the noon sync) must not replace it.
-    from estebot.analysis import calls
+    from estecoach.analysis import calls
     path = tmp_path / "calls.csv"
     row = {f: "" for f in calls.FIELDS} | {"date": "2026-10-30", "verdict": "normal"}
     assert calls.record(path, row)
@@ -13,7 +13,7 @@ def test_the_first_call_of_the_day_is_kept(tmp_path):
 
 def test_a_morning_call_waits_for_sleep_and_the_check_in_until_noon(con):
     from datetime import datetime
-    from estebot.analysis import calls
+    from estecoach.analysis import calls
     morning = datetime(2026, 10, 30, 7, 0)
     assert calls.waiting_for(con, morning) == ["last night's sleep", "this morning's check-in"]
     con.execute("INSERT INTO sleep (night, asleep_hr) VALUES ('2026-10-29', 7.1)")
@@ -29,8 +29,8 @@ def test_an_upload_after_the_days_call_doesnt_make_another(con, monkeypatch, cap
     # Every upload's sync ends with this step, and making a call grades every session (~10 s
     # on the server); only the day's first is kept, so the rest were thrown away.
     from datetime import date
-    from estebot import config
-    from estebot.analysis import calls
+    from estecoach import config
+    from estecoach.analysis import calls
     path = config.load().data_file("calls.csv")
     calls.record(path, {"date": date.today().isoformat(), "verdict": "normal"})
     monkeypatch.setattr(calls, "make_call", lambda *a, **k: (_ for _ in ()).throw(AssertionError("made")))

@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from estebot.parsers import health_auto_export as H
+from estecoach.parsers import health_auto_export as H
 
 DOC = json.loads((Path(__file__).parent / "fixtures" / "medications.json").read_text())
 
@@ -38,7 +38,7 @@ def test_the_ci_check_and_gitignore_keep_medications_out_of_the_repo():
 
 
 def test_a_medication_is_a_candidate_input_never_a_voting_area(con):
-    from estebot.analysis import engine
+    from estecoach.analysis import engine
     con.execute("INSERT INTO medication VALUES ('2026-01-10','07:41','Fictozole 20 mg',1,'count','Taken',1,1)")
     assert engine.medication_days(con, "2026-01-01", "2026-01-31") == {"Fictozole 20 mg": {"2026-01-10"}}
     assert engine.doses_today(con, "2026-01-11") == [{"name": "Fictozole 20 mg", "logged": None}]
@@ -48,7 +48,7 @@ def test_a_medication_is_a_candidate_input_never_a_voting_area(con):
 
 
 def test_the_chat_reports_doses_and_is_told_never_to_advise_on_them(con):
-    from estebot.web import chat
+    from estecoach.web import chat
     con.execute("INSERT INTO medication VALUES ('2026-01-10','07:41','Fictozole 20 mg',1,'count','Taken',1,1)")
     out = chat.run_tool(SimpleNamespace(goals={}, training=None), con, "medications",
                         {"start": "2026-01-01", "end": "2026-01-31"})

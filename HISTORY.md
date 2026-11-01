@@ -1,6 +1,6 @@
 # How this was built
 
-I built EsteBot in a private repo first, because my own health data was all through the
+I built EsteCoach in a private repo first, because my own health data was all through the
 early history. That repo had 52 pull requests over about three weeks. This is the short
 version of what happened in them, in order, and what each stage taught me. From here on the
 work happens in this repo, one PR at a time.
@@ -83,7 +83,7 @@ took the verdict from the count. That lasted until 29 Oct (below).
 - A generator writes six months of data for a made-up person from one seed (a year since
   29 Oct), and the same seed always gives the same files. Running the app on someone else's data exposed four
   bugs at once, all fixed before launch. The demo runs on Fly.io at
-  [estebot.app](https://estebot.app), read-only, regenerated every time it starts.
+  [estecoach.app](https://estecoach.app), read-only, regenerated every time it starts.
 - Before publishing I scrubbed comments, tests and docs of my own history. Then an audit of
   the exported tree, checked against my private notes, found more. This repo started from
   that cleaned tree with no history.
@@ -125,6 +125,14 @@ took the verdict from the count. That lasted until 29 Oct (below).
   misses, the area that called them would look predictive, and it would call more deloads.
 - The plan's day letters were swapped against my Hevy routines on pull and legs days. They
   follow Hevy now; calls.csv rows from before read the old way.
+
+## 1 Nov: EsteBot became EsteCoach
+
+- It reads every lift, night, dose and meal and tells me how to train, which is a coach, not
+  a bot. Renamed everywhere while it's early: the package, config, environment variables,
+  Keychain entries and launchd jobs. The code read both names until every secret and file had
+  moved, so the server never had a moment on a name it couldn't find. The Fly app keeps the
+  old name, since Fly can't rename one.
 
 ## What I'd tell someone starting the same thing
 

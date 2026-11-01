@@ -12,7 +12,7 @@ SICK_NOTE = "Sick with a fever, stayed in bed"
 
 @pytest.fixture
 def main(con):
-    from estebot.web import main as mod
+    from estecoach.web import main as mod
     mod = importlib.reload(mod)
     mod.recorded = []                    # the save's background call recorder, kept in-process
     mod._record_call = lambda p: mod.recorded.append(p)
@@ -84,7 +84,7 @@ def test_the_public_demo_is_read_only(main, con, monkeypatch):
     normal, _ = page(main)
     assert 'action="/goal"' in normal and 'action="/checkin"' in normal
 
-    monkeypatch.setenv("ESTEBOT_DEMO", "1")
+    monkeypatch.setenv("ESTECOACH_DEMO", "1")
     shown, _ = page(main)
     assert 'action="/goal"' not in shown and 'action="/checkin"' not in shown
     assert "Needs an answer" not in shown and "Goal:" in shown
@@ -99,7 +99,7 @@ def test_the_public_demo_is_read_only(main, con, monkeypatch):
 def test_the_how_it_was_built_line_is_on_the_demo_only(main, monkeypatch):
     # It's for people reviewing the project; a person's own page has no use for it.
     assert "How it was built" not in page(main)[0]
-    monkeypatch.setenv("ESTEBOT_DEMO", "1")
+    monkeypatch.setenv("ESTECOACH_DEMO", "1")
     shown, _ = page(main)
     assert "How it was built" in shown and "ARCHITECTURE.md" in shown and "linkedin.com/in/" in shown
     assert shown.index("How it was built") < shown.index('id="readiness"')
@@ -110,7 +110,7 @@ def test_the_footer_credits_and_links_the_author(main):
     html, _ = page(main)
     assert 'href="https://www.linkedin.com/in/stephensper"><b>Stephen Sper</b></a>, engineering leader in Ann Arbor, MI.' in html
     assert "Director of Engineering" not in html
-    assert 'href="https://github.com/sasper/estebot">GitHub</a>' in html and "mailto:" in html
+    assert 'href="https://github.com/sasper/estecoach">GitHub</a>' in html and "mailto:" in html
 
 
 def test_the_read_only_demo_person_gets_it_without_the_demo_flag(main, monkeypatch):
@@ -158,7 +158,7 @@ def test_the_tap_card_is_there_every_day_without_a_note(main):
 
 
 def test_a_tap_check_in_is_saved_prefilled_and_read_by_the_verdict(main, con):
-    from estebot.analysis import engine
+    from estecoach.analysis import engine
     today = date.today().isoformat()
     assert save(main, today, "sore", 1, 2, TAP_NOTE).status_code == 303
     row = con.execute("SELECT * FROM checkin WHERE date=?", (today,)).fetchone()
@@ -175,7 +175,7 @@ def test_a_tap_check_in_is_saved_prefilled_and_read_by_the_verdict(main, con):
 def test_a_sick_tap_with_no_energy_reads_as_energy_zero_and_rings_the_calendar(main, con):
     # The same rule as a sick note (core.checkin_energy), so being sick cannot turn the feel
     # signal red from a note and leave it empty from a tap.
-    from estebot.analysis import engine
+    from estecoach.analysis import engine
     today = date.today().isoformat()
     save(main, today, sick=True)
     row = con.execute("SELECT * FROM checkin WHERE date=?", (today,)).fetchone()
@@ -214,7 +214,7 @@ def test_presentation_and_demo_modes_leave_the_tap_card_out(main, con, monkeypat
     for private in ('action="/checkin"', TAP_NOTE, 'name="sick"', "spasm", "injured", "sick", "unwell"):
         assert private not in shown, private
 
-    monkeypatch.setenv("ESTEBOT_DEMO", "1")
+    monkeypatch.setenv("ESTECOACH_DEMO", "1")
     shown = today_page(main, "present=0")
     assert 'action="/checkin"' not in shown and 'id="checkin"' not in shown
     assert save(main, today, "ok", 3, 3, "").status_code == 403
@@ -236,7 +236,7 @@ def test_the_chat_comes_back_after_a_reload_and_stays_out_of_presentation_mode(m
     # The conversation lived in the tab, so a reload or a change of day lost an answer and
     # the question had to be asked again. Saved answers can quote anything in the data, so
     # presentation mode must not render them.
-    from estebot.web import chat
+    from estecoach.web import chat
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
     chat.save(con, "How did my squat go?", "Up 10 lb on the zorbotide week.", DAY)
     normal, _ = page(main)
@@ -249,18 +249,18 @@ def test_the_demo_shows_example_answers_built_from_the_days_numbers(main, monkey
     # The chat is off in the demo, so its panel shows examples instead. The demo person is
     # regenerated daily, so the answers are filled from the engine: the score in the
     # example is the one on the card beside it.
-    monkeypatch.setenv("ESTEBOT_DEMO", "1")
+    monkeypatch.setenv("ESTECOACH_DEMO", "1")
     html, _ = page(main)
     assert "behind today" in html
     score = html.split('class="rscore')[1].split(">")[1].split("<")[0]
     assert f"readiness {score}." in html
-    monkeypatch.delenv("ESTEBOT_DEMO")
+    monkeypatch.delenv("ESTECOACH_DEMO")
     assert "behind today" not in page(main)[0]
 
 
 def test_the_read_only_demo_person_gets_the_examples_too(main, monkeypatch):
-    # The signed-in site serves visitors the read-only demo person without ESTEBOT_DEMO set;
-    # the examples were tied to the flag, so estebot.app showed an empty panel.
+    # The signed-in site serves visitors the read-only demo person without ESTECOACH_DEMO set;
+    # the examples were tied to the flag, so estecoach.app showed an empty panel.
     from dataclasses import replace
     me = main.people.for_request(None)
     monkeypatch.setattr(main.people, "for_request", lambda request: replace(me, read_only=True))
@@ -270,7 +270,7 @@ def test_the_read_only_demo_person_gets_the_examples_too(main, monkeypatch):
 def test_the_example_call_reads_right_when_nothing_is_flagged():
     # Written against a take-it-easy day, the example said "The other 7 signals are good"
     # and explained a strained signal on a day with none.
-    from estebot.web import examples
+    from estecoach.web import examples
     sig = lambda area, level, reason: {"area": area, "level": level, "reasons": [reason]}
     green = [sig(a, "green", f"{a} fine") for a in examples.AREA]
     a = examples._call({"verdict": "hard", "score": 100, "signals": green, "voting": ["sleep"],
@@ -288,7 +288,7 @@ def test_the_example_call_reads_right_when_nothing_is_flagged():
 def test_a_check_in_said_in_a_sentence_is_only_a_draft_until_saved(main, con, monkeypatch):
     # The model's reading prefills the tap card; nothing reaches the checkin table, and so
     # the verdict, until the card is saved, which clears the draft.
-    from estebot.web import checkin_text
+    from estecoach.web import checkin_text
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
     monkeypatch.setattr(checkin_text, "read", lambda con, text, today: {
         "back": "sore", "energy": 1, "inter_set_recovery": None, "sick": False, "injured": False})
@@ -320,7 +320,7 @@ def test_the_scale_example_asks_what_this_week_shows(con):
     # The example asked "Why did the scale barely move this week?" beside a weight card
     # saying the last 7 days lost more than the 4-week pace.
     from datetime import date, timedelta
-    from estebot.web import examples
+    from estecoach.web import examples
     day0 = date(2026, 9, 1)
     # flat for seven weeks, then three pounds off in the last week
     rows = [((day0 + timedelta(days=i)).isoformat(), 200.0 if i < 49 else 197.0) for i in range(56)]
@@ -337,7 +337,7 @@ def test_looking_back_at_an_old_day_still_links_the_days_after_it(main, con):
     # Viewing an earlier day greyed out every day after it, and a greyed day has no link, so
     # the calendar couldn't take you forward again. Days up to the newest are linked; only
     # days with nothing yet stay greyed.
-    from estebot.analysis import engine
+    from estecoach.analysis import engine
     newest = engine.default_day(con, date.today().isoformat())
     viewed = (date.fromisoformat(newest) - timedelta(days=1)).isoformat()
     cells = [c for m in main._calendar(con, viewed) for w in m["weeks"] for c in w if c]
@@ -397,8 +397,8 @@ def test_before_the_morning_upload_the_page_says_what_the_call_waits_for(main, c
     # the label come from calls.waiting, the rule the recorded call follows.
     import os
     from datetime import datetime
-    from estebot import config
-    from estebot.analysis import calls
+    from estecoach import config
+    from estecoach.analysis import calls
     today = date.today()
     seven = datetime.combine(today, datetime.min.time()).replace(hour=7)
     class Clock(datetime):
@@ -439,7 +439,7 @@ def test_before_the_morning_upload_the_page_says_what_the_call_waits_for(main, c
 
 def test_an_upload_time_more_than_a_day_old_says_which_day():
     from datetime import datetime
-    from estebot.web import main
+    from estecoach.web import main
     now = datetime(2026, 10, 31, 7, 0)
     assert main._clock(datetime(2026, 10, 30, 21, 41), now) == "9:41 pm"
     assert main._clock(datetime(2026, 10, 29, 21, 41), now) == "Thu 29 Oct 9:41 pm"
@@ -461,7 +461,7 @@ def test_send_to_hevy_is_refused_to_the_demo_presentation_and_a_config_without_r
     assert _post(main).status_code == 403                       # no routines in this config
     monkeypatch.setattr(main.hevy_routines, "enabled", lambda cfg: True)
     assert _post(main, cookie="1").status_code == 403
-    monkeypatch.setenv("ESTEBOT_DEMO", "1")
+    monkeypatch.setenv("ESTECOACH_DEMO", "1")
     assert _post(main).status_code == 403 and sent == []
 
 

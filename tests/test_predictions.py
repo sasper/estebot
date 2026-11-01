@@ -1,4 +1,4 @@
-from estebot.analysis.predictions import parse_ledger
+from estecoach.analysis.predictions import parse_ledger
 
 # Line shapes copied from the ledger's own entry format; the claims are made up.
 LEDGER = """### P-NNN — <one-line claim>
@@ -33,7 +33,7 @@ def test_status_and_resolve_date_as_the_ledger_writes_them():
 def test_coverage_counts_the_data_the_prediction_depends_on(con):
     # The demo's HRV prediction reported complete food logs as its data. A coverage with a
     # column counts the days that column has a value: nights with HRV, not daily rows.
-    from estebot.analysis import engine, predictions
+    from estecoach.analysis import engine, predictions
     con.executemany("INSERT INTO daily (date, hrv_sdnn) VALUES (?, ?)",
                     [("2026-10-01", 44.0), ("2026-10-02", None), ("2026-10-03", 47.0)])
     spec = {"coverage": {"table": "daily", "column": "hrv_sdnn", "window": ["2026-10-01", "2026-10-03"],
@@ -47,7 +47,7 @@ def test_coverage_counts_the_data_the_prediction_depends_on(con):
 
 def test_the_demo_hrv_prediction_counts_nights_with_hrv(tmp_path):
     import tomllib
-    from estebot import demo
+    from estecoach import demo
     demo.generate(tmp_path / "d", end=demo.DEFAULT_END, days=120)
     specs = tomllib.loads((tmp_path / "d" / "predictions.toml").read_text())
     assert specs["P-003"]["metric"] == "hrv_vs_baseline"

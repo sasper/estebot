@@ -10,7 +10,7 @@ def _person(tmp_path, name, weight, training=""):
     data.mkdir()
     cfg = tmp_path / f"{name}.toml"
     cfg.write_text(f'data_dir = "{data}"\n[goals]\ntarget_weight_lb = {weight - 20}\n{training}')
-    from estebot.web import people
+    from estecoach.web import people
     p = people.load(str(cfg))
     con = p.connect()
     con.executemany("INSERT INTO weight (date, weight_lb) VALUES (?, ?)",
@@ -23,7 +23,7 @@ def test_each_person_gets_their_own_database_goals_and_split(con, tmp_path, monk
     # The page read one config at import and served it to everyone. A second person must
     # see their own weigh-ins, goal and training split, and a write for one must not touch
     # the other.
-    from estebot.web import main, people
+    from estecoach.web import main, people
     main = importlib.reload(main)
     a = _person(tmp_path, "a", 200)
     b = _person(tmp_path, "b", 150, '[training]\nrotation = ["upper", "lower"]\n'

@@ -1,26 +1,26 @@
-# EsteBot
+# EsteCoach
 
 **Your fitness coach who's seen every set you've lifted.**
 
-EsteBot pulls in everything I already track (Apple Health, Hevy workouts, Cronometer food
+EsteCoach pulls in everything I already track (Apple Health, Hevy workouts, Cronometer food
 logs and a live feed from my phone), cleans it up, and runs it through custom algorithms
 built for one athlete. Every morning it tells me how hard to train, what to lift, whether
 the weight is really moving and what I'm short on. And I can ask it anything in plain
 English.
 
-**▶ Live demo: [estebot.app](https://estebot.app)** — a made-up athlete, regenerated every
+**▶ Live demo: [estecoach.app](https://estecoach.app)** — a made-up athlete, regenerated every
 day. Read-only; the first load after a quiet spell takes a few seconds while the server
 wakes up.
 
 ## How I built it
 
-I designed and built EsteBot in three weeks. I wrote the requirements and design docs, made
+I designed and built EsteCoach in three weeks. I wrote the requirements and design docs, made
 the product and architecture decisions, set the quality gates (tests tied to real bugs,
 byte-identical parser output on every refactor, the CI privacy check), and used it every day
 to decide what to change next. Claude Code was my implementation tool: it wrote the code
 against those docs and gates, and nothing merged until it passed them.
 
-<img src="docs/screenshots/dashboard.png" alt="The EsteBot dashboard: today's call, session, trends and the Ask EsteBot panel" width="900">
+<img src="docs/screenshots/dashboard.png" alt="The EsteCoach dashboard: today's call, session, trends and the Ask EsteCoach panel" width="900">
 
 ## What it does
 
@@ -40,14 +40,14 @@ against those docs and gates, and nothing merged until it passed them.
 - **Nutrition down to the micronutrients.** Calories against what the scale says you burn,
   protein against target, and vitamins and minerals against reference intakes, food
   and supplements together.
-- **Ask EsteBot.** Claude answers questions about your data from EsteBot's own numbers. The
+- **Ask EsteCoach.** Claude answers questions about your data from EsteCoach's own numbers. The
   algorithms decide; the AI explains.
 
 <img src="docs/screenshots/verdict.png" alt="Today's call: a 0–100 readiness score in a ring of seven signals, each good, watch or strain" width="720">
 
 <img src="docs/screenshots/session.png" alt="Today's session with a target for every exercise" width="720">
 
-<img src="docs/screenshots/chat.png" alt="Ask EsteBot: three answers from the day's numbers, then follow-up questions to ask" width="380">
+<img src="docs/screenshots/chat.png" alt="Ask EsteCoach: three answers from the day's numbers, then follow-up questions to ask" width="380">
 
 <details>
 <summary>More: the training calendar, weight trend, strength standards, and the page on a phone</summary>
@@ -62,7 +62,7 @@ against those docs and gates, and nothing merged until it passed them.
 ## From four messy apps to one clean day
 
 Health data is messy. Every app has its own format, its own quirks and its own blind
-spots. EsteBot's pipeline streams a multi-gigabyte Apple Health export at constant memory,
+spots. EsteCoach's pipeline streams a multi-gigabyte Apple Health export at constant memory,
 pulls Hevy and Cronometer every day, takes a live feed from the phone, and lines it all up
 into one tidy record per day that the algorithms can trust. Fixes are dated rules applied
 at import, never hand edits, so years of history rebuild exactly, every time.
@@ -88,7 +88,7 @@ A few of the traps it handles:
 ## Built to be trusted
 
 1. **Custom algorithms, not AI guesses.** Every figure you might act on comes from
-   EsteBot's own algorithms. A language model explains the results; it never invents one.
+   EsteCoach's own algorithms. A language model explains the results; it never invents one.
    Otherwise there'd be no telling a real signal from a confident guess.
 2. **One source of truth.** Every metric has exactly one implementation, shared by the
    page, the text report and the chat, so they can never disagree.
@@ -107,20 +107,20 @@ You don't need my data or any exports. The demo module writes a synthetic data d
 for a made-up person:
 
 ```bash
-git clone https://github.com/sasper/estebot && cd estebot
+git clone https://github.com/sasper/estecoach && cd estecoach
 python -m venv .venv && ./.venv/bin/pip install -e ".[dev,web]"
 
-./.venv/bin/python -m estebot.demo --out /tmp/estebot-demo
+./.venv/bin/python -m estecoach.demo --out /tmp/estecoach-demo
 ```
 
 That writes a year of a made-up person's weigh-ins, lifting, sleep, food and notes, plus
-an `estebot.toml` pointing at them. Load it into the app's database and start the page:
+an `estecoach.toml` pointing at them. Load it into the app's database and start the page:
 
 ```bash
-export ESTEBOT_CONFIG=/tmp/estebot-demo/estebot.toml
-./.venv/bin/python -m estebot.web.ingest
-./.venv/bin/python -m estebot.analysis.calls --backfill 90   # optional: the self-grade's recorded calls
-./.venv/bin/uvicorn estebot.web.main:app --port 8000
+export ESTECOACH_CONFIG=/tmp/estecoach-demo/estecoach.toml
+./.venv/bin/python -m estecoach.web.ingest
+./.venv/bin/python -m estecoach.analysis.calls --backfill 90   # optional: the self-grade's recorded calls
+./.venv/bin/uvicorn estecoach.web.main:app --port 8000
 ```
 
 The same seed always gives the same data. `--seed` picks another person, and `--end today`
@@ -129,13 +129,13 @@ moves the year up to today.
 ## Running it on your own exports
 
 ```bash
-cp estebot.example.toml estebot.toml      # then edit data_dir, the export globs, your profile
+cp estecoach.example.toml estecoach.toml      # then edit data_dir, the export globs, your profile
 
-./.venv/bin/python -m estebot.parsers.apple_health   # streams the multi-GB export, ~8 min
-./.venv/bin/python -m estebot.parsers.jefit          # lifting tables (merges Hevy too)
-./.venv/bin/python -m estebot.parsers.cronometer
-./.venv/bin/python -m estebot.web.ingest             # tidy CSVs -> the app's SQLite cache
-./.venv/bin/python -m estebot.analysis.report        # a text summary
+./.venv/bin/python -m estecoach.parsers.apple_health   # streams the multi-GB export, ~8 min
+./.venv/bin/python -m estecoach.parsers.jefit          # lifting tables (merges Hevy too)
+./.venv/bin/python -m estecoach.parsers.cronometer
+./.venv/bin/python -m estecoach.web.ingest             # tidy CSVs -> the app's SQLite cache
+./.venv/bin/python -m estecoach.analysis.report        # a text summary
 ```
 
 Getting the exports: Apple Health, profile icon, Export All Health Data. Jefit, Account,
@@ -174,7 +174,7 @@ more depth, how I verify refactors, and the known problems.
 | `analysis/nutrition.py` | Energy balance, protein, and micronutrient gaps against the US reference intakes. |
 | `analysis/predictions.py` | Reads the prediction ledger and shows interim progress on open claims. |
 | `analysis/calls.py` | Writes each morning's first call to `calls.csv`, never rewritten, so the calls can be graded as they were made. |
-| `web/` | FastAPI and Jinja templates. It formats numbers the engine computed; it does not compute its own. Also Google sign-in, Ask EsteBot, and the sentence check-in. |
+| `web/` | FastAPI and Jinja templates. It formats numbers the engine computed; it does not compute its own. Also Google sign-in, Ask EsteCoach, and the sentence check-in. |
 | `daily.py` | The unattended daily sync: at noon on the server (`deploy/scheduler.py`), or with launchd on a Mac. |
 | `demo.py` | A complete data directory for a made-up person, from one seed. |
 

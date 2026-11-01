@@ -1,4 +1,4 @@
-from estebot.analysis import nutrition
+from estecoach.analysis import nutrition
 
 
 def _day(con, d, kcal, protein, complete=1):

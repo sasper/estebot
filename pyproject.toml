@@ -1,5 +1,5 @@
 [project]
-name = "estebot"
+name = "estecoach"
 version = "0.1.0"
 description = "Single-subject training and bodyweight analysis over your own exported health data"
 requires-python = ">=3.11"
@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 # The page's template and static files. Without this a non-editable install (the Docker
 # image) leaves them out and the app fails at import.
 [tool.setuptools.package-data]
-"estebot.web" = ["templates/*.html", "static/*"]
+"estecoach.web" = ["templates/*.html", "static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
