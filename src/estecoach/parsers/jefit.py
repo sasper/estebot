@@ -231,3 +231,8 @@ with open(f"{OUT}/jefit_body.csv", "w", newline="") as f:
         seen.add(d)
         w.writerow([d, r.get("weight"), r.get("fatpercent"), r.get("waist")])
 print("jefit_body.csv written")
+
+# The daily join reads lift_sessions.csv, written above.
+from estecoach.parsers import health_tables
+health_tables.write_daily_combined(OUT)
+print("daily_combined.csv written")

@@ -132,18 +132,11 @@ committed, snapshot it and diff against the snapshot instead of discarding anyth
 
 ## Known problems, in the order worth fixing
 
-**Two data access paths.** The engine reads SQLite, while `report.py` reads the tidy CSVs
-directly. Unifying them is a real decision (SQLite as the single read path, or CSVs as the
-contract with SQLite only for authored state), and it needs making before code. The visible
-symptom: "best e1RM in a date window" is computed three times, by `report.py`, `blocks.py`
-and the engine. Only one read path lets them collapse into one function.
-
-**Smaller:** `report.py` orders tied rows in its strength table by set iteration, so its
-output changes between runs. Until that's fixed, compare report output with
-`PYTHONHASHSEED=0` on both sides.
-
-**Smaller:** `report.py` writes `daily_combined.csv` as a side effect. A module called
-"report" shouldn't change the data directory; that belongs in the parser stage.
+**Two data access paths, partly.** The engine and the page read SQLite; `report.py` and
+`blocks.py` still read most things from the tidy CSVs. Best e1RM in a date window, the
+symptom that was computed three times, now goes through one function
+(`engine.e1rm_window_best`) for all three. The rest of the two scripts' reads stay on the
+CSVs until there's a reason to move them.
 
 ## Domain gotchas that caused wrong conclusions
 
