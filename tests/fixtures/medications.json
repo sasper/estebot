@@ -1,0 +1,40 @@
+{
+  "data": {
+    "medications": [
+      {
+        "status": "Taken",
+        "displayText": "Fictozole 20 mg Delayed Release Oral Capsule",
+        "units": "count",
+        "codings": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "000001",
+            "version": ""
+          }
+        ],
+        "isArchived": false,
+        "dosage": 1,
+        "end": "2026-01-10 07:41:12 -0500",
+        "start": "2026-01-10 07:41:12 -0500",
+        "scheduledDate": "2026-01-10 07:00:00 -0500",
+        "scheduledDosage": 1
+      },
+      {
+        "status": "Taken",
+        "displayText": "Examprofen 200 mg Oral Tablet",
+        "units": "count",
+        "codings": [
+          {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "000002",
+            "version": ""
+          }
+        ],
+        "isArchived": false,
+        "dosage": 1,
+        "end": "2026-01-10 19:05:55 -0500",
+        "start": "2026-01-10 19:05:55 -0500"
+      }
+    ]
+  }
+}

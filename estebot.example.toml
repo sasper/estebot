@@ -36,6 +36,9 @@ keychain_account = "api-key"
 # tables from from_date on; the full export.xml remains the record before that.
 metrics_glob = "~/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/EsteBot/HealthAutoExport-*.json"
 workouts_glob = "~/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/EsteBot Workouts/HealthAutoExport-*.json"
+# Optional: a third automation with the Medications data type (same JSON settings). One row
+# per logged dose goes to tidy/medications.csv; names never show in presentation mode.
+medications_glob = "~/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/EsteBot Medications/HealthAutoExport-*.json"
 from_date = "2026-10-11"
 
 [profile]

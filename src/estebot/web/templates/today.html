@@ -112,6 +112,11 @@
         <div class="seg">{% for v in [0, 1, 2, 3] %}<label><input type="radio" name="{{ name }}" value="{{ v }}"{{ " checked" if ci[name] == v }}><span>{{ words[v] }}</span></label>{% endfor %}</div>
       </fieldset>
       {% endfor %}
+      {% if doses_today %}
+      <fieldset><legend>Medications today</legend>
+        <div class="doses small">{% for m in doses_today %}<div>{{ m.name }}: {% if m.logged %}{{ m.logged.status|lower }} {{ m.logged.time }}{% else %}<span class="muted">not logged yet</span>{% endif %}</div>{% endfor %}</div>
+      </fieldset>
+      {% endif %}
       {% if is_today and plan and plan.exercises %}
       <fieldset><legend>Skip a lift today</legend>
         <div class="skips">{% for i in plan.exercises %}<label class="flag"><input type="checkbox" name="skip" value="{{ i.exercise }}"{{ " checked" if i.skipped }}><span>{{ i.exercise }}</span></label>{% endfor %}</div>
@@ -303,6 +308,7 @@
                 {% if l.muscle_groups %}<div class="muted">{{ l.muscle_groups|replace("|", ", ") }}</div>{% endif %}{% endif %}
                 {% for a, dm, light in c.workouts %}<div>{{ a }}{% if dm %} · {{ "%.0f"|format(dm) }} min{% endif %}{% if light %} <span class="muted">· light movement</span>{% endif %}</div>{% endfor %}
                 {% if i.exercise_min is not none %}<div class="muted">{{ "%.0f"|format(i.exercise_min) }} exercise minutes (Apple)</div>{% endif %}
+                {% for t, name, status in c.doses %}<div>{{ name }} · {{ t }}{% if status != "Taken" %} <span class="muted">· {{ status|lower }}</span>{% endif %}</div>{% endfor %}
                 {% if not l and not c.workouts %}<div class="muted">Nothing logged</div>{% endif %}
               </div>
             </a>

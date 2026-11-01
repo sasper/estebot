@@ -1,5 +1,6 @@
 import importlib, os, time, urllib.parse
 from http.cookies import SimpleCookie
+from pathlib import Path
 
 import pytest
 from starlette.requests import Request
@@ -236,3 +237,25 @@ def test_an_early_morning_upload_is_saved_as_today_and_leaves_yesterdays_file_al
     assert _upload(main, token, _early_morning_upload(today_points)).status_code == 202
     assert yesterday.read_text() == '{"data": {"metrics": "all of the 30th"}}'
     assert (feed / "HealthAutoExport-2026-10-31.json").read_bytes() == body
+
+
+def test_a_medications_upload_lands_in_its_own_folder_and_a_refusal_logs_no_names(site, tmp_path, monkeypatch, caplog):
+    # 1 Nov 2026: four medications uploads were refused, and the refusal's log line carried
+    # a medication's name: it only masked values that start with a digit.
+    import hashlib, json as _json, logging
+    main, auth, _ = site
+    token = "m" * 40
+    cfg = tmp_path / "me.toml"
+    feed = tmp_path / "me" / "raw" / "hae"
+    cfg.write_text(cfg.read_text() + f'[sources.health_auto_export]\nfrom_date = "2026-01-01"\n'
+                   f'metrics_glob = "{feed}/metrics/*.json"\nmedications_glob = "{feed}/medications/*.json"\n')
+    users = tmp_path / "users.toml"
+    users.write_text(users.read_text() + f'[uploads]\n"{hashlib.sha256(token.encode()).hexdigest()}" = "{cfg}"\n')
+    auth._settings.cache_clear()
+    monkeypatch.setattr(main.subprocess, "Popen", lambda args, **kw: None)
+    doc = _json.loads((Path(__file__).parent / "fixtures" / "medications.json").read_text())
+    assert _upload(main, token, doc).status_code == 202
+    assert (feed / "medications" / "HealthAutoExport-2026-01-10.json").exists()
+    with caplog.at_level(logging.WARNING):
+        assert _upload(main, token, {"data": {"allergies": [{"displayText": "Fictozole"}]}}).status_code == 400
+    assert "Fictozole" not in caplog.text and "allergies" in caplog.text

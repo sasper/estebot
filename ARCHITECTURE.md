@@ -32,6 +32,12 @@ the same inputs always give byte-identical CSVs, which is what makes refactoring
 `web/ingest.py` loads the CSVs, plus notes and authored state, into a SQLite cache. The
 analysis engine reads from SQLite. The web layer only formats what the engine returns.
 
+Logged medication doses come in through the same phone feed (`medications.csv`, one row per
+dose). They show in the calendar and on the check-in card, the chat can report them but is
+told never to advise on them, and they never reach the HTML in presentation mode. In the
+readiness call each medication is a candidate input, never a voting area: it is tracked
+against how sessions went on days it was taken, like the other candidates, and has no vote.
+
 One thing flows back out. `hevy_routines.py` writes the day's targets into the matching
 Hevy routine, right after the morning call is recorded, or from a Send to Hevy button on
 the page. It writes routines only: each planned exercise's top set (target weight and rep

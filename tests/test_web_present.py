@@ -463,3 +463,18 @@ def test_send_to_hevy_is_refused_to_the_demo_presentation_and_a_config_without_r
     assert _post(main, cookie="1").status_code == 403
     monkeypatch.setenv("ESTEBOT_DEMO", "1")
     assert _post(main).status_code == 403 and sent == []
+
+
+def test_presentation_mode_leaves_every_medication_name_out_of_the_html(main, con):
+    # Out of the HTML entirely, not hidden: the calendar tooltip and the check-in card both go.
+    today = date.today().isoformat()
+    yday = (date.today() - timedelta(days=1)).isoformat()
+    con.executemany("INSERT INTO medication VALUES (?,?,?,1,'count','Taken',?,1)",
+                    [(yday, "07:30", "Fictozole 20 mg", 1), (yday, "20:10", "Examprofen 200 mg", 0)])
+    con.commit()
+    normal = today_page(main)
+    assert "Fictozole 20 mg" in normal and "Examprofen 200 mg" in normal
+    assert "not logged yet" in normal                     # today's scheduled dose, on the check-in card
+    shown = today_page(main, "present=1")
+    for name in ("Fictozole", "Examprofen"):
+        assert name not in shown

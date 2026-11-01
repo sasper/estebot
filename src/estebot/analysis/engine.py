@@ -827,6 +827,37 @@ def _last_sets(con, exercise, before, skip=()):
                           ORDER BY set_idx""", (exercise, d)).fetchall()
     return d, [(x["weight_lb"], x["reps"], x["rpe"]) for x in rows]
 
+def medication_days(con, start, end):
+    """{name: set of days a dose was logged as taken} in [start, end]."""
+    out = {}
+    for r in con.execute("SELECT DISTINCT name, date FROM medication WHERE status='Taken' "
+                         "AND date BETWEEN ? AND ?", (start, end)):
+        out.setdefault(r["name"], set()).add(r["date"])
+    return out
+
+def doses_by_day(con, start, end):
+    """{day: [(time, name, status)]} of logged doses, for the calendar."""
+    out = {}
+    for r in con.execute("SELECT date, time, name, status FROM medication WHERE date BETWEEN ? AND ? "
+                         "ORDER BY date, time, name", (start, end)):
+        out.setdefault(r["date"], []).append((r["time"], r["name"], r["status"]))
+    return out
+
+def doses_today(con, day):
+    """Medications on a schedule (a scheduled dose logged in the week before `day`, or on it)
+    with `day`'s logged dose, or None while it isn't logged yet. The export holds logged doses
+    only, not the schedule itself, so a schedule is inferred from the last week."""
+    week = (d(day) - timedelta(days=7)).isoformat()
+    names = [r["name"] for r in con.execute(
+        "SELECT DISTINCT name FROM medication WHERE scheduled=1 AND date BETWEEN ? AND ? ORDER BY name",
+        (week, day))]
+    out = []
+    for n in names:
+        r = con.execute("SELECT time, status FROM medication WHERE name=? AND date=? ORDER BY time DESC LIMIT 1",
+                        (n, day)).fetchone()
+        out.append({"name": n, "logged": dict(r) if r else None})
+    return out
+
 # Light-call days before this held their loads; from it on, a light call is a real deload.
 DELOAD_SINCE = "2026-11-02"
 BACK_FLAGGED = ("tired", "sore", "spasm")
@@ -947,6 +978,11 @@ def evidence(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SET
     after_miss = [(prev["hit"] < 0.5, x["vs_phase"]) for prev, x in zip(rows, rows[1:])]
     candidates = {"missed most targets last session": core.flag_effect(
         [v for f, v in after_miss if f], [v for f, v in after_miss if not f])}
+    # Each logged medication is a candidate, never an area: it earns a place in the call only
+    # if sessions on days it was taken went differently (asked for on 1 Nov 2026).
+    for name, days in medication_days(con, start, end).items():
+        candidates[f"took {name}"] = core.flag_effect([x["vs_phase"] for x in rows if x["date"] in days],
+                                                      [x["vs_phase"] for x in rows if x["date"] not in days])
     # The self-grade's backtest: the call each session would get with the votes found here.
     # In-sample, so it flatters the rule; the recorded calls (calls.csv) are the real test.
     voting = [a for a, e in by_area.items() if e["votes"]]

@@ -87,6 +87,11 @@ CREATE TABLE IF NOT EXISTS checkin_draft (
   note TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP);
 
+-- Logged doses (Health Auto Export, tidy/medications.csv). Private: never in presentation mode.
+CREATE TABLE IF NOT EXISTS medication (
+  date TEXT, time TEXT, name TEXT, dose REAL, unit TEXT, status TEXT,
+  scheduled INT, scheduled_dose REAL);
+
 -- The morning calls as recorded (calls.csv, loaded by ingest): which days were deloads, and
 -- the targets each call gave, which a main lift's next target checks itself against.
 CREATE TABLE IF NOT EXISTS call_record (

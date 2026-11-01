@@ -208,7 +208,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         said=request.query_params.get("said"),
         review_days=review_days, prev_day=prev_day, next_day=next_day, month_nav=month_nav,
         is_today=is_today, waiting=_waiting_lines(waits, cfg, now), waiting_for=list(waits.values()),
-        hevy=hevy_card,
+        hevy=hevy_card, doses_today=an.doses_today(con, day) if is_today else [],
         demo=demo,
         signin=auth.settings() is not None, email=p.email, chat_on=chat_on, chat_resting=resting,
         # The demo opens on the canned conversation, live or not; live, it's the history a
@@ -235,7 +235,8 @@ def presentable(ctx):
     (check-in, recent context, calendar tooltips), the sick/injured calendar rings, back
     status and the sick/injured flags wherever they show, the supplement list and
     per-nutrient notes, the upper-limit table (it is about supplement doses) and predictions
-    marked private. The template also drops the forms on `present`, and the check-in card's
+    marked private, and every medication name (calendar and check-in card). The template also
+    drops the forms on `present`, and the check-in card's
     prefill (`day_ci`) goes here, so its note and toggles never reach the HTML.
     Numbers are untouched."""
     # The chat is off too, and its history left out: an answer could quote anything in the data.
@@ -257,8 +258,11 @@ def presentable(ctx):
         c["plan"] = dict(ctx["plan"], exercises=[
             dict(i, adjust=re.sub(r"^Back \w+: (\w)", lambda m: m[1].upper(), i["adjust"]))
             if i.get("adjust") else i for i in ctx["plan"]["exercises"]])
-    c["calendar"] = [dict(m, weeks=[[x and dict(x, unwell=None) for x in w] for w in m["weeks"]])
+    # Medication names are left out of the HTML entirely, not hidden: the calendar's doses
+    # and the check-in card's list go.
+    c["calendar"] = [dict(m, weeks=[[x and dict(x, unwell=None, doses=[]) for x in w] for w in m["weeks"]])
                      for m in ctx["calendar"]]
+    c["doses_today"] = []
     c["nut"] = dict(ctx["nut"], supplements=[], near_limit=[],
                     gaps=[dict(g, note=None) for g in ctx["nut"]["gaps"]])
     # predictions.toml marks the private ones; guessing from their wording would need a
@@ -327,6 +331,7 @@ def _calendar(con, day, newest=None, months=3):
     end = min(month_end, date.fromisoformat(newest))
     info = an.training_days(con, first.isoformat(), end.isoformat())
     unwell = an.unwell_days(con, first.isoformat(), end.isoformat())
+    doses = an.doses_by_day(con, first.isoformat(), end.isoformat())
     out, m = [], first
     while m <= viewed:
         nxt = (m.replace(day=28) + timedelta(days=4)).replace(day=1)
@@ -337,7 +342,7 @@ def _calendar(con, day, newest=None, months=3):
             i = info.get(k)
             cells.append({"date": k, "n": x.day, "future": i is None, "today": k == day,
                           "training": bool(i and i["training"]), "kind": (i or {}).get("kind"), "unwell": unwell.get(k),
-                          "info": i,
+                          "info": i, "doses": doses.get(k, []),
                           "workouts": [(_activity_name(a), dm, an.is_light_movement(a))
                                        for a, dm in (i or {}).get("workouts", [])]})
             x += timedelta(days=1)
@@ -552,9 +557,14 @@ async def health_auto_export(request: Request):
     if len(body) > MAX_UPLOAD:
         return refuse(413, "Upload too large.", len(body))
     head = re.sub(rb"\s", b"", body[:400])
-    kind = "workouts" if b'"workouts"' in head else "metrics" if b'"metrics"' in head else None
-    if not head.startswith(b'{"data":') or kind is None:
-        log.warning("upload starts %r", re.sub(rb'"\d[^"]*"|\d+(\.\d+)?', b"#", head[:80]))
+    # The kind is the first key under "data". Searching the head for the word instead would
+    # let a medication or workout name decide it.
+    m = re.match(rb'\{"data":\{"(\w+)"', head)
+    kind = m[1].decode() if m and m[1] in (b"metrics", b"workouts", b"medications") else None
+    if kind is None:
+        # Field names only: on 1 Nov 2026 this line logged a medication's name, since it only
+        # masked values that start with a digit.
+        log.warning("upload keys %s", b",".join(re.findall(rb'"(\w+)":', head[:200])).decode())
         return refuse(400, "Expected Health Auto Export JSON (Export Version 2).", len(body))
     p = people.load(path)
     glob_key = f"{kind}_glob"

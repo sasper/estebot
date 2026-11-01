@@ -452,6 +452,30 @@ def _rewrite(path, header, keep, new_rows, key=lambda r: r[0]):
         w = csv.writer(f); w.writerow(header); w.writerows(rows)
     return len(new_rows)
 
+# ---------------------------------------------------------------- medications
+MED_COLS = ["date", "time", "medication", "dose", "unit", "status", "scheduled", "scheduled_dose"]
+
+def parse_medications(docs):
+    """Medications export (Export Version 2) -> dose rows, one per logged dose. The app sends
+    no id, so a dose is deduplicated on its whole content; files seen so far hold only their
+    own day's doses, but a resend must not count twice. scheduled = 1 when the dose was
+    against a schedule (it carries scheduledDate), 0 for one taken as needed."""
+    seen, rows = set(), []
+    for doc in docs:
+        for m in doc.get("data", {}).get("medications", []):
+            key = json.dumps(m, sort_keys=True)
+            if key in seen or not m.get("start"):
+                continue
+            seen.add(key)
+            when = m["start"]
+            rows.append([when[:10], when[11:16], m.get("displayText") or "", _num(m.get("dosage")),
+                         m.get("units") or "", m.get("status") or "",
+                         "1" if m.get("scheduledDate") else "0", _num(m.get("scheduledDosage"))])
+    return sorted(rows)
+
+def _num(v):
+    return "" if v is None else f"{v:g}" if isinstance(v, (int, float)) else str(v)
+
 def _file_days(paths):
     """The day each feed file is named for (HealthAutoExport-YYYY-MM-DD.json)."""
     return {os.path.basename(p)[len("HealthAutoExport-"):-len(".json")] for p in paths}
@@ -462,6 +486,13 @@ def apply(cfg):
         return
     start = src["from_date"]
     mpaths, wpaths = _paths(src["metrics_glob"]), _paths(src.get("workouts_glob", ""))
+    dpaths = _paths(src.get("medications_glob", ""))
+    if dpaths:
+        doses = [r for r in parse_medications(_docs(dpaths)) if r[0] >= start]
+        mine = {d for d in _file_days(dpaths) if d >= start}     # the same own-file rule as daily
+        nd = _rewrite(cfg.tidy / "medications.csv", MED_COLS, lambda r: r[0] not in mine,
+                      [r for r in doses if r[0] in mine], key=lambda r: (r[0], r[1], r[2]))
+        print(f"   health auto export: {len(dpaths)} medication files: {nd} doses")
     if not mpaths and not wpaths:
         print("   health auto export: no files found"); return
     days, segments, weights = combine(_metric_parses(mpaths, cfg.data_dir / CACHE_DIR))
