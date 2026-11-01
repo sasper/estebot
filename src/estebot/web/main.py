@@ -1,5 +1,5 @@
 """FastAPI app. Thin layer over analysis/engine.py - it formats, it does not compute."""
-import glob, os, re, statistics as st, subprocess, sys, threading, time
+import glob, json, os, re, statistics as st, subprocess, sys, threading, time
 from contextlib import asynccontextmanager, closing
 from dataclasses import replace
 import logging
@@ -365,7 +365,8 @@ def _record_call(p):
 def checkin(request: Request, day: str = Form(...), back: str | None = Form(None),
             soreness: int = Form(0), energy: int | None = Form(None),
             inter_set_recovery: int | None = Form(None), note: str = Form(""),
-            sick: bool = Form(False), injured: bool = Form(False), csrf: str = Form("")):
+            sick: bool = Form(False), injured: bool = Form(False), skip: list[str] | None = Form(None),
+            csrf: str = Form("")):
     p = people.for_request(request)
     if refused := _refuse(p, csrf):
         return refused
@@ -383,16 +384,17 @@ def checkin(request: Request, day: str = Form(...), back: str | None = Form(None
     # the question is what resolving it means.
     con.execute("""INSERT INTO checkin
                      (date, back, back_reported, soreness, energy, inter_set_recovery, note,
-                      sick, injured, source, needs_review, saved_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,'manual',0,?)
+                      sick, injured, skip, source, needs_review, saved_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,'manual',0,?)
                    ON CONFLICT(date) DO UPDATE SET
                      back=excluded.back, back_reported=excluded.back_reported,
                      soreness=excluded.soreness, energy=excluded.energy,
                      inter_set_recovery=excluded.inter_set_recovery,
                      note=excluded.note, sick=excluded.sick, injured=excluded.injured,
-                     source='manual', needs_review=0, saved_at=excluded.saved_at""",
+                     skip=excluded.skip, source='manual', needs_review=0, saved_at=excluded.saved_at""",
                 (day, back if reported else "ok", int(reported), soreness, energy,
                  scale(inter_set_recovery), note.strip()[:400] or None, int(sick), int(injured),
+                 json.dumps(sorted({s[:80] for s in skip if s.strip()})[:20]) if isinstance(skip, list) and skip else None,
                  datetime.now().isoformat(timespec="seconds")))
     con.execute("DELETE FROM checkin_draft WHERE date=?", (day,))
     con.commit()

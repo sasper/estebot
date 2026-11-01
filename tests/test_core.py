@@ -405,3 +405,41 @@ class TestProgression:
         from estebot.core import progression
         p = progression("Pull-Up", [(0, 6, 7)] * 4 + [(0, 6, 9)] * 3)
         assert p["target"] == "7 sets, 43–44 reps in total"
+
+
+# 1 Nov 2026: after bench 275 x 6 @ 9.5 and 295 x 4 @ 10 on 31 Oct the old rule said
+# 295 x 4 again. Main lifts now go up 5 lb with the reps that land at RPE 8-9.5.
+from estebot import core  # noqa: E402
+
+BENCH_31_OCT = [(135, 20, 6), (225, 10, 7), (275, 6, 9.5), (295, 4, 10), (225, 8, 8)]
+
+
+def test_a_main_lift_adds_load_with_a_rep_range_from_its_estimated_max():
+    p = core.main_progression("Barbell Bench Press", BENCH_31_OCT)
+    assert p["target"] == "300 × 2–3" and p["goal"] == {"weight_lb": 300, "reps": 2}
+    assert core.main_progression("Barbell Bench Press", [(295, 6, 9)])["target"] == "300 × 5–6"
+
+
+def test_a_missed_main_lift_target_holds_the_weight():
+    assert core.main_progression("Barbell Bench Press", [(295, 2, 10)])["target"] == "300 × 1"
+    assert core.main_progression("Barbell Bench Press", [(295, 2, 10)], missed=True)["target"] == "295 × 1"
+
+
+def test_a_main_lift_without_rpe_or_load_keeps_the_old_rules():
+    assert core.main_progression("Barbell Bench Press", [(295, 4, None)])["action"] == "repeat"
+    assert "reps in total" in core.main_progression("Pull-Up", [(0, 7, 8), (0, 6, 9)])["target"]
+
+
+def test_back_from_two_deloads_eases_in_at_90_percent():
+    assert core.main_progression("Barbell Bench Press", [(295, 4, 10)], layoff=True)["target"].startswith("265 ×")
+
+
+def test_a_deload_keeps_the_first_sets_at_a_share_of_the_weight():
+    assert core.deload(BENCH_31_OCT, core.DELOAD) == [(110, 20), (180, 10), (220, 6), (235, 4)]
+    assert core.deload(BENCH_31_OCT, core.DELOAD_BACK) == [(80, 20), (135, 10), (165, 6)]
+
+
+def test_a_light_set_does_not_inflate_the_estimated_max():
+    # 29 Oct hang clean: 205 x 8 @ 6 alone reads as a 287 max; the near-max sets say 280.
+    p = core.main_progression("Barbell Hang Clean", [(205, 8, 6), (225, 5, 9), (255, 2, 9)])
+    assert "from 255 × 2 at RPE 9" in p["why"] and p["target"] == "260 × 1–2"

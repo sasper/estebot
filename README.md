@@ -31,7 +31,8 @@ against those docs and gates, and nothing merged until it passed them.
   *go as planned*, *take it easy* or *rest*. An absence of warnings is never by itself a
   reason to go hard; that needs a reason with its own record.
 - **Your next session, already planned.** It knows where you are in the rotation and sets a
-  target for every exercise from the last time you did it, held back on a take-it-easy day.
+  target for every exercise from the last time you did it. Main lifts go up 5 lb with a rep
+  range worked out from your RPEs; a take-it-easy day is a real deload, every lift still in.
 - **A weight trend that sees through the noise.** A 14-day average and a fitted weekly rate
   that ignore water swings, checked against your planned pace, with a projected goal date.
 - **Strength that's fair to your size.** Estimated one-rep maxes, scaled to body weight,
