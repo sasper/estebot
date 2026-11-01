@@ -111,9 +111,9 @@ def _post(main, path, body=None, ip="203.0.113.7", token=""):
 
 def _page(main, ip="203.0.113.7"):
     from starlette.requests import Request
-    req = Request({"type": "http", "method": "GET", "path": "/", "query_string": b"",
+    req = Request({"type": "http", "method": "GET", "path": "/demo", "query_string": b"",
                    "headers": [(b"fly-client-ip", ip.encode())]})
-    return main.today(req, DAY, "0").body.decode()
+    return main.demo_page(req, DAY, "0").body.decode()
 
 
 @pytest.fixture

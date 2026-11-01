@@ -493,3 +493,56 @@ h1{display:flex;align-items:center;gap:9px}
 .reqs .seen{color:var(--text-muted)}
 .signup .flag{display:inline-block;margin-top:16px}
 .signup .top{margin-bottom:22px}
+
+/* ---------------------------------------------------------------- landing page (/) */
+html{scroll-behavior:smooth}
+.land{max-width:1120px;margin:0 auto;padding:20px 16px 48px}
+.land-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
+.land-hero{display:grid;gap:28px;align-items:start}
+.land-h{font-family:var(--display);font-size:40px;font-weight:700;line-height:1.05;letter-spacing:-.005em;margin:0 0 14px}
+.land-sub{font-size:18px;color:var(--text-secondary);margin:0 0 22px;max-width:46ch}
+.land-btns{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.land-btns a,.land .intro-btn{display:inline-flex;align-items:center;min-height:44px;box-sizing:border-box}
+.land .intro-btn{border:0;cursor:pointer;font:inherit;font-weight:650}
+.land-btn2{padding:10px 18px;border-radius:999px;border:1px solid var(--line);color:var(--text-primary);
+  text-decoration:none;font-weight:600}
+.land-btn2:hover{border-color:var(--accent);color:var(--accent)}
+.land-origin{margin:26px 0 0;color:var(--text-secondary);font-size:15px;max-width:52ch;
+  padding-left:12px;border-left:2px solid var(--line)}
+.land-cards{min-width:0}
+.land-cards .card{margin-bottom:12px}
+.land-note{margin:4px 0 0}
+.land-sec{margin-top:56px}
+.land-h2{font-family:var(--display);font-size:28px;font-weight:700;margin:0 0 16px}
+.land-steps{margin:0;padding-left:22px;display:grid;gap:12px;max-width:70ch}
+.land-steps li{padding-left:4px}
+.land-grid,.land-who{display:grid;gap:12px 24px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.land-grid > div,.land-who > div{color:var(--text-secondary)}
+.land-grid b,.land-who b{color:var(--text-primary);display:block;margin-bottom:2px}
+/* the morning strip: real components, scaled down. Swipe on a phone, a row on desktop. */
+.land-strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(260px,82%);gap:14px;
+  overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+.land-strip figure{margin:0;scroll-snap-align:start;min-width:0}
+.land-shot{height:300px;overflow:hidden;border-radius:12px;border:1px solid var(--line);pointer-events:none}
+.land-shot > *{zoom:.62;margin:0}
+.land-strip figcaption{font-size:14px;color:var(--text-secondary);margin-top:8px}
+.land-form{max-width:560px}
+.land-tracks{border:0;padding:0;margin:16px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.land-tracks legend{font-weight:600;margin-bottom:8px;padding:0}
+.land-form textarea{min-height:80px}
+.land-form button{margin-top:18px}
+.land-where{margin:12px 0 0}
+.land-done{font-family:var(--display);font-size:24px;font-weight:700;margin:8px 0}
+.land-built{max-width:70ch;color:var(--text-secondary);border-top:1px solid var(--line);padding-top:22px}
+.land-foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line)}
+.land-foot a,.land-built a{color:inherit}
+@media (min-width:900px){
+  .land-hero{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:44px}
+  .land-h{font-size:52px}
+  .land-strip{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);overflow:visible}
+}
+.land-h,.land-h2{text-transform:none;color:var(--text-primary);letter-spacing:-.005em}
+.land-top .home{color:inherit;text-decoration:none}
+.land-form form > label:not(.flag){display:block;font-weight:600;margin:16px 0 6px}
+.land-form .land-tracks + label{margin-top:20px}
+@media (min-width:900px){ .land-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }

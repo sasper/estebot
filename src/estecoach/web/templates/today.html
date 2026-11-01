@@ -18,65 +18,62 @@
 <link rel="icon" type="image/svg+xml" href="/static/icon.svg?v={{ icon_v }}">
 <link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png?v={{ icon_v }}">
 <link rel="apple-touch-icon" href="/static/icon-180.png?v={{ icon_v }}">
-{# More about a card: a small (i) that opens its explanation, so the card shows only data. #}
 {% import "brand.html" as brand %}
-{% macro info() %}<details class="info"><summary aria-label="How this works">i</summary><div class="info-pop">{{ caller() }}</div></details>{% endmacro %}
-{% macro icon(name) %}{% set P = {
-  "recovery": "M3 12h4l2-5 4 10 2-5h6",
-  "calendar": "M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4",
-  "weight": "M5 8h14l-2 12H7z M9 12a3 3 0 0 1 6 0",
-  "strength": "M6 7v10 M18 7v10 M3 10v4 M21 10v4 M6 12h12",
-  "nutrition": "M7 3v7a2 2 0 0 0 4 0V3 M9 12v9 M16 3c-2.5 2.5-2.5 7 0 9v9",
-  "predictions": "M12 3a9 9 0 1 0 0.01 0z M12 8a4 4 0 1 0 0.01 0z M12 11.5v1",
-  "load": "M13 3 5 13h6l-1 8 8-10h-6z",
-  "context": "M5 4h14v16H5z M8 9h8 M8 13h8 M8 17h5",
-  "session": "M6 7v10 M18 7v10 M3 10v4 M21 10v4 M6 12h12",
-  "checkin": "M5 12l4 4L19 6",
-} %}<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ P[name] }}"/></svg>{% endmacro %}
+{% from "macros.html" import info, icon, AREA, LEVEL %}
 <div class="wrap">
 <div class="main">
-  {% set here = "/?day=" ~ day ~ "&" if not is_today else "/?" %}
+  {% set here = base ~ "?day=" ~ day ~ "&" if not is_today else base ~ "?" %}
   <header class="top" id="top">
     <h1>{{ brand.wordmark() }}</h1>
     {# the demo person has nothing private to hide, so the demo has no toggle #}
     {% if demo %}{% elif present %}<a class="chip on" href="{{ here }}present=0" title="Notes and medical details are hidden. Click to show everything.">Presentation</a>
     {% else %}<a class="chip" href="{{ here }}present=1" title="Hide notes and medical details, for showing the page to someone">Present</a>{% endif %}
-    {%- if signups_waiting %}<a class="chip on" href="/signups" title="People asking to use EsteCoach">{{ signups_waiting }} new sign-up{{ "s" if signups_waiting > 1 }}</a>{% endif %}
+    {%- if signups_waiting %}<a class="chip on" href="/admin/signups" title="People asking to use EsteCoach">{{ signups_waiting }} sign-up{{ "s" if signups_waiting > 1 }}</a>{% endif %}
     {%- if signin %}{% if email %}<form method="post" action="/auth/logout" class="signout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="chip" title="Signed in as {{ email }}">Sign out</button></form>
     {% else %}<a class="chip" href="/auth/login">Sign in</a>{% endif %}{% endif %}
   </header>
   {# The public demo opens with what this is and what to look at; the person's own page doesn't. #}
   {% if demo %}
   <section class="intro">
-    <p class="intro-pitch">Your personalized coach.</p>
-    <p class="intro-note">It reads every lift, night of sleep, medication and meal, and tells you how to train today: how hard to go, and what to lift. Every number comes from its own tested math, never an AI guess.</p>
-    <p class="intro-demo">This is a live demo on a made-up lifter, rebuilt every day.</p>
+    <p class="intro-pitch">Your fitness coach who's seen every set you've lifted.</p>
+    <p class="intro-note">It reads your training, sleep, food and weight, and tells you how hard to go and what to lift. Every number comes from its own algorithms, never an AI guess.</p>
+    <p class="intro-demo">A live demo on a made-up athlete, rebuilt every day.</p>
     <div class="intro-links">
-      <a class="intro-btn" href="/signup">Get EsteCoach for your training</a>
-      <a class="intro-more" href="#readiness">See today's call &darr;</a>
+      <a class="intro-btn" href="https://github.com/sasper/estecoach">See the code</a>
+      <a class="intro-more" href="#readiness">Jump to today &darr;</a>
+      <a class="intro-more" href="/#early-access">Get early access</a>
     </div>
+    {# For people reviewing the project rather than training with it; closed, so the call stays near the top. #}
+    <details class="intro-build">
+      <summary>Reviewing this as a portfolio piece? How it was built</summary>
+      <p>EsteCoach turns a lifter's workouts, sleep, food and weight into one call a day: built for one athlete, shown here on a made-up one.</p>
+      <p><b>Three rules:</b> no personal data in the code repo; every number comes from EsteCoach's own tested code, and the AI only explains it; one implementation per metric.</p>
+      <p>Designed and built by Stephen Sper.</p>
+      <p>Process, decisions and what broke along the way: <a href="https://github.com/sasper/estecoach/blob/main/HISTORY.md">HISTORY.md</a></p>
+      <p class="intro-build-links"><a href="https://github.com/sasper/estecoach">GitHub</a> · <a href="https://github.com/sasper/estecoach/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a> · <a href="https://github.com/sasper/estecoach/blob/main/HISTORY.md">HISTORY.md</a> · <a href="https://www.linkedin.com/in/stephensper">LinkedIn</a></p>
+    </details>
     <div class="intro-cards">
-      <a class="intro-card" href="#calendar"><span class="n">01</span><b>Your apps in. One clear day out.</b>
-        <span>Hevy or Jefit for lifting, Apple Health from your phone, Cronometer if you log food. Pulled in every day and lined up into one record.</span></a>
-      <a class="intro-card" href="#readiness"><span class="n">02</span><b>A call every morning.</b>
-        <span>Check in, and it weighs your sleep, recovery, training load and how you feel into one call. Every call is graded against how the session went.</span></a>
-      <a class="intro-card" href="#session"><span class="n">03</span><b>Your session, already in Hevy.</b>
-        <span>Every lift gets a target from your last session and your RPE, and it's written into your Hevy routine before you get to the gym.</span></a>
-      <a class="intro-card" href="#ask"><span class="n">04</span><b>Ask it anything.</b>
-        <span>Plain-English questions, answered from your own numbers. {{ "Live in this demo." if chat_on else "Off in this demo." }}</span></a>
+      <a class="intro-card" href="#calendar"><span class="n">01</span><b>Four apps in. One clean day out.</b>
+        <span>Workouts from Hevy, food from Cronometer, 2&nbsp;GB of Apple Health and a live phone feed, pulled every day and lined up into one tidy record per day.</span></a>
+      <a class="intro-card" href="https://github.com/sasper/estecoach"><span class="n">02</span><b>Messy data, fixed at the source.</b>
+        <span>Weights that switched units mid-history. Renamed exercises. Two apps logging the same day. Every fix is a dated rule, never a hand edit, so years of history rebuild exactly.</span></a>
+      <a class="intro-card" href="#readiness"><span class="n">03</span><b>A call that grades itself.</b>
+        <span>Seven signals are tracked, but only the ones your own sessions show matter get a vote, and every call is checked against how the session went.</span></a>
+      <a class="intro-card" href="#ask"><span class="n">04</span><b>Ask your data anything.</b>
+        <span>Plain-English questions, answered from EsteCoach's own numbers, not the AI's imagination. {{ "Live in this demo." if chat_on else "Off in this demo." }}</span></a>
     </div>
   </section>
   {% endif %}
   <p class="sub" style="margin-bottom:10px">{{ "Today" if is_today else "Looking back" }} · {{ day_label }}</p>
   <nav class="daynav">
-    <a href="/?day={{ prev_day }}">&larr;</a>
-    <form method="get" action="/"><input type="date" name="day" value="{{ day }}" onchange="this.form.submit()"></form>
-    <a href="/?day={{ next_day }}">&rarr;</a>
-    {% if not is_today %}<a class="tnow" href="/">today</a>{% endif %}
+    <a href="{{ base }}?day={{ prev_day }}">&larr;</a>
+    <form method="get" action="{{ base }}"><input type="date" name="day" value="{{ day }}" onchange="this.form.submit()"></form>
+    <a href="{{ base }}?day={{ next_day }}">&rarr;</a>
+    {% if not is_today %}<a class="tnow" href="{{ base }}">today</a>{% endif %}
   </nav>
   {% if review_days and not demo %}
   <p class="sub">Needs an answer:
-    {% for d in review_days %}<a href="/?day={{ d }}">{{ d }}</a>{{ ", " if not loop.last }}{% endfor %}
+    {% for d in review_days %}<a href="{{ base }}?day={{ d }}">{{ d }}</a>{{ ", " if not loop.last }}{% endfor %}
   </p>
   {% endif %}
 
@@ -158,88 +155,16 @@
      Phones stack the two in this order. #}
   <div class="dash">
   <div class="col-today">
-  {% set AREA = {"load": "Training load", "effort": "Effort (RPE)", "sleep": "Sleep", "recovery": "HRV & resting HR",
-                 "feel": "How you feel", "nutrition": "Nutrition", "pace": "Weight-loss pace"} %}
-  {% set LEVEL = {"green": "good", "amber": "watch", "red": "strain", None: "no data"} %}
-  {% set flagged = r.signals|selectattr("level", "in", ["red", "amber"])|list %}
-  {% set counted = flagged|selectattr("area", "in", r.voting)|list %}
-  <div class="card readiness" id="readiness" data-verdict="{{ r.verdict }}">
-    <h2>How should you train today?</h2>
-    {% if ask_first %}
-    <p class="why"><a href="#checkin">Check in to finish today's call</a></p>
-    {% else %}
-    <div class="rhero">
-      {{ ring|safe }}
-      <div>
-        <div class="vbadge v-{{ r.verdict }}">{{ verdict_text }}</div>
-        {% if waiting_for %}<p class="prov"><b>Provisional:</b> waiting for {{ waiting_for|join(" and ") }}. The call is kept once {{ "it's" if waiting_for|length == 1 else "they're" }} in, or at noon with what there is.</p>{% endif %}
-        <p class="why">{% if r.holds %}Held by a safety rule: {{ r.holds|join(", ") }}.
-          {% elif counted %}Held back by
-          {% for x in counted %}<b class="lv-{{ x.level }}">{{ AREA[x.area]|lower }}</b>{{ " and " if loop.revindex == 2 else (", " if not loop.last) }}{% endfor %}.
-          {% elif r.positive %}Reason to go hard: {{ r.positive }}.
-          {% elif r.voting %}Nothing that has earned a vote is flagged.
-          {% else %}No signal has a record of mattering for you yet, so the plan stands.{% endif %}</p>
-      </div>
-    </div>
-    <div class="contrib">
-      {% for x in r.signals %}
-      {% set votes = x.area in r.voting %}
-      {% set wait = waiting.get(x.area) if x.level is none %}
-      <details class="lv-{{ x.level or 'none' }}{{ '' if votes else ' ctx' }}"{{ " open" if (x.level == "red" and votes) or wait }}>
-        <summary><span class="dot"></span><span class="area">{{ AREA[x.area] }}</span><span class="vote{{ ' on' if votes }}">{{ "votes" if votes else "context" }}</span><span class="state">{{ "waiting" if wait else LEVEL[x.level] }}</span></summary>
-        <p>{{ wait or x.reasons|join("; ") }}</p>
-      </details>
-      {% endfor %}
-    </div>
-    {% call info() %}<p>Only areas with a record vote: an area votes once your sessions on its flagged days have gone worse than on its clear days (see <b>Is the call working?</b>). The rest are shown as context. Take it easy with one voting area in strain or two to watch, rest with two in strain. Going hard needs a reason that has itself gone with better sessions, never just nothing flagged. A safety rule (a health note, or coming back from a near-idle stretch) makes it a take-it-easy day whatever the record says.
-      The score sits inside the call's band (rest 0–24, take it easy 25–49, as planned 50–74, go hard 75–100), higher the more areas are clear.</p>{% endcall %}
-    {% if r.ramp %}<div class="ramp"><b>Ramp cap.</b> {{ r.ramp }}</div>{% endif %}
-    {% if r.subjective_review %}<div class="ramp review"><b>Check this.</b>
-      Your note for today carries conflicting signals, so nothing was inferred from it.
-      Answer below to resolve it.</div>{% endif %}
-    {% if pattern %}<div class="ramp pattern"><b>{{ "Rest" if pattern[0]=="rest" else pattern[0]|title ~ " day." }}</b> {{ pattern[1] }}</div>{% endif %}
-    {% endif %}
-  </div>
+  {% include "_call.html" %}
 
   {{ checkin_below }}
 
-  {# its targets and a rest day's note would give the call away before the check-in #}
-  {% if plan and not ask_first %}
-  <div class="card session" id="session">
-    <h2>{{ icon("session") }}Today's session{% if plan.rest %}, if you train{% endif %}</h2>
-    <div class="verdict"><span class="vbadge">{{ plan.kind|title }} {{ plan.variant }}{% if plan.main %} · {{ plan.main }}{% endif %}</span></div>
-    {% call info() %}<p>Next in your push → pull → legs rotation after {{ plan.after.kind }} on {{ plan.after.date|shortdate }}.
-      {% if plan.template %}Exercises from your last {{ plan.kind|title }} {{ plan.variant }} ({{ plan.template|shortdate }}); each target comes from the last time you did that exercise.{% endif %}</p><p>Each target comes from the last normal session of that exercise; deload days never set one. Main lifts: an estimated max from that session's sets and their RPEs, 5 lb more, and the reps that would land at RPE 8–9.5. A missed target holds the weight. Accessories: add a rep up to 12 (15 for calves, laterals, shrugs, face pulls, leg extensions, flyes), then add load and drop to the bottom of the range. Bodyweight: beat the last total reps by 1–2. No RPE logged: repeat it. A take-it-easy day is 80% of last time's sets and weight; a flagged back makes it 60%, every lift still in.</p>{% endcall %}
-    {% if plan.day_adjust %}<div class="ramp">{{ plan.day_adjust }}</div>{% endif %}
-    {% if plan.rest %}<div class="ramp"><b>Rest day.</b> The verdict above says rest; this is what the next session looks like when you do train.</div>{% endif %}
-    {% if hevy and not present %}
-    <form method="post" action="/hevy/send" class="hevysend">{% if csrf %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endif %}
-      <p class="small">{{ hevy.preview }}</p>
-      <button type="submit">Send to Hevy</button>
-      {% if hevy.last %}<span class="small muted">Last sent {{ hevy.last.written_at|clock }}{{ " by the morning call" if hevy.last.source == "auto" else "" }}</span>{% endif %}
-    </form>
-    {% endif %}
-    {% if plan.exercises %}
-    <table class="plan">
-      <thead><tr><th>Exercise</th><th>Today</th><th>Why</th><th>Last time</th></tr></thead>
-      {% for i in plan.exercises %}
-      <tr{% if i.main %} class="main"{% endif %}>
-        <td>{{ i.exercise }}</td>
-        <td><b>{{ i.target }}</b><div class="small muted">{{ i.action }}</div></td>
-        <td class="small">{{ i.why }}{% if i.adjust %}<div class="adjust">{{ i.adjust }}</div>{% endif %}</td>
-        <td class="small muted">{{ i.last }}{% if i.last_date %} · {{ i.last_date|shortdate }}{% endif %}</td>
-      </tr>
-      {% endfor %}
-    </table>
-    {% endif %}
-  </div>
-  {% endif %}
-  {# The demo is a made-up lifter; after the session it shows, ask the reader about their own. #}
+  {% include "_session.html" %}
+  {# The demo is a made-up lifter: after its session, point the reader at the early-access form. #}
   {% if demo %}
   <section class="card cta">
     <p class="cta-head">This is a made-up lifter. Want EsteCoach on your own training?</p>
-    <p class="small muted">It needs an iPhone with the Health Auto Export app, and Hevy or Jefit for your lifts. Cronometer is optional.</p>
-    <a class="intro-btn" href="/signup">Request access</a>
+    <a class="intro-btn" href="/#early-access">Get early access</a>
   </section>
   {% endif %}
   </div>
@@ -283,8 +208,8 @@
       <h2>{{ icon("calendar") }}Training calendar</h2>
       {% set mp, mn = month_nav %}
       <nav class="calnav" aria-label="Calendar months">
-        <a href="/?day={{ mp[1] }}#calendar" aria-label="Previous month">&lsaquo; {{ mp[0] }}</a>
-        {% if mn %}<a href="/?day={{ mn[1] }}#calendar" aria-label="Next month">{{ mn[0] }} &rsaquo;</a>{% endif %}
+        <a href="{{ base }}?day={{ mp[1] }}#calendar" aria-label="Previous month">&lsaquo; {{ mp[0] }}</a>
+        {% if mn %}<a href="{{ base }}?day={{ mn[1] }}#calendar" aria-label="Next month">{{ mn[0] }} &rsaquo;</a>{% endif %}
       </nav>
     </div>
     <div class="legend">
@@ -305,7 +230,7 @@
             {% else %}{% set i = c.info %}{% set l = i.lift %}
             {% set KIND = {"training": ("train", "Training"), "movement": ("move", "Rest day, light movement"), "rest": ("rest", "Rest day"), "open": ("open", "Today, nothing logged yet")} %}
             {% set u = c.unwell %}{% set ul = u and (["sick"] if u.sick else []) + (["injured"] if u.injured else []) %}
-            <a class="calcell {{ KIND[c.kind][0] }}{{ ' today' if c.today }}{{ ' unwell' if u }}" href="/?day={{ c.date }}"
+            <a class="calcell {{ KIND[c.kind][0] }}{{ ' today' if c.today }}{{ ' unwell' if u }}" href="{{ base }}?day={{ c.date }}"
                aria-label="{{ c.date }}: {{ KIND[c.kind][1]|lower }}{% if u %}, {{ ul|join(' and ') }}{% endif %}">
               <span>{{ c.n }}</span>
               <div class="caltip" role="tooltip">

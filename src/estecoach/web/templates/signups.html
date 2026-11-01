@@ -9,16 +9,18 @@
 {% import "brand.html" as brand %}
 <div class="wrap"><div class="main">
   <header class="top"><a href="/" class="home" aria-label="EsteCoach home"><h1>{{ brand.wordmark() }}</h1></a></header>
-  <h2>Sign-up requests</h2>
+  <h2>Early-access requests</h2>
+  <p class="small"><a href="/admin/signups.csv">Download CSV</a>{% if visits %} · front page opened {{ visits|sum(attribute="n") }} times in the last {{ visits|length }} days{% endif %}</p>
   {% if not rows %}<p class="muted">None yet.</p>{% else %}
   <table class="reqs">
-    <tr><th>When</th><th>Who</th><th>Tracks today</th><th></th></tr>
+    <tr><th>When</th><th>Who</th><th>Tracks</th><th>Note</th><th></th></tr>
     {% for r in rows %}
-    <tr class="{{ 'seen' if r.reviewed_at }}">
-      <td>{{ r.at[:16]|replace("T", " ") }}</td>
-      <td><b>{{ r.name }}</b><br><a href="mailto:{{ r.email }}">{{ r.email }}</a></td>
+    <tr>
+      <td>{{ r.at[:16]|replace("T", " ") }}{% if r.updated_at %}<br><span class="muted">again {{ r.updated_at[:10] }}</span>{% endif %}</td>
+      <td><b>{{ r.name or "" }}</b><br><a href="mailto:{{ r.email }}">{{ r.email }}</a></td>
       <td>{{ r.tracks or "" }}</td>
-      <td>{% if r.reviewed_at %}reviewed{% else %}<form method="post" action="/signups/{{ r.id }}/reviewed"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="chip">Mark reviewed</button></form>{% endif %}</td>
+      <td>{{ r.note or "" }}</td>
+      <td><form method="post" action="/admin/signups/{{ r.id }}/delete"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="chip">Delete</button></form></td>
     </tr>
     {% endfor %}
   </table>

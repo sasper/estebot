@@ -60,7 +60,7 @@ def test_the_demo_fits_a_phone_with_every_tile_open(demo_app, browser, scheme):
     # so it scrolled sideways.
     page = browser.new_page(viewport={"width": 390, "height": 844}, color_scheme=scheme)
     page.route("**/*", _serve(demo_app))
-    page.goto(f"http://estecoach.test/?day={END.isoformat()}")
+    page.goto(f"http://estecoach.test/demo?day={END.isoformat()}")
     tiles = page.locator("details.tile")
     assert tiles.count() >= 5
     page.evaluate("document.querySelectorAll('details.tile').forEach(d => d.open = true)")
@@ -74,3 +74,20 @@ def test_the_demo_fits_a_phone_with_every_tile_open(demo_app, browser, scheme):
         .map(e => e.tagName.toLowerCase() + (e.className ? '.' + e.className : ''))""")
     page.close()
     assert width[0] <= width[1], wide
+
+
+@pytest.mark.parametrize("scheme", ["light", "dark"])
+def test_the_landing_page_fits_a_phone_and_its_hero_is_above_the_fold(demo_app, browser, scheme):
+    # The page linked from LinkedIn: at 390px no sideways scroll, buttons at least 44px tall,
+    # and the headline and both buttons inside the first screen.
+    page = browser.new_page(viewport={"width": 390, "height": 844}, color_scheme=scheme)
+    page.route("**/*", _serve(demo_app))
+    page.goto("http://estecoach.test/")
+    width = page.evaluate("[document.documentElement.scrollWidth, document.documentElement.clientWidth]")
+    buttons = page.evaluate("""[...document.querySelectorAll('.land-btns a, .land-form button')]
+        .map(b => b.getBoundingClientRect().height)""")
+    fold = page.evaluate("document.querySelector('.land-btns').getBoundingClientRect().bottom")
+    page.close()
+    assert width[0] <= width[1]
+    assert buttons and min(buttons) >= 44, buttons
+    assert fold <= 844, fold

@@ -1,0 +1,42 @@
+{# The morning call. Shared by the person's page and the landing page, which renders the
+   demo's real call with it, so the picture there is never stale. #}
+{% from "macros.html" import info, icon, AREA, LEVEL %}
+  {% set flagged = r.signals|selectattr("level", "in", ["red", "amber"])|list %}
+  {% set counted = flagged|selectattr("area", "in", r.voting)|list %}
+  <div class="card readiness" id="readiness" data-verdict="{{ r.verdict }}">
+    <h2>How should you train today?</h2>
+    {% if ask_first %}
+    <p class="why"><a href="#checkin">Check in to finish today's call</a></p>
+    {% else %}
+    <div class="rhero">
+      {{ ring|safe }}
+      <div>
+        <div class="vbadge v-{{ r.verdict }}">{{ verdict_text }}</div>
+        {% if waiting_for %}<p class="prov"><b>Provisional:</b> waiting for {{ waiting_for|join(" and ") }}. The call is kept once {{ "it's" if waiting_for|length == 1 else "they're" }} in, or at noon with what there is.</p>{% endif %}
+        <p class="why">{% if r.holds %}Held by a safety rule: {{ r.holds|join(", ") }}.
+          {% elif counted %}Held back by
+          {% for x in counted %}<b class="lv-{{ x.level }}">{{ AREA[x.area]|lower }}</b>{{ " and " if loop.revindex == 2 else (", " if not loop.last) }}{% endfor %}.
+          {% elif r.positive %}Reason to go hard: {{ r.positive }}.
+          {% elif r.voting %}Nothing that has earned a vote is flagged.
+          {% else %}No signal has a record of mattering for you yet, so the plan stands.{% endif %}</p>
+      </div>
+    </div>
+    <div class="contrib">
+      {% for x in r.signals %}
+      {% set votes = x.area in r.voting %}
+      {% set wait = waiting.get(x.area) if x.level is none %}
+      <details class="lv-{{ x.level or 'none' }}{{ '' if votes else ' ctx' }}"{{ " open" if (x.level == "red" and votes) or wait }}>
+        <summary><span class="dot"></span><span class="area">{{ AREA[x.area] }}</span><span class="vote{{ ' on' if votes }}">{{ "votes" if votes else "context" }}</span><span class="state">{{ "waiting" if wait else LEVEL[x.level] }}</span></summary>
+        <p>{{ wait or x.reasons|join("; ") }}</p>
+      </details>
+      {% endfor %}
+    </div>
+    {% call info() %}<p>Only areas with a record vote: an area votes once your sessions on its flagged days have gone worse than on its clear days (see <b>Is the call working?</b>). The rest are shown as context. Take it easy with one voting area in strain or two to watch, rest with two in strain. Going hard needs a reason that has itself gone with better sessions, never just nothing flagged. A safety rule (a health note, or coming back from a near-idle stretch) makes it a take-it-easy day whatever the record says.
+      The score sits inside the call's band (rest 0–24, take it easy 25–49, as planned 50–74, go hard 75–100), higher the more areas are clear.</p>{% endcall %}
+    {% if r.ramp %}<div class="ramp"><b>Ramp cap.</b> {{ r.ramp }}</div>{% endif %}
+    {% if r.subjective_review %}<div class="ramp review"><b>Check this.</b>
+      Your note for today carries conflicting signals, so nothing was inferred from it.
+      Answer below to resolve it.</div>{% endif %}
+    {% if pattern %}<div class="ramp pattern"><b>{{ "Rest" if pattern[0]=="rest" else pattern[0]|title ~ " day." }}</b> {{ pattern[1] }}</div>{% endif %}
+    {% endif %}
+  </div>
