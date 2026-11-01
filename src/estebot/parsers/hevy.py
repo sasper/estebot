@@ -4,8 +4,10 @@
 Two halves, kept apart on purpose:
 
   fetch      network. Pulls every workout and writes data_dir/raw/hevy/workouts.json.
-             Run as `python -m estebot.parsers.hevy`. Read-only: the API can also create
-             and edit workouts and routines, and nothing here ever calls those endpoints.
+             Run as `python -m estebot.parsers.hevy`. Read-only: nothing here writes.
+             Writing lives in estebot/hevy_routines.py and is limited to routines: the
+             day's top-set targets and a note line. No code anywhere creates, edits or
+             deletes a workout.
   hevy_sets  pure. Snapshot -> set rows. Skips the Jefit history hevy_import.py posted. parsers/jefit.py calls it, so every lifting table
              is still built from one set list by one implementation of volume and e1RM.
 
