@@ -1,0 +1,178 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EsteCoach: a fitness coach that's seen every set you've lifted</title>
+<meta name="description" content="Every morning it reads your training, sleep, food and weight, and tells you how hard to go and what to lift.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="EsteCoach">
+<meta property="og:title" content="A fitness coach that's seen every set you've lifted.">
+<meta property="og:description" content="Every morning it reads your training, sleep, food and weight, and tells you how hard to go and what to lift.">
+<meta property="og:url" content="https://estecoach.app/">
+<meta property="og:image" content="https://estecoach.app/static/social-card.png">
+<meta property="og:image:width" content="2400"><meta property="og:image:height" content="1254">
+<meta property="og:image:alt" content="EsteCoach: the morning call and today's session">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="A fitness coach that's seen every set you've lifted.">
+<meta name="twitter:image" content="https://estecoach.app/static/social-card.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&display=swap">
+<link rel="stylesheet" href="/static/app.css?v={{ css_v }}">
+<link rel="icon" type="image/svg+xml" href="/static/icon.svg?v={{ icon_v }}">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png?v={{ icon_v }}">
+{% import "brand.html" as brand %}
+{% from "macros.html" import icon %}
+<div class="land">
+
+  <header class="land-top"><a href="/" class="home" aria-label="EsteCoach home"><h1>{{ brand.wordmark() }}</h1></a>
+    <a class="chip" href="/auth/login">Sign in</a></header>
+
+  {# 1. Hero: the copy, and beside it (under it on a phone) the demo's real call and session. #}
+  <section class="land-hero">
+    <div class="land-copy">
+      <h2 class="land-h">A fitness coach that's seen every set you've lifted.</h2>
+      <p class="land-sub">Every morning it reads your training, sleep, food and weight, and tells you how hard to go and what to lift.</p>
+      <div class="land-btns">
+        <a class="intro-btn" href="/demo">See the demo</a>
+        <a class="land-btn2" href="#early-access">Get early access</a>
+      </div>
+      {# 2. Origin #}
+      <p class="land-origin">I had four apps tracking everything and none of them told me what to do this morning. So I built the one that does.</p>
+    </div>
+    {% if r %}
+    <div class="land-cards" aria-label="A morning call from the demo">
+      {% include "_call.html" %}
+      <p class="small muted land-note">The demo's call for {{ day_label }}, on a made-up lifter. <a href="/demo?day={{ day }}">Open that day</a></p>
+    </div>
+    {% endif %}
+  </section>
+
+  {# 3. How it works #}
+  <section class="land-sec">
+    <h2 class="land-h2">{{ icon("steps") }}How it works</h2>
+    <ol class="land-steps">
+      <li class="land-panel"><span class="land-num">1</span><h3>{{ icon("connect") }}Connect what you already use</h3>
+        <p>Apple Health for sleep, HRV, resting heart rate and weight. Hevy for lifting. Cronometer for food. Pulled in automatically.</p></li>
+      <li class="land-panel"><span class="land-num">2</span><h3>{{ icon("checkin") }}Check in, get one call</h3>
+        <p>4 taps after you wake up. Then one call: go hard, go as planned, take it easy, or rest, with the reasons written out.</p></li>
+      <li class="land-panel"><span class="land-num">3</span><h3>{{ icon("session") }}Open Hevy and lift</h3>
+        <p>Your coach has already picked today's training. Your Hevy routine is updated from your own signals, with a target for every exercise.</p></li>
+    </ol>
+  </section>
+
+  {# 4. Why it's different #}
+  <section class="land-sec">
+    <h2 class="land-h2">{{ icon("spark") }}Why it's different</h2>
+    <div class="land-grid">
+      <div class="land-panel"><h3>{{ icon("math") }}Numbers from math, not guesses</h3><p>Every figure comes from tested algorithms. The AI explains them. It never makes one up.</p></div>
+      <div class="land-panel"><h3>{{ icon("grade") }}It grades itself</h3><p>Every call is checked against how the session went. A signal only gets a say once your own history shows it matters for you.</p></div>
+      <div class="land-panel"><h3>{{ icon("fix") }}Messy data, fixed at the source</h3><p>Unit switches, renamed exercises, double-counted sleep: fixed by rules, so years of history rebuild the same way every time.</p></div>
+      <div class="land-panel"><h3>{{ icon("ask") }}Ask it anything about your data</h3><p>Plain-English answers from your own numbers.</p></div>
+    </div>
+  </section>
+
+  {# 5. A morning with EsteCoach: real views, scaled down. Swipe on a phone, a row on desktop. #}
+  {% if r %}
+  <section class="land-sec">
+    <h2 class="land-h2">{{ icon("sun") }}A morning with EsteCoach</h2>
+    <div class="land-strip">
+      <figure><div class="land-shot">
+        {# The check-in as it looks after "Read it": the sentence typed, the taps drafted from it
+           (they match what it says), waiting for Save. The model drafts words, never a number. #}
+        <section class="card tapcheck"><div class="taphead"><h2>Check-in</h2><span class="small muted">read from what you wrote, check and save</span></div>
+          <div class="tapsay"><input readonly tabindex="-1" value="Slept great, back is fine, legs fresh"><button type="button" tabindex="-1">Read it</button></div>
+          <div class="tap">
+          {% for label, words, pick in [("Lower back", ["ok", "tired", "sore", "spasm"], 0), ("Energy", ["wiped", "low", "ok", "great"], 3), ("Recovery between sets", ["very slow", "slow", "ok", "normal"], 3)] %}
+          <fieldset><legend>{{ label }}</legend><div class="seg">{% for w in words %}<label><input type="radio" disabled{{ " checked" if loop.index0 == pick }}><span>{{ w }}</span></label>{% endfor %}</div></fieldset>
+          {% endfor %}
+          <div class="tapfoot"><label class="flag"><input type="checkbox" tabindex="-1"><span>Sick</span></label>
+            <label class="flag"><input type="checkbox" tabindex="-1"><span>Injured</span></label>
+            <input class="tapnote-in" readonly tabindex="-1" placeholder="Note (optional)"><button type="button" tabindex="-1">Save</button></div>
+          </div>
+        </section></div>
+        <figcaption>Wake up, tap how you feel.</figcaption></figure>
+      <figure><div class="land-shot">{% include "_call.html" %}</div>
+        <figcaption>One call, with its reasons.</figcaption></figure>
+      {% if plan %}<figure><div class="land-shot">{% include "_session.html" %}</div>
+        <figcaption>A target for every lift.</figcaption></figure>{% endif %}
+      {% if ask %}<figure><div class="land-shot"><div class="card">{% for q, a in ask %}<div class="ask-msg me">{{ q }}</div><div class="ask-msg bot">{{ a }}</div>{% endfor %}</div></div>
+        <figcaption>Ask about your own numbers.</figcaption></figure>{% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# 6. Who it's for #}
+  <section class="land-sec">
+    <h2 class="land-h2">{{ icon("who") }}Who it's for</h2>
+    <div class="land-who">
+      <div class="land-panel yes"><h3>{{ icon("yes") }}For</h3><p>People who lift with a plan, wear an Apple Watch, and already log in Hevy. Cronometer is optional.</p></div>
+      <div class="land-panel no"><h3>{{ icon("no") }}Not yet</h3><p>Android and sports other than lifting. Wearables other than Apple Watch, like Whoop, Oura or Garmin, and lifting or food apps other than Hevy and Cronometer, don't connect yet.</p></div>
+    </div>
+  </section>
+
+  {# 7. Early access #}
+  <section class="land-sec land-form land-panel" id="early-access">
+    <div class="land-form-intro">
+      <h2 class="land-h2">{{ icon("mail") }}Want to try it?</h2>
+      <p>I'm letting a few people in as I go. Leave your email and I'll reach out.</p>
+      <p class="small muted land-where">Comes to me. Not shared, not sold. <a href="/privacy">Privacy</a></p>
+    </div>
+    <div class="land-form-body">
+    {% if done %}
+    <p class="land-done" role="status">Got it. I'll be in touch.</p>
+    {% else %}
+    <form method="post" action="/signup" id="signup" class="signup">
+      <p class="err" id="signup-err" role="alert"{{ "" if error else " hidden" }}>{{ error or "" }}</p>
+      <div class="land-pair">
+        <div><label for="name">Name</label>
+          <input type="text" id="name" name="name" maxlength="{{ limits.name }}" value="{{ (form.name or [''])[0] }}" autocomplete="name"></div>
+        <div><label for="email">Email</label>
+          <input type="email" id="email" name="email" maxlength="{{ limits.email }}" required value="{{ (form.email or [''])[0] }}" autocomplete="email"></div>
+      </div>
+      <p class="land-q">What do you track with today? <span class="muted">Tick all that apply.</span></p>
+      <div class="land-kinds">
+      {% for group, names in track_groups %}
+      <fieldset class="land-tracks"><legend>{{ group }}</legend>
+        {% for t in names %}<label class="flag"><input type="checkbox" name="tracks" value="{{ t }}"{{ " checked" if t in (form.tracks or []) }}><span>{{ t }}</span></label>{% endfor %}
+      </fieldset>
+      {% endfor %}
+      </div>
+      <label for="note">Anything else? <span class="muted" style="font-weight:400">(optional)</span></label>
+      <textarea id="note" name="note" rows="2" maxlength="{{ limits.note }}" placeholder="Something not on the list, or what you're training for">{{ (form.note or [''])[0] }}</textarea>
+      {# Left empty by people; filled in by form-filling bots, whose requests are dropped. #}
+      <div class="hp" aria-hidden="true"><label for="website">Website</label><input type="text" id="website" name="website" tabindex="-1" autocomplete="off"></div>
+      <button type="submit" class="intro-btn">Get early access</button>
+    </form>
+    {% endif %}
+    </div>
+  </section>
+
+  {# 8. Built by #}
+  <section class="land-sec land-built land-panel">
+    <h3>{{ icon("build") }}Built by</h3>
+    <p>Designed and built by Stephen Sper, an engineering leader in Ann Arbor. I wrote the requirements and design docs and used Claude Code for implementation. How it's built, and what broke along the way, is on GitHub.</p>
+    <p class="small"><a href="https://github.com/sasper/estecoach">GitHub</a> · <a href="https://github.com/sasper/estecoach/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a> · <a href="https://github.com/sasper/estecoach/blob/main/HISTORY.md">HISTORY.md</a> · <a href="https://www.linkedin.com/in/stephensper">LinkedIn</a></p>
+  </section>
+
+  {# 9. Footer #}
+  <footer class="land-foot small muted">EsteCoach · Not medical advice · <a href="/privacy">Privacy</a> · <a href="https://github.com/sasper/estecoach">GitHub</a> · <a href="mailto:stephen@estecoach.app">stephen@estecoach.app</a></footer>
+</div>
+<script>
+// Sends the form without leaving the page, and shows the result where the form was. Without
+// JavaScript the form posts normally and the page comes back with the same message.
+(function () {
+  var f = document.getElementById("signup"); if (!f || !window.fetch) return;
+  f.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var err = document.getElementById("signup-err");
+    fetch(f.action, {method: "POST", body: new URLSearchParams(new FormData(f)), headers: {"Accept": "application/json"}})
+      .then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
+      .then(function (x) {
+        if (x[0]) { var p = document.createElement("p"); p.className = "land-done"; p.setAttribute("role", "status");
+          p.textContent = x[1].message;
+          f.replaceWith(p);
+          var r = p.getBoundingClientRect();                       // bring it into view only if it isn't
+          if (r.top < 0 || r.top > innerHeight - 60) p.scrollIntoView({block: "center", behavior: "smooth"}); }
+        else { err.textContent = x[1].error; err.hidden = false; }
+      })
+      .catch(function () { err.textContent = "That didn't go through. Try again in a minute."; err.hidden = false; });
+  });
+})();
+</script>

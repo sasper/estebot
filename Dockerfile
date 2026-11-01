@@ -20,7 +20,7 @@ RUN useradd --create-home --uid 1000 estecoach && mkdir /data && chown estecoach
 
 USER estecoach
 ENV ESTECOACH_DEMO=1 ESTECOACH_DEMO_DIR=/data/demo ESTECOACH_CONFIG=/data/demo/estecoach.toml \
-    ESTECOACH_DEMO_CHAT_METER=/data/demo-chat.sqlite \
+    ESTECOACH_DEMO_CHAT_METER=/data/demo-chat.sqlite ESTECOACH_SIGNUPS=/data/signups.sqlite \
     DATA_DIR=/data/health-data PORT=8080
 EXPOSE 8080
 CMD ["/app/entrypoint.sh"]

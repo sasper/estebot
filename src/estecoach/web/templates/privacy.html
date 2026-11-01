@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Privacy · EsteCoach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&display=swap">
+<link rel="stylesheet" href="/static/app.css?v={{ css_v }}">
+<link rel="icon" type="image/svg+xml" href="/static/icon.svg?v={{ icon_v }}">
+{% import "brand.html" as brand %}
+<div class="wrap"><div class="main signup">
+  <header class="top"><a href="/" class="home" aria-label="EsteCoach home"><h1>{{ brand.wordmark() }}</h1></a></header>
+  <p class="intro-pitch">Privacy</p>
+  <p><b>The early-access form.</b> It keeps your name, your email, which of Apple Watch, Hevy, Cronometer or Other you ticked, and your note if you leave one. It asks for no health details. It comes to me, Stephen Sper, who builds EsteCoach, and only I see it. I use it to reach out to you about using EsteCoach. It isn't shared, sold, or added to a mailing list.</p>
+  <p><b>Where it's kept.</b> In a database on EsteCoach's server, hosted by Fly.io. Not in the code, and not in any repository.</p>
+  <p><b>Removing it.</b> Email <a href="mailto:stephen@estecoach.app">stephen@estecoach.app</a> and I'll delete it.</p>
+  <p><b>The demo.</b> It uses a made-up athlete and no real person's data. Nothing you do on it is kept. Questions typed into its chat are sent to Anthropic's Claude to be answered; EsteCoach doesn't store them.</p>
+  <p><b>Everything else.</b> No selling, no analytics, no third-party trackers. The server counts how many times the front page is opened each day, with no cookies. The page's fonts load from Google Fonts. The hosting provider keeps ordinary request logs (address and page asked for). The demo remembers which of its panels you left open, in your own browser only. Signing in, for people who use EsteCoach, sets a cookie that keeps you signed in.</p>
+  <p class="small muted">Last updated 1 November 2026.</p>
+  <a class="intro-btn" href="/">Back to EsteCoach</a>
+</div></div>

@@ -1,3 +1,4 @@
+import os
 import importlib
 from datetime import date, timedelta
 
@@ -33,7 +34,9 @@ def page(main, query="", cookie=None):
     req = Request({"type": "http", "method": "GET", "path": "/", "query_string": query.encode(),
                    "headers": headers})
     present = dict(x.split("=") for x in query.split("&") if x).get("present")
-    resp = main.today(req, DAY, present)
+    # The demo lives at /demo; / is a person's own page (and the landing page for visitors).
+    route = main.demo_page if os.environ.get("ESTECOACH_DEMO") == "1" else main.today
+    resp = route(req, DAY, present)
     return resp.body.decode(), resp.headers.get("set-cookie", "")
 
 
@@ -96,14 +99,25 @@ def test_the_public_demo_is_read_only(main, con, monkeypatch):
     assert con.execute("SELECT source FROM checkin WHERE date=?", (DAY,)).fetchone()[0] == "notes"
 
 
-def test_the_how_it_was_built_line_is_on_the_demo_only(main, monkeypatch):
-    # It's for people reviewing the project; a person's own page has no use for it.
-    assert "How it was built" not in page(main)[0]
+def test_the_demo_is_just_the_demo_with_a_way_back_to_the_landing_page(main, monkeypatch):
+    # The landing page (/) explains EsteCoach, so the demo dropped its own pitch and reviewer
+    # strip: one line says what it is, and links back home and to early access.
+    own = page(main)[0]
+    assert "demo-bar" not in own and "/#early-access" not in own
     monkeypatch.setenv("ESTECOACH_DEMO", "1")
     shown, _ = page(main)
-    assert "How it was built" in shown and "ARCHITECTURE.md" in shown and "linkedin.com/in/" in shown
-    assert shown.index("How it was built") < shown.index('id="readiness"')
-    assert "Designed and built by Stephen Sper." in shown and "Claude Code" not in shown
+    assert "How it was built" not in shown and '<section class="intro">' not in shown and "intro-cards" not in shown
+    bar = shown.index('class="demo-bar"')
+    assert bar < shown.index('id="readiness"')
+    assert '<a href="/">About EsteCoach</a>' in shown and '<a href="/" class="home"' in shown
+    assert shown.count('href="/#early-access"') == 2
+    assert 'href="/demo?day=' in shown and 'href="/?day=' not in shown       # its links stay on /demo
+
+
+def test_the_header_says_estecoach(main):
+    # The wordmark is split across tags to colour its second half, and the rename's text
+    # replace missed it: estecoach.app said EsteBot in its header for a day.
+    assert 'Este<span>Coach</span>' in page(main)[0] and "Este<span>Bot" not in page(main)[0]
 
 
 def test_the_footer_credits_and_links_the_author(main):
@@ -118,7 +132,7 @@ def test_the_read_only_demo_person_gets_it_without_the_demo_flag(main, monkeypat
     from dataclasses import replace
     me = main.people.for_request(None)
     monkeypatch.setattr(main.people, "for_request", lambda request: replace(me, read_only=True))
-    assert "How it was built" in page(main)[0]
+    assert 'id="early-access"' in page(main)[0]          # / is the landing page for them
 
 
 def test_every_weight_rate_on_the_page_names_its_window(main):

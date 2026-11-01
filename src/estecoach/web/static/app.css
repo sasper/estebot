@@ -270,7 +270,10 @@ table.plan tr.main td:first-child{font-weight:600}
 table.evidence td,table.evidence th{padding:6px 12px 6px 0;text-align:left;vertical-align:top}
 table.evidence tr.on td:last-child{color:var(--accent);font-weight:600}
 .tapsay{display:flex;gap:8px;margin:4px 0 12px}
-.tapsay input{flex:1;min-width:0}
+.tapsay input{flex:1;min-width:0;height:42px;font:inherit;font-size:16px;padding:0 12px;
+  border:1px solid var(--line);border-radius:10px;background:var(--surface-1);color:var(--text-primary)}
+.tapsay button{font:inherit;font-size:15px;font-weight:600;padding:0 16px;border-radius:10px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface-2,color-mix(in srgb,var(--text-primary) 6%,transparent));color:var(--text-primary)}
 .rscore{font-size:38px;font-weight:700;letter-spacing:-.03em;fill:currentColor;font-variant-numeric:tabular-nums}
 .readiness .vbadge{line-height:1.15}
 .readiness .prov{margin:4px 0 0;font-size:13px;color:var(--text-secondary)}
@@ -413,7 +416,7 @@ a{color:var(--accent)}
   padding:10px 18px;border-radius:999px;box-shadow:0 0 18px color-mix(in srgb,var(--accent) 35%,transparent)}
 .intro-more{color:var(--text-secondary);text-decoration:none;font-weight:550}
 .intro-more:hover{color:var(--accent)}
-.intro-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.intro-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}   /* four cards: two by two, one column on a phone */
 /* The reviewers' line: one muted row until opened, then about five lines. */
 .intro-build{margin:-6px 0 20px;font-size:13.5px;color:var(--text-secondary);max-width:70ch}
 .intro-build summary{cursor:pointer;font-weight:550;list-style:none;min-height:32px;display:flex;align-items:center}
@@ -474,3 +477,139 @@ h1{display:flex;align-items:center;gap:9px}
 .credit p{margin:0}
 .credit b{color:var(--text-secondary);font-weight:600}
 .credit-links{white-space:nowrap;margin-left:6px}
+/* The demo's ask, after the session, and the sign-up pages. */
+.cta{margin-top:18px}
+.cta-head{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.2;margin:0 0 6px}
+.cta .intro-btn{display:inline-block;margin-top:10px}
+.signup{max-width:560px}
+.signup form > label:not(.flag){display:block;font-weight:600;margin:16px 0 6px}
+.top .home{color:inherit;text-decoration:none}
+.signup input[type=text],.signup input[type=email],.signup textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;
+  padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface-1);color:var(--text-primary)}
+.signup textarea{min-height:96px;resize:vertical}
+.signup .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.signup button{margin-top:20px}
+.signup .err{color:var(--bad);font-weight:600}
+.signup ul{padding-left:20px;color:var(--text-secondary)}
+.reqs{width:100%;border-collapse:collapse;font-size:14px}
+.reqs th,.reqs td{text-align:left;padding:8px 6px;border-top:1px solid var(--line);vertical-align:top}
+.reqs .seen{color:var(--text-muted)}
+.signup .flag{display:inline-block;margin-top:16px}
+.signup .top{margin-bottom:22px}
+
+/* ---------------------------------------------------------------- landing page (/) */
+html{scroll-behavior:smooth}
+.land{max-width:1120px;margin:0 auto;padding:20px 16px 48px}
+.land-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
+.land-hero{display:grid;gap:28px;align-items:start}
+.land-h{font-family:var(--display);font-size:40px;font-weight:700;line-height:1.05;letter-spacing:-.005em;margin:0 0 14px}
+.land-sub{font-size:18px;color:var(--text-secondary);margin:0 0 22px;max-width:46ch}
+.land-btns{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.land-btns a,.land .intro-btn{display:inline-flex;align-items:center;min-height:44px;box-sizing:border-box}
+.land .intro-btn{border:0;cursor:pointer;font:inherit;font-weight:650}
+.land-btn2{padding:10px 18px;border-radius:999px;border:1px solid var(--line);color:var(--text-primary);
+  text-decoration:none;font-weight:600}
+.land-btn2:hover{border-color:var(--accent);color:var(--accent)}
+.land-origin{margin:26px 0 0;color:var(--text-secondary);font-size:15px;max-width:52ch;
+  padding-left:12px;border-left:2px solid var(--line)}
+.land-cards{min-width:0}
+.land-cards .card{margin-bottom:12px}
+.land-note{margin:4px 0 0}
+.land-sec{margin-top:56px}
+.land-h2{font-family:var(--display);font-size:28px;font-weight:700;margin:0 0 16px}
+.land-steps{margin:0;padding-left:22px;display:grid;gap:12px;max-width:70ch}
+.land-steps li{padding-left:4px}
+.land-grid,.land-who{display:grid;gap:12px 24px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.land-grid > div,.land-who > div{color:var(--text-secondary)}
+.land-grid b,.land-who b{color:var(--text-primary);display:block;margin-bottom:2px}
+/* the morning strip: real components, scaled down. Swipe on a phone, a row on desktop. */
+.land-strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(260px,82%);gap:14px;
+  overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+.land-strip figure{margin:0;scroll-snap-align:start;min-width:0}
+.land-shot{height:300px;overflow:hidden;border-radius:12px;border:1px solid var(--line);pointer-events:none;
+  -webkit-mask-image:linear-gradient(#000 calc(100% - 28px),transparent);mask-image:linear-gradient(#000 calc(100% - 28px),transparent)}
+.land-shot > *{zoom:.62;margin:0}
+.land-strip figcaption{font-size:14px;color:var(--text-secondary);margin-top:8px}
+.land-form{max-width:560px}
+.land-tracks{border:0;padding:0;margin:16px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.land-tracks legend{font-weight:600;margin-bottom:8px;padding:0}
+.land-form textarea{min-height:80px}
+.land-form button{margin-top:18px}
+.land-where{margin:12px 0 0}
+.land-done{font-family:var(--display);font-size:24px;font-weight:700;margin:8px 0}
+.land-built{max-width:70ch;color:var(--text-secondary);border-top:1px solid var(--line);padding-top:22px}
+.land-foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line)}
+.land-foot a,.land-built a{color:inherit}
+@media (min-width:900px){
+  .land-hero{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:44px}
+  .land-h{font-size:52px}
+  .land-strip{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);overflow:visible}
+}
+.land-h,.land-h2{text-transform:none;color:var(--text-primary);letter-spacing:-.005em}
+.land-top .home{color:inherit;text-decoration:none}
+.land-form form > label:not(.flag){display:block;font-weight:600;margin:16px 0 6px}
+.land-form .land-tracks + label{margin-top:20px}
+@media (min-width:900px){ .land-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* landing: panels and icons (1 Nov 2026 review) */
+.land-hero{align-items:center}
+.land-panel{background:var(--surface-1);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+  box-shadow:0 1px 0 color-mix(in srgb,var(--text-primary) 4%,transparent)}
+.land-panel h3{display:flex;align-items:center;gap:8px;font-size:16px;margin:0 0 6px;color:var(--text-primary)}
+.land-panel p{margin:0;color:var(--text-secondary)}
+.land-panel .ico,.land-h2 .ico{width:20px;height:20px;flex:0 0 auto}
+.land-h2{display:flex;align-items:center;gap:10px}
+.land-h2 .ico{width:24px;height:24px}
+.land-steps{list-style:none;padding:0;margin:0;display:grid;gap:14px;max-width:none;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.land-steps li{position:relative;padding-left:20px}
+.land-num{position:absolute;top:14px;right:16px;font-family:var(--display);font-size:34px;font-weight:700;
+  line-height:1;color:color-mix(in srgb,var(--accent) 35%,transparent)}
+.land-grid{gap:14px}
+.land-grid > .land-panel,.land-who > .land-panel{color:var(--text-secondary)}
+.land-who .yes h3 .ico{stroke:var(--good)}
+.land-who .no h3 .ico{stroke:var(--bad)}
+.land-form.land-panel{max-width:none;padding:24px}
+.land-form form{max-width:640px}
+.land-q{font-weight:600;margin:20px 0 4px;color:var(--text-primary)}
+.land-q .muted{font-weight:400}
+.land-tracks{margin:10px 0 0}
+.land-tracks legend{font-size:13px;color:var(--text-secondary);font-weight:600}
+.land-tracks .flag span{height:38px;font-size:13.5px}
+.land-built.land-panel{border-top:1px solid var(--line);padding-top:18px}
+.land-tracks .flag{margin:0}
+.land-tracks{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.land-tracks legend{width:100%;margin-bottom:6px}
+.land-shot fieldset{border:0;padding:0;margin:0 0 10px}
+.land-shot legend{padding:0;font-weight:600;font-size:13px;margin-bottom:4px}
+/* landing, second review: the hero shows the decision card (ring and the areas behind it),
+   smaller, level with the copy; the form is two columns and a grid of compact kinds */
+.land-cards .info{display:none}
+.land-cards .ring{width:76px;height:76px}
+.land-cards .rhero{gap:14px;margin:0 0 8px}
+.land-form.land-panel{display:grid;gap:20px 32px}
+.land-form-intro .land-where{margin-top:14px}
+.land-pair{display:grid;gap:12px;grid-template-columns:1fr}
+.land-pair label,.land-form form > label:not(.flag){display:block;font-weight:600;margin:0 0 6px}
+.land-form form > label:not(.flag){margin-top:14px}
+.land-kinds{display:grid;gap:10px;grid-template-columns:1fr;margin-top:8px}
+.land-kinds .land-tracks{border:1px solid var(--line);border-radius:10px;padding:10px 12px 12px;margin:0;gap:6px}
+.land-kinds .land-tracks legend{float:left;width:100%;margin:0 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+.land-kinds .flag span{height:32px;padding:0 11px;font-size:13px}
+.land-form textarea{min-height:56px}
+.land-form .land-q{margin:16px 0 0}
+@media (min-width:700px){
+  .land-pair{grid-template-columns:1fr 1fr}
+  .land-kinds{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (min-width:980px){
+  .land-form.land-panel{grid-template-columns:260px minmax(0,1fr);align-items:start}
+}
+.land-kinds .land-tracks{align-content:flex-start}
+.land-form.land-panel form{max-width:none}
+.demo-bar{margin:6px 0 18px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:14px;
+  color:var(--text-secondary);background:var(--surface-1)}
+.demo-bar a{font-weight:600}
+.top .home{color:inherit;text-decoration:none}
+/* The calendar is a tile, but a closed one keeps the full row: half a row is too narrow for it. */
+@container (min-width:640px){ .trends > .tile.caltile:not([open]){grid-column:1/-1} }
+.caltile .calhead-row{justify-content:flex-end}

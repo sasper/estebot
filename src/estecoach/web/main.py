@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -17,7 +17,7 @@ from estecoach.analysis import calls, engine as an, nutrition, predictions
 import anthropic
 from starlette.concurrency import run_in_threadpool
 
-from estecoach.web import auth, chat, checkin_text, db, charts, examples, people
+from estecoach.web import auth, chat, checkin_text, db, charts, examples, landing, people, signups
 
 log = logging.getLogger("estecoach")
 HERE = os.path.dirname(__file__)
@@ -100,9 +100,34 @@ def _refuse(p, csrf):
 VERDICT_TEXT = {"hard": "Go hard", "normal": "Go as planned", "light": "Take it easy", "rest": "Rest day"}
 BACK_LEVELS = ("ok", "tired", "sore", "spasm")      # checkin.back, mildest first
 
+def _is_visitor(p):
+    """Someone who isn't signed in on the hosted site: they get the landing page at /."""
+    return p.read_only or demo_mode()
+
+
 @app.get("/", response_class=HTMLResponse)
 def today(request: Request, day: str | None = None, present: str | None = None):
+    """A signed-in person's own page (and the only page on a person's own machine). A visitor
+    gets the landing page; their old demo links (/?day=...) go to /demo, permanently."""
     p = people.for_request(request)
+    if _is_visitor(p):
+        if request.url.query:
+            return RedirectResponse(f"/demo?{request.url.query}", status_code=301)
+        return landing.page(request, tpl, _context)
+    return _render(request, _context(request, p, day), present, "/")
+
+
+@app.get("/demo", response_class=HTMLResponse)
+def demo_page(request: Request, day: str | None = None, present: str | None = None):
+    """The made-up lifter, read-only, for anyone, signed in or not."""
+    p = people.demo()
+    if p is None:
+        return PlainTextResponse("No demo here.", status_code=404)
+    return _render(request, _context(request, p, day), present, "/demo")
+
+
+def _context(request, p, day=None):
+    """Everything a page shows for one person on one day."""
     cfg, goals = p.cfg, p.goals         # goals are starting values; the page can set its own goal
     con = p.connect()
     day = day or an.default_day(con, date.today().isoformat())
@@ -223,7 +248,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         said=request.query_params.get("said"),
         review_days=review_days, prev_day=prev_day, next_day=next_day, month_nav=month_nav,
         is_today=is_today, waiting=_waiting_lines(waits, cfg, now), waiting_for=list(waits.values()),
-        hevy=hevy_card, doses_today=an.doses_today(con, day) if is_today else [],
+        hevy=hevy_card, signups_waiting=signups.count() if _reviews_signups(p) else 0, doses_today=an.doses_today(con, day) if is_today else [],
         demo=demo,
         signin=auth.settings() is not None, email=p.email, chat_on=chat_on, chat_resting=resting,
         # The demo opens on the canned conversation, live or not; live, it's the history a
@@ -231,7 +256,12 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         chat_history=(examples.conversation(con, day, goals, r, ws, strength, specs) if demo else
                       chat.recent(con) if chat_on else []),
         csrf=auth.csrf_token(auth.settings(), p.session) if p.session else "")
+    return ctx
+
+
+def _render(request, ctx, present, base):
     on = request.cookies.get(PRESENT_COOKIE) == "1" if present is None else present == "1"
+    ctx = dict(ctx, base=base)
     resp = tpl.TemplateResponse(request, "today.html", presentable(ctx) if on else dict(ctx, present=False))
     if present is not None:
         resp.set_cookie(PRESENT_COOKIE, "1" if on else "0", max_age=365 * 86400,
@@ -420,6 +450,99 @@ def hevy_send(request: Request, csrf: str = Form("")):
         log.warning("hevy send failed: %s", e)
         return PlainTextResponse(f"Hevy didn't take it: {e}", status_code=502)
     return RedirectResponse(f"/?day={day}#session", status_code=303)
+
+
+# ---------------------------------------------------------------- sign-ups (web/signups.py)
+
+def _reviews_signups(p):
+    """The owner: signed in, not the demo, and their config says `[site] review_signups = true`."""
+    return bool(p.email) and not demo_mode() and not p.read_only and bool(p.cfg.site.get("review_signups"))
+
+
+def _same_origin(request):
+    """The form was posted from this site: its Origin (or Referer) names this host."""
+    from urllib.parse import urlparse
+    src = request.headers.get("origin") or request.headers.get("referer")
+    return bool(src) and urlparse(src).netloc == request.headers.get("host")
+
+
+@app.get("/signup")
+def signup_form():
+    return RedirectResponse("/#early-access", status_code=302)
+
+
+@app.post("/signup")
+async def signup_submit(request: Request):
+    """The landing page's early-access form. Anyone may ask; the checks are for bots: same
+    origin, a small body, a hidden field people leave empty, five requests an hour from one
+    address, and an email that looks like one. A repeated email updates its row. The page's
+    script asks for JSON and shows the answer in place; without it, the page comes back."""
+    wants_json = "application/json" in (request.headers.get("accept") or "")
+    def answer(status, message=None, error=None, form=None):
+        if wants_json:
+            return JSONResponse({"message": message} if message else {"error": error}, status_code=status)
+        return landing.page(request, tpl, _context, status, form=form, error=error, done=bool(message), count=False)
+    if int(request.headers.get("content-length") or 0) > signups.MAX_BODY:
+        return answer(413, error="That's more than the form sends.")
+    body = await request.body()
+    if len(body) > signups.MAX_BODY:
+        return answer(413, error="That's more than the form sends.")
+    if not _same_origin(request):
+        return answer(403, error="Send the form from estecoach.app.")
+    from urllib.parse import parse_qs
+    form = parse_qs(body.decode("utf-8", "replace"))
+    if form.get("website", [""])[0]:
+        return answer(200, message="Got it. I'll be in touch.")     # a bot: thanked, nothing kept
+    address = request.headers.get("fly-client-ip") or (request.client.host if request.client else "?")
+    if not signups.allowed(address):
+        return answer(429, error="Too many requests from here. Try again in an hour.", form=form)
+    try:
+        row = signups.clean(form)
+    except signups.Invalid as e:
+        return answer(400, error=str(e), form=form)
+    signups.notify(row, signups.save(row))
+    return answer(200, message="Got it. I'll be in touch.")
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+def privacy(request: Request):
+    return tpl.TemplateResponse(request, "privacy.html", {})
+
+
+@app.get("/signups")
+def old_signups():
+    return RedirectResponse("/admin/signups", status_code=301)
+
+
+@app.get("/admin/signups", response_class=HTMLResponse)
+def admin_signups(request: Request):
+    p = people.for_request(request)
+    if not _reviews_signups(p):
+        return PlainTextResponse("Not found.", status_code=404)
+    return tpl.TemplateResponse(request, "signups.html", dict(
+        rows=signups.listing(), visits=signups.visits(),
+        csrf=auth.csrf_token(auth.settings(), p.session) if p.session else ""))
+
+
+@app.get("/admin/signups.csv")
+def admin_signups_csv(request: Request):
+    p = people.for_request(request)
+    if not _reviews_signups(p):
+        return PlainTextResponse("Not found.", status_code=404)
+    return Response(signups.as_csv(), media_type="text/csv",
+                    headers={"Content-Disposition": 'attachment; filename="estecoach-signups.csv"'})
+
+
+@app.post("/admin/signups/{sid}/delete")
+def admin_signup_delete(request: Request, sid: int, csrf: str = Form("")):
+    p = people.for_request(request)
+    refused = _refuse(p, csrf)
+    if refused:
+        return refused
+    if not _reviews_signups(p):
+        return PlainTextResponse("Not found.", status_code=404)
+    signups.delete(sid)
+    return RedirectResponse("/admin/signups", status_code=303)
 
 
 @app.post("/checkin")

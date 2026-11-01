@@ -56,3 +56,15 @@ def for_request(request):
     if not s.demo_config:
         raise RuntimeError("sign-in is on but the users file has no demo_config")
     return replace(load(s.demo_config), read_only=True)
+
+
+def demo():
+    """The made-up person behind /demo, whoever is asking: the users file's demo_config when
+    sign-in is on, this process's own config when it is the public demo itself. None on a
+    person's own machine, which has no demo."""
+    s = auth.settings()
+    if s is not None:
+        return replace(load(s.demo_config), read_only=True) if s.demo_config else None
+    if config.env("DEMO") == "1":
+        return replace(load(), read_only=True)
+    return None

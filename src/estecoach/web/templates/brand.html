@@ -1,0 +1,7 @@
+{# The mark and the wordmark, in one place: the rename once missed a copy split across tags. #}
+{% macro mark() %}<svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" class="logo-bg"/>
+      <polyline points="12,27 23,20 32,23 47,12" class="logo-trend"/><polyline points="40,11 48,11.5 47.5,19.5" class="logo-trend"/>
+      <g class="logo-bar"><rect x="7" y="41.5" width="50" height="5" rx="2.5"/><rect x="12" y="32" width="7" height="24" rx="2.5"/>
+      <rect x="20.5" y="36" width="5" height="16" rx="2"/><rect x="45" y="32" width="7" height="24" rx="2.5"/>
+      <rect x="38.5" y="36" width="5" height="16" rx="2"/></g></svg>{% endmacro %}
+{% macro wordmark() %}{{ mark() }}<span class="word">Este<span>Coach</span></span>{% endmacro %}
