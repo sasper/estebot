@@ -548,7 +548,6 @@ html{scroll-behavior:smooth}
 @media (min-width:900px){ .land-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
 /* landing: panels and icons (1 Nov 2026 review) */
 .land-hero{align-items:center}
-.land-cards .contrib,.land-cards .info{display:none}          /* the hero shows the call, not its seven rows */
 .land-panel{background:var(--surface-1);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
   box-shadow:0 1px 0 color-mix(in srgb,var(--text-primary) 4%,transparent)}
 .land-panel h3{display:flex;align-items:center;gap:8px;font-size:16px;margin:0 0 6px;color:var(--text-primary)}
@@ -578,3 +577,28 @@ html{scroll-behavior:smooth}
 .land-tracks legend{width:100%;margin-bottom:6px}
 .land-shot fieldset{border:0;padding:0;margin:0 0 10px}
 .land-shot legend{padding:0;font-weight:600;font-size:13px;margin-bottom:4px}
+/* landing, second review: the hero shows the decision card (ring and the areas behind it),
+   smaller, level with the copy; the form is two columns and a grid of compact kinds */
+.land-cards .info{display:none}
+.land-cards .ring{width:76px;height:76px}
+.land-cards .rhero{gap:14px;margin:0 0 8px}
+.land-form.land-panel{display:grid;gap:20px 32px}
+.land-form-intro .land-where{margin-top:14px}
+.land-pair{display:grid;gap:12px;grid-template-columns:1fr}
+.land-pair label,.land-form form > label:not(.flag){display:block;font-weight:600;margin:0 0 6px}
+.land-form form > label:not(.flag){margin-top:14px}
+.land-kinds{display:grid;gap:10px;grid-template-columns:1fr;margin-top:8px}
+.land-kinds .land-tracks{border:1px solid var(--line);border-radius:10px;padding:10px 12px 12px;margin:0;gap:6px}
+.land-kinds .land-tracks legend{float:left;width:100%;margin:0 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+.land-kinds .flag span{height:32px;padding:0 11px;font-size:13px}
+.land-form textarea{min-height:56px}
+.land-form .land-q{margin:16px 0 0}
+@media (min-width:700px){
+  .land-pair{grid-template-columns:1fr 1fr}
+  .land-kinds{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (min-width:980px){
+  .land-form.land-panel{grid-template-columns:260px minmax(0,1fr);align-items:start}
+}
+.land-kinds .land-tracks{align-content:flex-start}
+.land-form.land-panel form{max-width:none}

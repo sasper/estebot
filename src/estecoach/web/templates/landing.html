@@ -37,10 +37,9 @@
       <p class="land-origin">I had four apps tracking everything and none of them told me what to do this morning. So I built the one that does.</p>
     </div>
     {% if r %}
-    <div class="land-cards" aria-label="Today's call and session, from the demo">
+    <div class="land-cards" aria-label="Today's call, from the demo">
       {% include "_call.html" %}
-      {% if plan %}{% set plan = dict(plan, exercises=plan.exercises[:3]) %}{% include "_session.html" %}{% endif %}
-      <p class="small muted land-note">Today in the demo, on a made-up lifter. <a href="/demo">Open it</a></p>
+      <p class="small muted land-note">Today's call in the demo, on a made-up lifter. <a href="/demo">Open it</a></p>
     </div>
     {% endif %}
   </section>
@@ -52,9 +51,9 @@
       <li class="land-panel"><span class="land-num">1</span><h3>{{ icon("connect") }}Connect what you already use</h3>
         <p>Apple Health for sleep, HRV, resting heart rate and weight. Hevy for lifting. Cronometer for food. Pulled in automatically.</p></li>
       <li class="land-panel"><span class="land-num">2</span><h3>{{ icon("checkin") }}Check in, get one call</h3>
-        <p>Thirty seconds of taps after you wake up. Then one call: go hard, go as planned, take it easy, or rest, with the reasons written out.</p></li>
+        <p>4 taps after you wake up. Then one call: go hard, go as planned, take it easy, or rest, with the reasons written out.</p></li>
       <li class="land-panel"><span class="land-num">3</span><h3>{{ icon("session") }}Open Hevy and lift</h3>
-        <p>Today's session is already in your routine, with a target for every exercise.</p></li>
+        <p>Your coach has already picked today's training. Your Hevy routine is updated from your own signals, with a target for every exercise.</p></li>
     </ol>
   </section>
 
@@ -96,37 +95,45 @@
     <h2 class="land-h2">{{ icon("who") }}Who it's for</h2>
     <div class="land-who">
       <div class="land-panel yes"><h3>{{ icon("yes") }}For</h3><p>People who lift with a plan, wear an Apple Watch, and already log in Hevy. Cronometer is optional.</p></div>
-      <div class="land-panel no"><h3>{{ icon("no") }}Not yet</h3><p>Android, sports other than lifting, or metric units on the page.</p></div>
+      <div class="land-panel no"><h3>{{ icon("no") }}Not yet</h3><p>Android and sports other than lifting. Wearables other than Apple Watch, like Whoop, Oura or Garmin, and lifting or food apps other than Hevy and Cronometer, don't connect yet.</p></div>
     </div>
   </section>
 
   {# 7. Early access #}
   <section class="land-sec land-form land-panel" id="early-access">
-    <h2 class="land-h2">{{ icon("mail") }}Want to try it?</h2>
+    <div class="land-form-intro">
+      <h2 class="land-h2">{{ icon("mail") }}Want to try it?</h2>
+      <p>I'm letting a few people in as I go. Leave your email and I'll reach out.</p>
+      <p class="small muted land-where">Comes to me. Not shared, not sold. <a href="/privacy">Privacy</a></p>
+    </div>
+    <div class="land-form-body">
     {% if done %}
     <p class="land-done" role="status">Got it. I'll be in touch.</p>
     {% else %}
-    <p>I'm letting a few people in as I go. Leave your email and I'll reach out.</p>
     <form method="post" action="/signup" id="signup" class="signup">
       <p class="err" id="signup-err" role="alert"{{ "" if error else " hidden" }}>{{ error or "" }}</p>
-      <label for="name">Name</label>
-      <input type="text" id="name" name="name" maxlength="{{ limits.name }}" value="{{ (form.name or [''])[0] }}" autocomplete="name">
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" maxlength="{{ limits.email }}" required value="{{ (form.email or [''])[0] }}" autocomplete="email">
+      <div class="land-pair">
+        <div><label for="name">Name</label>
+          <input type="text" id="name" name="name" maxlength="{{ limits.name }}" value="{{ (form.name or [''])[0] }}" autocomplete="name"></div>
+        <div><label for="email">Email</label>
+          <input type="email" id="email" name="email" maxlength="{{ limits.email }}" required value="{{ (form.email or [''])[0] }}" autocomplete="email"></div>
+      </div>
       <p class="land-q">What do you track with today? <span class="muted">Tick all that apply.</span></p>
+      <div class="land-kinds">
       {% for group, names in track_groups %}
       <fieldset class="land-tracks"><legend>{{ group }}</legend>
         {% for t in names %}<label class="flag"><input type="checkbox" name="tracks" value="{{ t }}"{{ " checked" if t in (form.tracks or []) }}><span>{{ t }}</span></label>{% endfor %}
       </fieldset>
       {% endfor %}
+      </div>
       <label for="note">Anything else? <span class="muted" style="font-weight:400">(optional)</span></label>
-      <textarea id="note" name="note" maxlength="{{ limits.note }}" placeholder="Something not on the list, or what you're training for">{{ (form.note or [''])[0] }}</textarea>
+      <textarea id="note" name="note" rows="2" maxlength="{{ limits.note }}" placeholder="Something not on the list, or what you're training for">{{ (form.note or [''])[0] }}</textarea>
       {# Left empty by people; filled in by form-filling bots, whose requests are dropped. #}
       <div class="hp" aria-hidden="true"><label for="website">Website</label><input type="text" id="website" name="website" tabindex="-1" autocomplete="off"></div>
       <button type="submit" class="intro-btn">Get early access</button>
-      <p class="small muted land-where">Comes to me. Not shared, not sold. <a href="/privacy">Privacy</a></p>
     </form>
     {% endif %}
+    </div>
   </section>
 
   {# 8. Built by #}

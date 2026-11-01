@@ -22,8 +22,7 @@ TRACK_GROUPS = (
     ("Lifting", ("Hevy", "Strong", "Jefit", "Fitbod", "Boostcamp", "TrainHeroic", "RP Hypertrophy",
                  "Notes app or spreadsheet", "Paper log")),
     ("Food", ("Cronometer", "MyFitnessPal", "MacroFactor", "Lose It", "Carbon Diet Coach", "Noom")),
-    ("Body weight", ("Smart scale", "Regular scale")),
-    ("Something else", ("Other",)),
+    ("Scales and other", ("Smart scale", "Regular scale", "Other")),
 )
 TRACKS = tuple(t for _, ts in TRACK_GROUPS for t in ts)
 LIMITS = {"name": 80, "email": 120, "note": 300}
