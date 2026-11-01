@@ -74,17 +74,25 @@
     <h2 class="land-h2">{{ icon("sun") }}A morning with EsteCoach</h2>
     <div class="land-strip">
       <figure><div class="land-shot">
-        <section class="card tapcheck"><div class="taphead"><h2>Check-in</h2></div>
+        {# The check-in as it looks after "Read it": the sentence typed, the taps drafted from it
+           (they match what it says), waiting for Save. The model drafts words, never a number. #}
+        <section class="card tapcheck"><div class="taphead"><h2>Check-in</h2><span class="small muted">read from what you wrote, check and save</span></div>
+          <div class="tapsay"><input readonly tabindex="-1" value="Slept great, back is fine, legs fresh"><button type="button" tabindex="-1">Read it</button></div>
+          <div class="tap">
           {% for label, words, pick in [("Lower back", ["ok", "tired", "sore", "spasm"], 0), ("Energy", ["wiped", "low", "ok", "great"], 3), ("Recovery between sets", ["very slow", "slow", "ok", "normal"], 3)] %}
           <fieldset><legend>{{ label }}</legend><div class="seg">{% for w in words %}<label><input type="radio" disabled{{ " checked" if loop.index0 == pick }}><span>{{ w }}</span></label>{% endfor %}</div></fieldset>
           {% endfor %}
+          <div class="tapfoot"><label class="flag"><input type="checkbox" tabindex="-1"><span>Sick</span></label>
+            <label class="flag"><input type="checkbox" tabindex="-1"><span>Injured</span></label>
+            <input class="tapnote-in" readonly tabindex="-1" placeholder="Note (optional)"><button type="button" tabindex="-1">Save</button></div>
+          </div>
         </section></div>
         <figcaption>Wake up, tap how you feel.</figcaption></figure>
       <figure><div class="land-shot">{% include "_call.html" %}</div>
         <figcaption>One call, with its reasons.</figcaption></figure>
       {% if plan %}<figure><div class="land-shot">{% include "_session.html" %}</div>
         <figcaption>A target for every lift.</figcaption></figure>{% endif %}
-      {% if ask %}<figure><div class="land-shot"><div class="card"><div class="ask-msg me">{{ ask[0] }}</div><div class="ask-msg bot">{{ ask[1] }}</div></div></div>
+      {% if ask %}<figure><div class="land-shot"><div class="card">{% for q, a in ask %}<div class="ask-msg me">{{ q }}</div><div class="ask-msg bot">{{ a }}</div>{% endfor %}</div></div>
         <figcaption>Ask about your own numbers.</figcaption></figure>{% endif %}
     </div>
   </section>

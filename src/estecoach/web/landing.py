@@ -59,8 +59,11 @@ def page(request, tpl, context_fn, status=200, form=None, error=None, done=None,
     if count:
         signups.count_visit()
     ctx = demo_context(request, context_fn) or {}
-    ask = next(((q["text"], a["text"]) for q, a in zip(ctx.get("chat_history", []), ctx.get("chat_history", [])[1:])
-                if q.get("role") == "user" and a.get("role") != "user"), None)
+    # The demo panel's own questions and answers, each answer to its first paragraph so a few
+    # fit in the picture. Their numbers come from the engine, as on the demo page.
+    h = ctx.get("chat_history", [])
+    ask = [(q["text"], a["text"].split("\n\n")[0]) for q, a in zip(h, h[1:])
+           if q.get("role") == "user" and a.get("role") != "user"]
     return tpl.TemplateResponse(request, "landing.html", dict(
         ctx, base="/demo", present=False, waiting={}, waiting_for=[], hevy=None, csrf="",
         ask_first=False, ask=ask, tracks=signups.TRACKS, track_groups=signups.TRACK_GROUPS, form=form or {}, error=error, done=done,
