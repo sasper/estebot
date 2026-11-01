@@ -230,7 +230,10 @@ def test_the_plan_follows_the_rotation_and_alternates_the_version(con):
     assert p["exercises"][1]["target"] == "25 × 9"
 
 
-def test_a_take_it_easy_day_holds_and_a_sore_back_drops_spinal_lifts(con):
+def test_a_take_it_easy_day_deloads_and_a_sore_back_keeps_every_lift_at_60(con):
+    # 1 Nov 2026: a take-it-easy day used to repeat last loads with one set fewer, and a sore
+    # back dropped the spine-loading lifts. Asked instead: keep every movement, cut sets and
+    # weight by 20%, or 40% with the back flagged; skip only what the check-in marks skip.
     from estebot.analysis import engine
     _session(con, "2026-10-21", "back|biceps|olympic", [("Barbell Hang Clean", 155, 3, 8)] * 3
              + [("Dumbbell Incline Curl", 30, 8, 8)] * 3)
@@ -238,12 +241,28 @@ def test_a_take_it_easy_day_holds_and_a_sore_back_drops_spinal_lifts(con):
     _session(con, "2026-10-25", "chest|shoulders|triceps", [("Barbell Bench Press", 225, 4, 8.5)] * 5)
     light = engine.training_plan(con, "2026-10-26", "light")
     assert "Take it easy" in light["day_adjust"]                 # said once, for the session
-    assert not any(x.get("adjust") for x in light["exercises"])
+    got = {x["exercise"]: x for x in light["exercises"]}
+    assert got["Barbell Hang Clean"]["target"] == "125 × 3, 125 × 3"         # 80%: 2 of 3 sets
     con.execute("INSERT INTO checkin (date, back, back_reported) VALUES ('2026-10-26', 'sore', 1)")
     ci = con.execute("SELECT * FROM checkin WHERE date='2026-10-26'").fetchone()
-    sore = {x["exercise"]: x.get("adjust") for x in engine.training_plan(con, "2026-10-26", "normal", ci)["exercises"]}
-    assert sore["Barbell Hang Clean"] == "Back sore: skip it today."
-    assert sore["Dumbbell Incline Curl"] is None
+    sore = {x["exercise"]: x for x in engine.training_plan(con, "2026-10-26", "normal", ci)["exercises"]}
+    assert sore["Barbell Hang Clean"]["target"] == "95 × 3, 95 × 3"          # 60%, still in
+    assert sore["Dumbbell Incline Curl"]["action"] == "deload"
+
+
+def test_a_lift_marked_skip_is_skipped_only_on_its_own_day(con):
+    from estebot.analysis import engine
+    _session(con, "2026-10-21", "back|biceps|olympic", [("Barbell Hang Clean", 155, 3, 8)] * 3
+             + [("Dumbbell Incline Curl", 30, 8, 8)] * 3)
+    _session(con, "2026-10-22", "quads|hamstrings|calves", [("Barbell Squat", 315, 1, 9)] * 5)
+    _session(con, "2026-10-25", "chest|shoulders|triceps", [("Barbell Bench Press", 225, 4, 8.5)] * 5)
+    con.execute("""INSERT INTO checkin (date, back, back_reported, skip)
+                   VALUES ('2026-10-26', 'ok', 1, '["Barbell Hang Clean"]')""")
+    ci = con.execute("SELECT * FROM checkin WHERE date='2026-10-26'").fetchone()
+    same_day = {x["exercise"]: x for x in engine.training_plan(con, "2026-10-26", "normal", ci)["exercises"]}
+    assert same_day["Barbell Hang Clean"].get("skipped")
+    next_day = {x["exercise"]: x for x in engine.training_plan(con, "2026-10-27", "normal", ci)["exercises"]}
+    assert not next_day["Barbell Hang Clean"].get("skipped")         # yesterday's skip doesn't carry
 
 
 UPPER_LOWER = """
@@ -469,3 +488,44 @@ def test_monotony_counts_rest_day_walks_as_rest(con):
     assert "no easy day" not in text and "no rest day" not in text
     assert "2 rest days in the last 7" in text
     assert "monotony 1.6" in text                  # five 60s and two zeros; 40s every day was infinite
+
+
+def _call(con, day, verdict, targets=()):
+    import json
+    con.execute("INSERT INTO call_record VALUES (?,?,?,?)", (day, verdict, "", json.dumps(list(targets))))
+
+
+def test_a_deload_session_sets_no_target_and_is_not_graded(con):
+    # A 20%-light session would read as a miss against the normal target, making the area
+    # that called it look predictive and calling more deloads.
+    from estebot.analysis import engine
+    _session(con, "2026-11-02", "chest|shoulders|triceps", [("Barbell Bench Press", 295, 4, 10)] * 5)
+    _session(con, "2026-11-05", "back|biceps", [("Pendlay Row", 205, 8, 8)] * 5)
+    _session(con, "2026-11-06", "quads|hamstrings|calves", [("Barbell Squat", 405, 3, 8)] * 5)
+    _call(con, "2026-11-09", "light")
+    _session(con, "2026-11-09", "chest|shoulders|triceps", [("Barbell Bench Press", 235, 4, 7)] * 4)
+    assert engine.session_outcome(con, "2026-11-09") is None
+    when, _ = engine._last_sets(con, "Barbell Bench Press", "2026-11-12", engine.deload_days(con))
+    assert when == "2026-11-02"
+
+
+def test_a_main_lift_holds_after_missing_the_target_its_call_gave(con):
+    from estebot.analysis import engine
+    # Push A (bench) missed its target, then push B, pull and legs: the next push is A again.
+    _session(con, "2026-10-26", "chest|shoulders|triceps", [("Barbell Bench Press", 295, 2, 10)] * 5)
+    _call(con, "2026-10-26", "normal", [{"exercise": "Barbell Bench Press",
+                                         "goal": {"weight_lb": 300, "reps": 2}}])
+    _session(con, "2026-10-29", "chest|shoulders|triceps", [("Barbell Military Press", 185, 5, 8)] * 5)
+    _session(con, "2026-11-02", "back|biceps", [("Pendlay Row", 205, 8, 8)] * 5)
+    _session(con, "2026-11-05", "quads|hamstrings|calves", [("Barbell Squat", 405, 3, 8)] * 5)
+    plan = engine.training_plan(con, "2026-11-09", "normal")
+    assert (plan["kind"], plan["variant"]) == ("push", "A")
+    bench = next(x for x in plan["exercises"] if x["exercise"] == "Barbell Bench Press")
+    assert bench["main"] and bench["target"] == "295 × 1"
+
+
+def test_main_lifts_come_from_config_and_anchors_still_pick_the_version():
+    from estebot.analysis.engine import Training
+    t = Training.from_config({"main_lifts": {"pull A": ["Sumo Deadlift", "Barbell Hang Clean"]}})
+    assert t.mains_for("pull", "A") == ("Sumo Deadlift", "Barbell Hang Clean")
+    assert t.mains_for("pull", "B") == ("Pendlay Row", "Barbell Bent-Over Row")   # anchors by default

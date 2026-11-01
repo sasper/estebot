@@ -494,6 +494,97 @@ def progression(exercise: str, sets: list[tuple[float | None, int, float | None]
             "goal": goal(top_w, reps + 1)}
 
 
+MAIN_STEP = 5.0          # a main lift's jump: 5 lb on a barbell, per dumbbell, or on a machine
+MAIN_MAX_REPS = 12       # above this the estimated max stops meaning much; the accessory rule takes over
+MAIN_RPE = (8.0, 9.5)    # a main lift's rep range is the reps that land in this RPE band
+DELOAD = 0.8             # a take-it-easy day: 80% of the sets and of each set's weight
+DELOAD_BACK = 0.6        # a flagged back: 60%, every lift still in
+LAYOFF = 0.9             # back from two or more deloads in a row: one session at 90%
+
+
+def round5(x: float) -> float:
+    return math.floor(x / 5 + 0.5) * 5
+
+
+def estimated_max(weight: float, reps: int, rpe: float) -> float:
+    """One-rep max from a set and its RPE (Epley, counting the reps left in the tank)."""
+    return weight * (1 + (reps + (10 - rpe)) / 30)
+
+
+def implied_rpe(est_max: float, weight: float, reps: int) -> float:
+    """The RPE that `reps` at `weight` would be against est_max, rounded to the half point
+    RPE is logged in."""
+    left = 30 * (est_max / weight - 1) - reps
+    return math.floor((10 - left) * 2 + 0.5) / 2
+
+
+def _rep_range(est_max, weight):
+    lo, hi = MAIN_RPE
+    fit = [r for r in range(1, 31) if lo <= implied_rpe(est_max, weight, r) <= hi]
+    return (fit[0], fit[-1]) if fit else None
+
+
+def main_progression(exercise: str, sets: list[tuple[float | None, int, float | None]],
+                     missed=False, hold=False, layoff=False, **kw) -> dict | None:
+    """A main lift's next target: weight up by MAIN_STEP and a rep range, from the last
+    normal session. Asked for on 1 Nov 2026: after bench 275 x 6 @ 9.5 and 295 x 4 @ 10 the
+    old rule held at 295 x 4; this says 300 x 2-3.
+
+      estimate   the best estimated_max over that session's sets at RPE 8 or more (every
+                 set with an RPE when none is)
+      weight     last top weight + MAIN_STEP; the same weight when the last target was
+                 missed or `hold` (go as planned right after a deload); 90% of it, to the
+                 nearest 5, when `layoff` (two or more deloads in a row)
+      reps       every whole rep at that weight whose implied RPE is 8 to 9.5; none fits
+                 (the jump is too big) -> the same weight, its range
+
+    Bodyweight work, sets without RPE, or a top set over MAIN_MAX_REPS keep progression().
+    goal = the bottom of the range at that weight, so goal_met() grades it unchanged."""
+    work = [(w or 0.0, r, rpe) for w, r, rpe in sets if r]
+    if not work:
+        return None
+    top_w = max(w for w, _, _ in work)
+    rated = [(w, r, rpe) for w, r, rpe in work if rpe is not None and w > 0]
+    top_reps = max(r for w, r, _ in work if w == top_w)
+    if top_w == 0 or not rated or top_reps > MAIN_MAX_REPS:
+        return progression(exercise, sets, **kw)
+    # Near-max sets only: an RPE 6 set has 4 reps in the tank to extrapolate, and on 29 Oct
+    # a 205 x 8 @ 6 hang clean read as a 287 max against 280 from 255 x 2 @ 9.
+    near = [s for s in rated if s[2] >= MAIN_RPE[0]] or rated
+    est = max(estimated_max(w, r, rpe) for w, r, rpe in near)
+    best = max(near, key=lambda s: estimated_max(*s))
+    u = rep_unit(exercise)
+    if layoff:
+        weight, action = round5(top_w * LAYOFF), "ease back in"
+    elif missed or hold:
+        weight, action = top_w, "hold the weight"
+    else:
+        weight, action = top_w + MAIN_STEP, "add load"
+    rng = _rep_range(est, weight)
+    if rng is None and weight > top_w:
+        weight, action, rng = top_w, "hold the weight", _rep_range(est, top_w)
+    if rng is None:
+        return progression(exercise, sets, **kw)
+    lo, hi = rng
+    reps = f"{lo}–{hi}" if hi > lo else f"{lo}"
+    why = f"max about {est:.0f} from {_fmt(best[0])} × {best[1]}{u} at RPE {best[2]:g}"
+    if missed:
+        why += "; last target missed, so the weight holds"
+    elif layoff:
+        why += "; first session after two or more easy days"
+    return {"action": action, "target": f"{_fmt(weight)} × {reps}{u}", "why": why,
+            "goal": {"weight_lb": weight, "reps": lo}, "reps_range": [lo, hi]}
+
+
+def deload(sets: list[tuple[float | None, int, float | None]], factor: float) -> list[tuple[float, int]]:
+    """A deload of the last session's sets: round(n x factor) of them, at least one, the
+    first ones kept so back-off sets go first, each weight x factor to the nearest 5 lb.
+    Reps stay. Every movement stays in; only the volume drops (asked for on 1 Nov 2026)."""
+    work = [(w or 0.0, r) for w, r, _ in sets if r]
+    n = max(1, math.floor(len(work) * factor + 0.5))
+    return [(round5(w * factor) if w else 0.0, r) for w, r in work[:n]]
+
+
 def goal_met(goal: dict, sets: list[tuple[float | None, int, float | None]]) -> bool:
     """Whether a session's working sets of one exercise reached its progression goal: one set
     at or above the goal weight for the goal reps, or the goal total for bodyweight work.

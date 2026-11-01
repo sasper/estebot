@@ -3,7 +3,7 @@
 Every number the app shows or acts on is produced here, in plain arithmetic, so it can
 be checked by hand. The LLM layer explains these outputs; it never produces them.
 """
-import os, re, statistics as st, threading, time
+import json, os, re, statistics as st, threading, time
 from dataclasses import dataclass
 from datetime import date, timedelta
 from estebot import config, core
@@ -754,11 +754,14 @@ def strength_standards(con, day, body_lb, goal_lb=None, weeks=8):
 # Defaults for the config's [training] section: push, pull, legs, each in an A and a B
 # version told apart by the main lift. A deadlift day stays pull B in either stance.
 ROTATION = ("push", "pull", "legs")
+# Each variant's anchor lifts: the lift that tells which version a session was. The letters
+# follow the Hevy routines (Pull A - Deadlift, Legs A - Front Squat); until 1 Nov 2026 pull
+# and legs had them the other way round, so calls.csv rows before then read swapped.
 VARIANTS = {
     "push": (("A", ("Barbell Bench Press",)), ("B", ("Barbell Military Press",))),
-    "pull": (("A", ("Pendlay Row", "Barbell Bent-Over Row")),
-             ("B", ("Barbell Deadlift", "Sumo Deadlift"))),
-    "legs": (("A", ("Barbell Squat",)), ("B", ("Barbell Front Squat",))),
+    "pull": (("A", ("Sumo Deadlift", "Barbell Deadlift")),
+             ("B", ("Pendlay Row", "Barbell Bent-Over Row"))),
+    "legs": (("A", ("Barbell Front Squat",)), ("B", ("Barbell Squat",))),
 }
 
 @dataclass(frozen=True)
@@ -772,6 +775,14 @@ class Training:
     high_rep: tuple
     rep_range: tuple
     high_rep_range: tuple
+    main_lifts: dict = None     # "push A" -> the lifts that progress by load and a rep range
+
+    def mains_for(self, kind, variant):
+        """A day's main lifts: [training.main_lifts] when it names the day, else its anchors.
+        Anchors pick the variant, so a lift on both versions of a day (hang clean on both
+        pull days) can be a main lift but never an anchor."""
+        got = (self.main_lifts or {}).get(f"{kind} {variant}")
+        return tuple(got) if got else dict(self.variants.get(kind, ())).get(variant, ())
 
     @classmethod
     def from_config(cls, raw):
@@ -782,7 +793,8 @@ class Training:
                           if "day_types" in raw else DAY_TYPES,
                 high_rep=tuple(raw.get("high_rep", core.HIGH_REP)),
                 rep_range=tuple(raw.get("rep_range", core.REP_RANGE)),
-                high_rep_range=tuple(raw.get("high_rep_range", core.HIGH_REP_RANGE)))
+                high_rep_range=tuple(raw.get("high_rep_range", core.HIGH_REP_RANGE)),
+                main_lifts={k: tuple(v) for k, v in raw.get("main_lifts", {}).items()})
         missing = [k for k in t.rotation if not t.variants.get(k) or k not in t.day_types]
         if missing:
             raise config.ConfigError(f"[training] rotation names {', '.join(missing)} "
@@ -802,22 +814,74 @@ def _variant(kind, exercises, training):
             return name, hit[0]
     return None, None
 
-def _last_sets(con, exercise, before):
-    r = con.execute("SELECT MAX(date) d FROM lift_set WHERE exercise=? AND date < ?",
-                    (exercise, before)).fetchone()
-    if not r or not r["d"]:
+def _last_sets(con, exercise, before, skip=()):
+    """The last session of an exercise before `before`, passing over days in `skip` (deloads,
+    whose light sets would drag the next target down)."""
+    d = next((r["date"] for r in con.execute(
+        "SELECT DISTINCT date FROM lift_set WHERE exercise=? AND date < ? ORDER BY date DESC",
+        (exercise, before)) if r["date"] not in skip), None)
+    if d is None:
         return None, []
     rows = con.execute("""SELECT weight_lb, reps, rpe FROM lift_set
                           WHERE exercise=? AND date=? AND COALESCE(set_type,'') != 'warmup'
-                          ORDER BY set_idx""", (exercise, r["d"])).fetchall()
-    return r["d"], [(x["weight_lb"], x["reps"], x["rpe"]) for x in rows]
+                          ORDER BY set_idx""", (exercise, d)).fetchall()
+    return d, [(x["weight_lb"], x["reps"], x["rpe"]) for x in rows]
 
-def session_outcome(con, day, training=None):
-    """How a day's lifting went against its plan: for each exercise done, the goal
-    core.progression set from the last time it was done, whether the day's working sets
-    met it, and the RPE of its first top set. Rebuilt from lift_set, so any past session can
-    be graded, not just those since calls were recorded. None on a day with nothing to grade."""
+# Light-call days before this held their loads; from it on, a light call is a real deload.
+DELOAD_SINCE = "2026-11-02"
+BACK_FLAGGED = ("tired", "sore", "spasm")
+
+def deload_days(con):
+    """Days whose session was a deload: a recorded light call, or a back flagged in the
+    check-in, from DELOAD_SINCE on."""
+    out = {r["date"] for r in con.execute(
+        "SELECT date FROM call_record WHERE verdict='light' AND date >= ?", (DELOAD_SINCE,))}
+    out |= {r["date"] for r in con.execute(
+        f"SELECT date FROM checkin WHERE back_reported=1 AND back IN {BACK_FLAGGED} AND date >= ?",
+        (DELOAD_SINCE,))}
+    return out
+
+def recorded_goals(con):
+    """{(date, exercise): goal} as the morning calls gave them (calls.csv, via ingest)."""
+    out = {}
+    for r in con.execute("SELECT date, targets FROM call_record"):
+        for t in json.loads(r["targets"] or "[]"):
+            if t.get("goal"):
+                out[(r["date"], t["exercise"])] = t["goal"]
+    return out
+
+def _target(con, ex, day, training, main, deloads, goals, hold=False, layoff=False):
+    """-> (date, sets, progression) for one exercise. A main lift that missed the target its
+    last call gave holds the weight; that is the target you were given, not one rebuilt."""
+    when, sets = _last_sets(con, ex, day, deloads)
+    kw = dict(high_rep=training.high_rep, rep_range=training.rep_range,
+              high_rep_range=training.high_rep_range)
+    if not main:
+        return when, sets, core.progression(ex, sets, **kw)
+    g = goals.get((when, ex))
+    missed = g is not None and not core.goal_met(g, sets)
+    return when, sets, core.main_progression(ex, sets, missed=missed, hold=hold, layoff=layoff, **kw)
+
+def _day_mains(con, day, training):
+    r = con.execute("SELECT muscle_groups FROM lift_session WHERE date=?", (day,)).fetchone()
+    kind = day_type(r["muscle_groups"], training) if r else None
+    variant = _variant(kind, _session_exercises(con, day), training)[0] if kind else None
+    return set(training.mains_for(kind, variant)) if variant else set()
+
+def session_outcome(con, day, training=None, deloads=None, goals=None):
+    """How a day's lifting went against its plan: for each exercise done, the goal its rule
+    set from the last time it was done (main lifts core.main_progression, the rest
+    core.progression), whether the day's working sets met it, and the RPE of its first top
+    set. Rebuilt from lift_set, so any past session can be graded, not just those since calls
+    were recorded. None on a day with nothing to grade, and on a deload day: it is lighter on
+    purpose, and grading it against the normal target would make the area that called it
+    look predictive and call more deloads."""
     training = training or TRAINING
+    deloads = deload_days(con) if deloads is None else deloads
+    if day in deloads:
+        return None
+    goals = recorded_goals(con) if goals is None else goals
+    mains = _day_mains(con, day, training)
     done = {}
     for r in con.execute("""SELECT exercise, weight_lb, reps, rpe FROM lift_set
                             WHERE date=? AND COALESCE(set_type,'') != 'warmup'
@@ -825,8 +889,7 @@ def session_outcome(con, day, training=None):
         done.setdefault(r["exercise"], []).append((r["weight_lb"], r["reps"], r["rpe"]))
     out = []
     for ex, sets in done.items():
-        _, before = _last_sets(con, ex, day)
-        p = core.progression(ex, before, training.high_rep, training.rep_range, training.high_rep_range)
+        _, before, p = _target(con, ex, day, training, ex in mains, deloads, goals)
         if p is None:
             continue
         top_w = max((w or 0.0) for w, _, _ in sets)
@@ -845,9 +908,10 @@ def graded_sessions(con, start, end, goals, training=None, min_sets=LIFT_STREAK_
     part of evidence(); a session's row doesn't depend on the window around it, so rows made
     once can be tallied over many windows."""
     rows = []
+    deloads, goals = deload_days(con), recorded_goals(con)
     for r in con.execute("SELECT date FROM lift_session WHERE date BETWEEN ? AND ? AND n_sets >= ? "
                          "ORDER BY date", (start, end, min_sets)):
-        o = session_outcome(con, r["date"], training)
+        o = session_outcome(con, r["date"], training, deloads, goals)
         if o is None:
             continue
         call = readiness(con, r["date"], goals, voting=())
@@ -913,10 +977,16 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
 
     Next day type follows the last session's in the rotation; the version is the other one from
     the last session of that type. The exercises are those of the last session of the same
-    version (so a swap like reverse lunges carries forward), and each target is
-    core.progression on the last time that exercise was done, whichever day it was on.
-    A 'light' verdict holds every load; a sore or tired back flags the spine-loading lifts
-    (axial_score 3). `training` is the person's split; None means this config's."""
+    version (so a swap like reverse lunges carries forward). Main lifts (training.mains_for)
+    get core.main_progression, everything else core.progression, each on the last normal
+    session of that exercise; deload sessions never set a target.
+
+    A 'light' verdict is a deload of every lift (core.deload at DELOAD); a back flagged in the
+    check-in makes it DELOAD_BACK, every lift still in. Right after a deload, a 'normal' call
+    holds main-lift weights and a 'hard' one progresses as if it never happened; after two or
+    more deloads in a row the first normal session eases back in at core.LAYOFF. A lift marked
+    skip in the check-in is listed as skipped and gets no target. `training` is the person's
+    split; None means this config's."""
     training = training or TRAINING
     sessions = []
     for r in con.execute("""SELECT date, muscle_groups FROM lift_session
@@ -940,26 +1010,46 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
     if template is None:
         return {"kind": kind, "variant": variant, "after": last, "template": None, "exercises": []}
 
-    mains = dict(training.variants[kind])[variant]
+    mains = training.mains_for(kind, variant)
     order = sorted(template["exercises"],
                    key=lambda e: (e not in mains, -axial_score(e), template["exercises"].index(e)))
     back = (checkin["back"] if checkin and checkin["back_reported"] else None) or "ok"
+    # Skips are for the check-in's own day; the back carries over from yesterday's, a skip never does.
+    skip = (set(json.loads(checkin["skip"] or "[]"))
+            if checkin and "skip" in checkin.keys() and checkin["date"] == day else set())
+    factor = core.DELOAD_BACK if back in BACK_FLAGGED else core.DELOAD if verdict == "light" else None
+    deloads, goals = deload_days(con), recorded_goals(con)
+    after_deload = sessions[0]["date"] in deloads
+    layoff = factor is None and len(sessions) > 1 and all(x["date"] in deloads for x in sessions[:2])
     items = []
     for ex in order:
-        when, sets = _last_sets(con, ex, day)
-        p = core.progression(ex, sets, training.high_rep, training.rep_range, training.high_rep_range)
+        main = ex in mains
+        if ex in skip:
+            items.append({"exercise": ex, "main": main, "skipped": True, "action": "skip",
+                          "target": "Skipped today", "why": "marked skip in the check-in", "goal": None})
+            continue
+        when, sets, p = _target(con, ex, day, training, main, deloads, goals,
+                                hold=after_deload and verdict == "normal", layoff=layoff)
         if p is None:
             continue
-        item = {"exercise": ex, "main": ex in mains, "last_date": when,
-                "last": ", ".join(f"{w:g} × {r}{core.rep_unit(ex)}" if w else f"{r}" for w, r, _ in sets), **p}
-        if back in ("sore", "tired") and axial_score(ex) >= 3:
-            item["adjust"] = ("Back sore: skip it today." if back == "sore"
-                              else "Back tired: go light, no top set.")
+        u = core.rep_unit(ex)
+        item = {"exercise": ex, "main": main, "last_date": when,
+                "last": ", ".join(f"{w:g} × {r}{u}" if w else f"{r}" for w, r, _ in sets), **p}
+        if factor:
+            d = core.deload(sets, factor)
+            top = max(d)
+            item.update(action="deload", deload_sets=d, reps_range=None,
+                        target=", ".join(f"{w:g} × {r}{u}" if w else f"{r}" for w, r in d),
+                        why=f"{round((1 - factor) * 100)}% off last time ({item['last']}); stop each set by RPE 8",
+                        goal={"weight_lb": top[0], "reps": top[1]} if top[0] else {"total_reps": sum(r for _, r in d)})
         items.append(item)
-    # The take-it-easy rule covers the whole session, so it is said once, not on every exercise;
-    # the back rules name single lifts, so they stay on those.
+    # The deload covers the whole session, so it is said once, not on every exercise.
     return {"kind": kind, "variant": variant, "main": next((e for e in order if e in mains), None),
             "after": last, "template": template["date"], "rest": verdict == "rest", "exercises": items,
-            "day_adjust": ("Take it easy: repeat last time's loads with one set fewer, and stop each "
-                           "set by RPE 8." if verdict == "light" else
+            "deload": factor,
+            "day_adjust": ("Back flagged: every lift stays in at 60% of last time's sets and weight. "
+                           "Stop each set by RPE 8, and mark a lift skip in the check-in if it hurts."
+                           if factor == core.DELOAD_BACK else
+                           "Take it easy: every lift at 80% of last time's sets and weight. "
+                           "Stop each set by RPE 8." if factor else
                            "Go hard: go for every target today." if verdict == "hard" else None)}

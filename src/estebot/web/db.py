@@ -87,6 +87,11 @@ CREATE TABLE IF NOT EXISTS checkin_draft (
   note TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP);
 
+-- The morning calls as recorded (calls.csv, loaded by ingest): which days were deloads, and
+-- the targets each call gave, which a main lift's next target checks itself against.
+CREATE TABLE IF NOT EXISTS call_record (
+  date TEXT PRIMARY KEY, verdict TEXT, plan TEXT, targets TEXT);
+
 CREATE INDEX IF NOT EXISTS idx_ann_start ON annotation(start_date);
 """
 
@@ -115,6 +120,8 @@ _ADDED_COLUMNS = {
         ("sick", "INT NOT NULL DEFAULT 0"),
         ("injured", "INT NOT NULL DEFAULT 0"),
         ("saved_at", "TEXT"),
+        # Lifts marked skip in the check-in, as a JSON list of exercise names (1 Nov 2026).
+        ("skip", "TEXT"),
     ],
 }
 

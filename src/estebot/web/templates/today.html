@@ -112,6 +112,11 @@
         <div class="seg">{% for v in [0, 1, 2, 3] %}<label><input type="radio" name="{{ name }}" value="{{ v }}"{{ " checked" if ci[name] == v }}><span>{{ words[v] }}</span></label>{% endfor %}</div>
       </fieldset>
       {% endfor %}
+      {% if is_today and plan and plan.exercises %}
+      <fieldset><legend>Skip a lift today</legend>
+        <div class="skips">{% for i in plan.exercises %}<label class="flag"><input type="checkbox" name="skip" value="{{ i.exercise }}"{{ " checked" if i.skipped }}><span>{{ i.exercise }}</span></label>{% endfor %}</div>
+      </fieldset>
+      {% endif %}
       <div class="tapfoot">
         <label class="flag" title="Sick with no energy picked counts as energy 0"><input type="checkbox" name="sick" value="1"{{ " checked" if ci.sick }}><span>Sick{{ when }}</span></label>
         <label class="flag"><input type="checkbox" name="injured" value="1"{{ " checked" if ci.injured }}><span>Injured{{ when }}</span></label>
@@ -200,7 +205,7 @@
     <h2>{{ icon("session") }}Today's session{% if plan.rest %}, if you train{% endif %}</h2>
     <div class="verdict"><span class="vbadge">{{ plan.kind|title }} {{ plan.variant }}{% if plan.main %} · {{ plan.main }}{% endif %}</span></div>
     {% call info() %}<p>Next in your push → pull → legs rotation after {{ plan.after.kind }} on {{ plan.after.date|shortdate }}.
-      {% if plan.template %}Exercises from your last {{ plan.kind|title }} {{ plan.variant }} ({{ plan.template|shortdate }}); each target comes from the last time you did that exercise.{% endif %}</p><p>One rule for every exercise, applied to its last session. Strength work (top set of 5 or fewer): RPE 8 or under adds load, 8.5–9 adds a rep. Accessories: add a rep up to 12 (15 for calves, laterals, shrugs, face pulls, leg extensions, flyes), then add load and drop to the bottom of the range. Bodyweight: beat the last total reps by 1–2. Any top set at RPE 9.5+: hold the load and make it cleaner. No RPE logged: repeat it. A hold day repeats every load; a sore back drops the spine-loading lifts.</p>{% endcall %}
+      {% if plan.template %}Exercises from your last {{ plan.kind|title }} {{ plan.variant }} ({{ plan.template|shortdate }}); each target comes from the last time you did that exercise.{% endif %}</p><p>Each target comes from the last normal session of that exercise; deload days never set one. Main lifts: an estimated max from that session's sets and their RPEs, 5 lb more, and the reps that would land at RPE 8–9.5. A missed target holds the weight. Accessories: add a rep up to 12 (15 for calves, laterals, shrugs, face pulls, leg extensions, flyes), then add load and drop to the bottom of the range. Bodyweight: beat the last total reps by 1–2. No RPE logged: repeat it. A take-it-easy day is 80% of last time's sets and weight; a flagged back makes it 60%, every lift still in.</p>{% endcall %}
     {% if plan.day_adjust %}<div class="ramp">{{ plan.day_adjust }}</div>{% endif %}
     {% if plan.rest %}<div class="ramp"><b>Rest day.</b> The verdict above says rest; this is what the next session looks like when you do train.</div>{% endif %}
     {% if plan.exercises %}

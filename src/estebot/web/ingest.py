@@ -76,6 +76,14 @@ EXCUSE_HINTS = re.compile(
     r"travel|away|parents|hospital|surgery|camping|vacation|holiday|wedding|funeral|"
     r"sick|ill|flu|injur|emergency", re.I)
 
+def load_calls(con):
+    from estebot.analysis import calls
+    rows = calls.load(_cfg.data_file("calls.csv"))
+    con.execute("DELETE FROM call_record")
+    con.executemany("INSERT INTO call_record VALUES (?,?,?,?)",
+                    [(c["date"], c["verdict"], c.get("plan", ""), c.get("targets", "")) for c in rows])
+    print(f"   {'call_record':14} {len(rows):5} rows")
+
 def load_workouts(con):
     """Apple workouts, several per day, so like nutrients it skips the one-row-per-date
     loader. The rest-day rule needs to know a non-lifting session happened, not just minutes."""
@@ -149,6 +157,7 @@ def run():
     load_workouts(con)
     load_annotations(con)
     parse_subjective(con)
+    load_calls(con)
     con.commit()
     cur = con.execute("SELECT MAX(date) d FROM weight").fetchone()
     print(f"\nlatest weigh-in: {cur['d']}")

@@ -59,7 +59,7 @@ def make_call(con, day, goals, training=None, graded=None, code=None):
     plan = engine.training_plan(con, day, r["verdict"], r["checkin"], training=training)
     levels = {x["area"]: x["level"] or "" for x in r["signals"]}
     targets = [{"exercise": e["exercise"], "action": e["action"], "target": e["target"], "goal": e["goal"]}
-               for e in (plan or {}).get("exercises", [])]
+               for e in (plan or {}).get("exercises", []) if not e.get("skipped")]
     return {"date": day, "recorded_at": datetime.now().isoformat(timespec="seconds"),
             "code": code or _code_version(), "verdict": r["verdict"], "score": r["score"],
             **{a: levels.get(a, "") for a in AREAS},
@@ -102,7 +102,11 @@ def backfill(con, path, goals, days, today=None, training=None):
     for k in range(days - 1, -1, -1):
         day = (end - timedelta(days=k)).isoformat()
         row = dict(make_call(con, day, goals, training, graded, code="backfill"), recorded_at=f"{day}T07:00:00")
-        n += record(path, row)
+        if record(path, row):
+            con.execute("INSERT OR IGNORE INTO call_record VALUES (?,?,?,?)",
+                        (row["date"], row["verdict"], row["plan"], row["targets"]))
+            n += 1
+    con.commit()
     return n
 
 
@@ -147,8 +151,13 @@ def main(argv):
         print(f"{day}: waiting for {' and '.join(missing)} before recording the call")
         return 0
     row = make_call(con, day, cfg.goals)
+    wrote = record(path, row)
+    if wrote:   # the engine reads deload days and given targets from here until the next ingest
+        con.execute("INSERT OR IGNORE INTO call_record VALUES (?,?,?,?)",
+                    (row["date"], row["verdict"], row["plan"], row["targets"]))
+        con.commit()
     print(f"{day}: {row['verdict']} {row['score']}"
-          + (" recorded" if record(path, row) else ", already recorded today; kept the first"))
+          + (" recorded" if wrote else ", already recorded today; kept the first"))
     return 0
 
 

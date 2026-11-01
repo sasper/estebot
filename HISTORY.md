@@ -113,6 +113,19 @@ took the verdict from the count. That lasted until 29 Oct (below).
   and Fly throttles a small shared CPU hard after a short burst. Now each session is graded
   once and the backfill takes under two seconds, before the server starts.
 
+## 1 Nov: main lifts, and a real deload
+
+- After a 295 x 4 bench at RPE 10 the plan said 295 x 4 again. Main lifts, named per day in
+  config, now estimate a max from the last session's near-max sets and go up 5 lb with the
+  reps that would land at RPE 8-9.5: 300 x 2-3. A missed target holds the weight.
+- A take-it-easy day used to repeat last loads with one set fewer. Now it cuts sets and
+  weight by 20%, or 40% with a flagged back, and keeps every lift. Nothing is skipped unless
+  I mark it in the check-in.
+- Deload sessions are left out of grading. Graded against normal targets they'd read as
+  misses, the area that called them would look predictive, and it would call more deloads.
+- The plan's day letters were swapped against my Hevy routines on pull and legs days. They
+  follow Hevy now; calls.csv rows from before read the old way.
+
 ## What I'd tell someone starting the same thing
 
 - Make the parsers deterministic and diff their output. It caught more mistakes than the
