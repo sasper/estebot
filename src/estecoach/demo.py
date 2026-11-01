@@ -691,7 +691,7 @@ def main(argv=None):
     if a.days < 60:
         p.error("--days must be at least 60: the baselines need a month before anything is judged")
     out = Path(a.out).expanduser()
-    if out.exists() and any(out.iterdir()) and not any((out / m).exists() for m in (MARKER, ".estebot-demo")):
+    if out.exists() and any(out.iterdir()) and not (out / MARKER).exists():
         sys.exit(f"{out} has files in it and was not written by this command; refusing to touch it")
     generate(out, a.seed, end, a.days)
     print(f"demo data for {end - timedelta(days=a.days - 1)} to {end} in {out.resolve()}\n"

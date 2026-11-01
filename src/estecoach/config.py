@@ -17,30 +17,13 @@ from glob import glob
 from pathlib import Path
 
 def env(name: str, default=None):
-    """$ESTECOACH_<name>, else $ESTEBOT_<name>: the project was EsteBot until 1 Nov 2026, and
-    a secret set under the old name keeps working until it has been set again."""
-    for prefix in ("ESTECOACH_", "ESTEBOT_"):
-        v = os.environ.get(prefix + name)
-        if v is not None:
-            return v
-    return default
-
-
-def _either(p: Path) -> Path:
-    """A path written before the rename can name estebot.toml after the file became
-    estecoach.toml (or the other way round, before it has moved)."""
-    if p.is_file():
-        return p
-    for old, new in (("estebot", "estecoach"), ("estecoach", "estebot")):
-        if old in p.name and (q := p.with_name(p.name.replace(old, new))).is_file():
-            return q
-    return p
+    """$ESTECOACH_<name>."""
+    return os.environ.get("ESTECOACH_" + name, default)
 
 
 _SEARCH = [
     env("CONFIG"),
     "estecoach.toml",
-    "estebot.toml",
     "~/.config/estecoach/config.toml",
 ]
 
@@ -53,7 +36,7 @@ def _find() -> Path:
     for cand in _SEARCH:
         if not cand:
             continue
-        p = _either(Path(cand).expanduser())
+        p = Path(cand).expanduser()
         if p.is_file():
             return p
     raise ConfigError(
@@ -77,8 +60,8 @@ class Config:
     # ---- derived paths. Nothing is ever written inside the code repo. ----
     @property
     def is_demo(self) -> bool:
-        """Written by estecoach.demo (.estebot-demo before the rename)."""
-        return any((self.data_dir / m).exists() for m in (".estecoach-demo", ".estebot-demo"))
+        """Written by estecoach.demo."""
+        return (self.data_dir / ".estecoach-demo").exists()
 
     @property
     def tidy(self) -> Path:
@@ -115,7 +98,7 @@ class Config:
 
 
 def load(path: str | os.PathLike | None = None) -> Config:
-    p = _either(Path(path).expanduser()) if path else _find()
+    p = Path(path).expanduser() if path else _find()
     with open(p, "rb") as fh:
         raw = tomllib.load(fh)
     if "data_dir" not in raw:

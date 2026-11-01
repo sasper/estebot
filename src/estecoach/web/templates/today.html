@@ -541,7 +541,7 @@
   // Remember which tiles were left open, in this browser only; the page works without it.
   (() => {
     let open = {};
-    try { open = JSON.parse(localStorage.getItem("estecoach-tiles") || localStorage.getItem("estebot-tiles") || "{}"); } catch (e) {}
+    try { open = JSON.parse(localStorage.getItem("estecoach-tiles") || "{}"); } catch (e) {}
     document.querySelectorAll("details.tile").forEach((t) => {
       if (t.dataset.tile in open) t.open = open[t.dataset.tile];
       t.addEventListener("toggle", () => {

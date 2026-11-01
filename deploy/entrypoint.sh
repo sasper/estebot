@@ -9,14 +9,6 @@
 # deploy key, each config is loaded, and the daily sync runs at each SYNC_AT time and pushes back.
 set -eu
 
-# The project was EsteBot until 1 Nov 2026. A secret still set under the old name is used
-# until it has been set again as ESTECOACH_*.
-for name in USERS_TOML_B64 SESSION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET BASE_URL \
-            CHAT_DAILY_USD DEMO_CHAT_DAILY_USD; do
-    eval "new=\${ESTECOACH_${name}:-} old=\${ESTEBOT_${name}:-}"
-    if [ -z "$new" ] && [ -n "$old" ]; then export "ESTECOACH_${name}=$old"; fi
-done
-
 # Secrets that span lines or may hold any character arrive base64-encoded (NAME_B64).
 for name in ESTECOACH_USERS_TOML DATA_REPO_KEY CRONOMETER_PASSWORD; do
     eval "v=\${${name}_B64:-}"

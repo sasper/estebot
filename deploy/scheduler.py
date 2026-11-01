@@ -22,7 +22,7 @@ def times(spec):
 AT = times(os.environ.get("SYNC_AT", "12:00"))
 
 def configs():
-    with open(os.environ.get("ESTECOACH_USERS") or os.environ["ESTEBOT_USERS"], "rb") as fh:
+    with open(os.environ["ESTECOACH_USERS"], "rb") as fh:
         return sorted(set(tomllib.load(fh).get("users", {}).values()))
 
 def seconds_until(hhmm, now):

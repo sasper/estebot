@@ -38,8 +38,7 @@ def api_key(cfg):
     if key:
         return key.strip()
     src = cfg.sources.get("hevy", {})
-    # estebot-hevy was the entry's name before the project became EsteCoach (1 Nov 2026).
-    for service in [src["keychain_service"]] if "keychain_service" in src else ["estecoach-hevy", "estebot-hevy"]:
+    for service in [src.get("keychain_service", "estecoach-hevy")]:
         try:
             out = subprocess.run(
                 ["security", "find-generic-password", "-w", "-s", service,
