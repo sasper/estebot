@@ -52,15 +52,24 @@ def dedupe_daily_total(per_source: dict[str, float]) -> float:
     return max(per_source.values()) if per_source else 0.0
 
 
-def epley_e1rm(weight: float, reps: int, max_reps: int = 10) -> float | None:
-    """Estimated 1RM. Returns None above `max_reps`, where Epley drifts badly.
+NEAR_FAILURE_RPE = 8.0   # from here up, RPE says how many reps were left; below it, it's a guess
 
-    None rather than 0.0 on purpose: a zero is a number and will silently
-    corrupt any min(), mean() or median() taken over the column.
+
+def e1rm(weight: float, reps: int, rpe: float | None = None, max_reps: int = 10) -> float | None:
+    """Estimated 1RM, the one definition every table, report, prediction and target uses
+    (decided 1 Nov 2026): Epley, counting the reps left in the tank when the set was at RPE
+    8 or more, weight x (1 + (reps + 10 - RPE) / 30). A lighter set, or one with no RPE,
+    proves only what was lifted: weight x (1 + reps / 30). Counted on a light set, RPE
+    inflated the session's best: a 205 x 8 at RPE 6 hang clean read as a 287 max against
+    280 from that day's 255 x 2 at RPE 9.
+
+    None above `max_reps`, where Epley drifts badly. None rather than 0.0 on purpose: a zero
+    is a number and will silently corrupt any min(), mean() or median() taken over the column.
     """
     if reps <= 0 or weight <= 0 or reps > max_reps:
         return None
-    return weight * (1 + reps / 30.0)
+    left = 10 - rpe if rpe is not None and NEAR_FAILURE_RPE <= rpe <= 10 else 0
+    return weight * (1 + (reps + left) / 30.0)
 
 
 def parse_jefit_logs(logs: str) -> list[tuple[float, int]]:
@@ -495,7 +504,7 @@ def progression(exercise: str, sets: list[tuple[float | None, int, float | None]
 
 
 MAIN_STEP = 5.0          # a main lift's jump: 5 lb on a barbell, per dumbbell, or on a machine
-MAIN_MAX_REPS = 12       # above this the estimated max stops meaning much; the accessory rule takes over
+MAIN_MAX_REPS = 10       # e1rm()'s own limit: above it the accessory rule takes over
 MAIN_RPE = (8.0, 9.5)    # a main lift's rep range is the reps that land in this RPE band
 DELOAD = 0.8             # a take-it-easy day: 80% of the sets and of each set's weight
 DELOAD_BACK = 0.6        # a flagged back: 60%, every lift still in
@@ -504,11 +513,6 @@ LAYOFF = 0.9             # back from two or more deloads in a row: one session a
 
 def round5(x: float) -> float:
     return math.floor(x / 5 + 0.5) * 5
-
-
-def estimated_max(weight: float, reps: int, rpe: float) -> float:
-    """One-rep max from a set and its RPE (Epley, counting the reps left in the tank)."""
-    return weight * (1 + (reps + (10 - rpe)) / 30)
 
 
 def implied_rpe(est_max: float, weight: float, reps: int) -> float:
@@ -530,8 +534,8 @@ def main_progression(exercise: str, sets: list[tuple[float | None, int, float | 
     normal session. Asked for on 1 Nov 2026: after bench 275 x 6 @ 9.5 and 295 x 4 @ 10 the
     old rule held at 295 x 4; this says 300 x 2-3.
 
-      estimate   the best estimated_max over that session's sets at RPE 8 or more (every
-                 set with an RPE when none is)
+      estimate   the best e1rm() over that session's sets with an RPE (sets under RPE 8
+                 count as lifted, without the reps left)
       weight     last top weight + MAIN_STEP; the same weight when the last target was
                  missed or `hold` (go as planned right after a deload); 90% of it, to the
                  nearest 5, when `layoff` (two or more deloads in a row)
@@ -548,11 +552,11 @@ def main_progression(exercise: str, sets: list[tuple[float | None, int, float | 
     top_reps = max(r for w, r, _ in work if w == top_w)
     if top_w == 0 or not rated or top_reps > MAIN_MAX_REPS:
         return progression(exercise, sets, **kw)
-    # Near-max sets only: an RPE 6 set has 4 reps in the tank to extrapolate, and on 29 Oct
-    # a 205 x 8 @ 6 hang clean read as a 287 max against 280 from 255 x 2 @ 9.
-    near = [s for s in rated if s[2] >= MAIN_RPE[0]] or rated
-    est = max(estimated_max(w, r, rpe) for w, r, rpe in near)
-    best = max(near, key=lambda s: estimated_max(*s))
+    scored = [(e1rm(w, r, rpe), (w, r, rpe)) for w, r, rpe in rated]
+    scored = [x for x in scored if x[0]]
+    if not scored:
+        return progression(exercise, sets, **kw)
+    est, best = max(scored)
     u = rep_unit(exercise)
     if layoff:
         weight, action = round5(top_w * LAYOFF), "ease back in"

@@ -573,7 +573,7 @@ def _write_lifting(tidy, weights, sets, sess_min):
         if EXERCISES[name][1] == "bw":
             t = core.trailing_mean(bw, date.fromisoformat(d))
             load = w + t if t is not None else 0.0
-        e1 = core.epley_e1rm(load, reps) or 0.0
+        e1 = core.e1rm(load, reps, rpe) or 0.0
         rows.append({"date": d, "exercise": name, "muscle_group": EXERCISES[name][0],
                      "set_idx": idx[(d, name)], "weight_lb": round(w, 1), "reps": int(reps),
                      "volume_lb": round(w * reps, 1), "e1rm_lb": round(e1, 1),
