@@ -17,7 +17,7 @@ from estecoach.analysis import calls, engine as an, nutrition, predictions
 import anthropic
 from starlette.concurrency import run_in_threadpool
 
-from estecoach.web import auth, chat, checkin_text, db, charts, examples, people
+from estecoach.web import auth, chat, checkin_text, db, charts, examples, people, signups
 
 log = logging.getLogger("estecoach")
 HERE = os.path.dirname(__file__)
@@ -223,7 +223,7 @@ def today(request: Request, day: str | None = None, present: str | None = None):
         said=request.query_params.get("said"),
         review_days=review_days, prev_day=prev_day, next_day=next_day, month_nav=month_nav,
         is_today=is_today, waiting=_waiting_lines(waits, cfg, now), waiting_for=list(waits.values()),
-        hevy=hevy_card, doses_today=an.doses_today(con, day) if is_today else [],
+        hevy=hevy_card, signups_waiting=signups.unreviewed() if _reviews_signups(p) else 0, doses_today=an.doses_today(con, day) if is_today else [],
         demo=demo,
         signin=auth.settings() is not None, email=p.email, chat_on=chat_on, chat_resting=resting,
         # The demo opens on the canned conversation, live or not; live, it's the history a
@@ -420,6 +420,64 @@ def hevy_send(request: Request, csrf: str = Form("")):
         log.warning("hevy send failed: %s", e)
         return PlainTextResponse(f"Hevy didn't take it: {e}", status_code=502)
     return RedirectResponse(f"/?day={day}#session", status_code=303)
+
+
+# ---------------------------------------------------------------- sign-ups (web/signups.py)
+
+def _reviews_signups(p):
+    """The owner: signed in, not the demo, and their config says `[site] review_signups = true`."""
+    return bool(p.email) and not demo_mode() and not p.read_only and bool(p.cfg.site.get("review_signups"))
+
+
+def _signup_page(request, status=200, **kw):
+    ctx = dict(phones=signups.PHONES, trackers=signups.TRACKERS, form={}, error=None, done=None)
+    ctx.update(kw)
+    return tpl.TemplateResponse(request, "signup.html", ctx, status_code=status)
+
+
+@app.get("/signup", response_class=HTMLResponse)
+def signup_form(request: Request):
+    return _signup_page(request)
+
+
+@app.post("/signup", response_class=HTMLResponse)
+async def signup_submit(request: Request):
+    """Anyone may ask, the demo's visitors above all. A bot that fills the hidden field is told
+    thanks and nothing is kept; one address gets signups.PER_HOUR requests an hour."""
+    form = dict(await request.form())
+    if form.get("website"):
+        return _signup_page(request, done="for your interest")
+    address = request.headers.get("fly-client-ip") or (request.client.host if request.client else "?")
+    if not signups.allowed(address):
+        return _signup_page(request, 429, form=form, error="Too many requests from here. Try again in an hour.")
+    try:
+        row = signups.clean(form)
+    except signups.Invalid as e:
+        return _signup_page(request, 400, form=form, error=str(e))
+    signups.save(row)
+    log.warning("sign-up request saved")          # no name or email in the log
+    return _signup_page(request, done=row["name"].split()[0])
+
+
+@app.get("/signups", response_class=HTMLResponse)
+def signup_review(request: Request):
+    p = people.for_request(request)
+    if not _reviews_signups(p):
+        return PlainTextResponse("Not found.", status_code=404)
+    return tpl.TemplateResponse(request, "signups.html", dict(
+        rows=signups.listing(), csrf=auth.csrf_token(auth.settings(), p.session) if p.session else ""))
+
+
+@app.post("/signups/{sid}/reviewed")
+def signup_reviewed(request: Request, sid: int, csrf: str = Form("")):
+    p = people.for_request(request)
+    refused = _refuse(p, csrf)
+    if refused:
+        return refused
+    if not _reviews_signups(p):
+        return PlainTextResponse("Not found.", status_code=404)
+    signups.mark_reviewed(sid)
+    return RedirectResponse("/signups", status_code=303)
 
 
 @app.post("/checkin")

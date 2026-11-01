@@ -413,7 +413,7 @@ a{color:var(--accent)}
   padding:10px 18px;border-radius:999px;box-shadow:0 0 18px color-mix(in srgb,var(--accent) 35%,transparent)}
 .intro-more{color:var(--text-secondary);text-decoration:none;font-weight:550}
 .intro-more:hover{color:var(--accent)}
-.intro-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.intro-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}   /* four cards: two by two, one column on a phone */
 /* The reviewers' line: one muted row until opened, then about five lines. */
 .intro-build{margin:-6px 0 20px;font-size:13.5px;color:var(--text-secondary);max-width:70ch}
 .intro-build summary{cursor:pointer;font-weight:550;list-style:none;min-height:32px;display:flex;align-items:center}
@@ -474,3 +474,22 @@ h1{display:flex;align-items:center;gap:9px}
 .credit p{margin:0}
 .credit b{color:var(--text-secondary);font-weight:600}
 .credit-links{white-space:nowrap;margin-left:6px}
+/* The demo's ask, after the session, and the sign-up pages. */
+.cta{margin-top:18px}
+.cta-head{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.2;margin:0 0 6px}
+.cta .intro-btn{display:inline-block;margin-top:10px}
+.signup{max-width:560px}
+.signup form > label:not(.flag){display:block;font-weight:600;margin:16px 0 6px}
+.top .home{color:inherit;text-decoration:none}
+.signup input[type=text],.signup input[type=email],.signup textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;
+  padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface-1);color:var(--text-primary)}
+.signup textarea{min-height:96px;resize:vertical}
+.signup .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.signup button{margin-top:20px}
+.signup .err{color:var(--bad);font-weight:600}
+.signup ul{padding-left:20px;color:var(--text-secondary)}
+.reqs{width:100%;border-collapse:collapse;font-size:14px}
+.reqs th,.reqs td{text-align:left;padding:8px 6px;border-top:1px solid var(--line);vertical-align:top}
+.reqs .seen{color:var(--text-muted)}
+.signup .flag{display:inline-block;margin-top:16px}
+.signup .top{margin-bottom:22px}

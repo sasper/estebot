@@ -96,14 +96,22 @@ def test_the_public_demo_is_read_only(main, con, monkeypatch):
     assert con.execute("SELECT source FROM checkin WHERE date=?", (DAY,)).fetchone()[0] == "notes"
 
 
-def test_the_how_it_was_built_line_is_on_the_demo_only(main, monkeypatch):
-    # It's for people reviewing the project; a person's own page has no use for it.
-    assert "How it was built" not in page(main)[0]
+def test_the_demo_asks_visitors_to_sign_up_and_a_persons_own_page_does_not(main, monkeypatch):
+    # 1 Nov 2026: the demo is for people who might train with EsteCoach, not for reviewing
+    # a portfolio. It points them at the sign-up form, before the call and after the session.
+    own = page(main)[0]
+    assert 'href="/signup"' not in own and "portfolio" not in own.lower()
     monkeypatch.setenv("ESTECOACH_DEMO", "1")
     shown, _ = page(main)
-    assert "How it was built" in shown and "ARCHITECTURE.md" in shown and "linkedin.com/in/" in shown
-    assert shown.index("How it was built") < shown.index('id="readiness"')
-    assert "Designed and built by Stephen Sper." in shown and "Claude Code" not in shown
+    assert shown.index('href="/signup"') < shown.index('id="readiness"')
+    assert "Request access" in shown and "portfolio" not in shown.lower()
+    assert "Designed and built by" in shown and "Claude Code" not in shown
+
+
+def test_the_header_says_estecoach(main):
+    # The wordmark is split across tags to colour its second half, and the rename's text
+    # replace missed it: estecoach.app said EsteBot in its header for a day.
+    assert 'Este<span>Coach</span>' in page(main)[0] and "Este<span>Bot" not in page(main)[0]
 
 
 def test_the_footer_credits_and_links_the_author(main):
@@ -118,7 +126,7 @@ def test_the_read_only_demo_person_gets_it_without_the_demo_flag(main, monkeypat
     from dataclasses import replace
     me = main.people.for_request(None)
     monkeypatch.setattr(main.people, "for_request", lambda request: replace(me, read_only=True))
-    assert "How it was built" in page(main)[0]
+    assert 'href="/signup"' in page(main)[0]
 
 
 def test_every_weight_rate_on_the_page_names_its_window(main):

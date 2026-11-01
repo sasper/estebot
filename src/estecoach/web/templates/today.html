@@ -19,6 +19,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png?v={{ icon_v }}">
 <link rel="apple-touch-icon" href="/static/icon-180.png?v={{ icon_v }}">
 {# More about a card: a small (i) that opens its explanation, so the card shows only data. #}
+{% import "brand.html" as brand %}
 {% macro info() %}<details class="info"><summary aria-label="How this works">i</summary><div class="info-pop">{{ caller() }}</div></details>{% endmacro %}
 {% macro icon(name) %}{% set P = {
   "recovery": "M3 12h4l2-5 4 10 2-5h6",
@@ -36,46 +37,33 @@
 <div class="main">
   {% set here = "/?day=" ~ day ~ "&" if not is_today else "/?" %}
   <header class="top" id="top">
-    <h1><svg class="logo" viewBox="0 0 64 64" aria-hidden="true">{# the tab icon's mark, in the theme's colours #}
-      <rect width="64" height="64" rx="14" class="logo-bg"/>
-      <polyline points="12,27 23,20 32,23 47,12" class="logo-trend"/><polyline points="40,11 48,11.5 47.5,19.5" class="logo-trend"/>
-      <g class="logo-bar"><rect x="7" y="41.5" width="50" height="5" rx="2.5"/><rect x="12" y="32" width="7" height="24" rx="2.5"/>
-      <rect x="20.5" y="36" width="5" height="16" rx="2"/><rect x="45" y="32" width="7" height="24" rx="2.5"/>
-      <rect x="38.5" y="36" width="5" height="16" rx="2"/></g></svg><span class="word">Este<span>Bot</span></span></h1>
+    <h1>{{ brand.wordmark() }}</h1>
     {# the demo person has nothing private to hide, so the demo has no toggle #}
     {% if demo %}{% elif present %}<a class="chip on" href="{{ here }}present=0" title="Notes and medical details are hidden. Click to show everything.">Presentation</a>
     {% else %}<a class="chip" href="{{ here }}present=1" title="Hide notes and medical details, for showing the page to someone">Present</a>{% endif %}
+    {%- if signups_waiting %}<a class="chip on" href="/signups" title="People asking to use EsteCoach">{{ signups_waiting }} new sign-up{{ "s" if signups_waiting > 1 }}</a>{% endif %}
     {%- if signin %}{% if email %}<form method="post" action="/auth/logout" class="signout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="chip" title="Signed in as {{ email }}">Sign out</button></form>
     {% else %}<a class="chip" href="/auth/login">Sign in</a>{% endif %}{% endif %}
   </header>
   {# The public demo opens with what this is and what to look at; the person's own page doesn't. #}
   {% if demo %}
   <section class="intro">
-    <p class="intro-pitch">Your fitness coach who's seen every set you've lifted.</p>
-    <p class="intro-note">It reads your training, sleep, food and weight, and tells you how hard to go and what to lift. Every number comes from its own algorithms, never an AI guess.</p>
-    <p class="intro-demo">A live demo on a made-up athlete, rebuilt every day.</p>
+    <p class="intro-pitch">Your personalized coach.</p>
+    <p class="intro-note">It reads every lift, night of sleep, medication and meal, and tells you how to train today: how hard to go, and what to lift. Every number comes from its own tested math, never an AI guess.</p>
+    <p class="intro-demo">This is a live demo on a made-up lifter, rebuilt every day.</p>
     <div class="intro-links">
-      <a class="intro-btn" href="https://github.com/sasper/estecoach">See the code</a>
-      <a class="intro-more" href="#readiness">Jump to today &darr;</a>
+      <a class="intro-btn" href="/signup">Get EsteCoach for your training</a>
+      <a class="intro-more" href="#readiness">See today's call &darr;</a>
     </div>
-    {# For people reviewing the project rather than training with it; closed, so the call stays near the top. #}
-    <details class="intro-build">
-      <summary>Reviewing this as a portfolio piece? How it was built</summary>
-      <p>EsteCoach turns a lifter's workouts, sleep, food and weight into one call a day: built for one athlete, shown here on a made-up one.</p>
-      <p><b>Three rules:</b> no personal data in the code repo; every number comes from EsteCoach's own tested code, and the AI only explains it; one implementation per metric.</p>
-      <p>Designed and built by Stephen Sper.</p>
-      <p>Process, decisions and what broke along the way: <a href="https://github.com/sasper/estecoach/blob/main/HISTORY.md">HISTORY.md</a></p>
-      <p class="intro-build-links"><a href="https://github.com/sasper/estecoach">GitHub</a> · <a href="https://github.com/sasper/estecoach/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a> · <a href="https://github.com/sasper/estecoach/blob/main/HISTORY.md">HISTORY.md</a> · <a href="https://www.linkedin.com/in/stephensper">LinkedIn</a></p>
-    </details>
     <div class="intro-cards">
-      <a class="intro-card" href="#calendar"><span class="n">01</span><b>Four apps in. One clean day out.</b>
-        <span>Workouts from Hevy, food from Cronometer, 2&nbsp;GB of Apple Health and a live phone feed, pulled every day and lined up into one tidy record per day.</span></a>
-      <a class="intro-card" href="https://github.com/sasper/estecoach"><span class="n">02</span><b>Messy data, fixed at the source.</b>
-        <span>Weights that switched units mid-history. Renamed exercises. Two apps logging the same day. Every fix is a dated rule, never a hand edit, so years of history rebuild exactly.</span></a>
-      <a class="intro-card" href="#readiness"><span class="n">03</span><b>A call that grades itself.</b>
-        <span>Seven signals are tracked, but only the ones your own sessions show matter get a vote, and every call is checked against how the session went.</span></a>
-      <a class="intro-card" href="#ask"><span class="n">04</span><b>Ask your data anything.</b>
-        <span>Plain-English questions, answered from EsteCoach's own numbers, not the AI's imagination. {{ "Live in this demo." if chat_on else "Off in this demo." }}</span></a>
+      <a class="intro-card" href="#calendar"><span class="n">01</span><b>Your apps in. One clear day out.</b>
+        <span>Hevy or Jefit for lifting, Apple Health from your phone, Cronometer if you log food. Pulled in every day and lined up into one record.</span></a>
+      <a class="intro-card" href="#readiness"><span class="n">02</span><b>A call every morning.</b>
+        <span>Check in, and it weighs your sleep, recovery, training load and how you feel into one call. Every call is graded against how the session went.</span></a>
+      <a class="intro-card" href="#session"><span class="n">03</span><b>Your session, already in Hevy.</b>
+        <span>Every lift gets a target from your last session and your RPE, and it's written into your Hevy routine before you get to the gym.</span></a>
+      <a class="intro-card" href="#ask"><span class="n">04</span><b>Ask it anything.</b>
+        <span>Plain-English questions, answered from your own numbers. {{ "Live in this demo." if chat_on else "Off in this demo." }}</span></a>
     </div>
   </section>
   {% endif %}
@@ -245,6 +233,14 @@
     </table>
     {% endif %}
   </div>
+  {% endif %}
+  {# The demo is a made-up lifter; after the session it shows, ask the reader about their own. #}
+  {% if demo %}
+  <section class="card cta">
+    <p class="cta-head">This is a made-up lifter. Want EsteCoach on your own training?</p>
+    <p class="small muted">It needs an iPhone with the Health Auto Export app, and Hevy or Jefit for your lifts. Cronometer is optional.</p>
+    <a class="intro-btn" href="/signup">Request access</a>
+  </section>
   {% endif %}
   </div>
 
@@ -540,11 +536,7 @@
   </div>
   </div>
   <footer class="credit">
-    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" class="logo-bg"/>
-      <polyline points="12,27 23,20 32,23 47,12" class="logo-trend"/><polyline points="40,11 48,11.5 47.5,19.5" class="logo-trend"/>
-      <g class="logo-bar"><rect x="7" y="41.5" width="50" height="5" rx="2.5"/><rect x="12" y="32" width="7" height="24" rx="2.5"/>
-      <rect x="20.5" y="36" width="5" height="16" rx="2"/><rect x="45" y="32" width="7" height="24" rx="2.5"/>
-      <rect x="38.5" y="36" width="5" height="16" rx="2"/></g></svg>
+    {{ brand.mark() }}
     <p>Designed and built by <a href="https://www.linkedin.com/in/stephensper"><b>Stephen Sper</b></a>, engineering leader in Ann Arbor, MI.
       <span class="credit-links"><a href="https://github.com/sasper/estecoach">GitHub</a> · <a href="mailto:stephen@estecoach.app">stephen@estecoach.app</a></span></p>
   </footer>
