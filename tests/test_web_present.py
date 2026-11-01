@@ -99,16 +99,18 @@ def test_the_public_demo_is_read_only(main, con, monkeypatch):
     assert con.execute("SELECT source FROM checkin WHERE date=?", (DAY,)).fetchone()[0] == "notes"
 
 
-def test_the_demo_keeps_its_reviewer_strip_and_points_at_early_access(main, monkeypatch):
-    # The landing page (/) carries the pitch and the form; the demo stays as it was, with a
-    # "Get early access" link to the form at the top and after the session.
+def test_the_demo_is_just_the_demo_with_a_way_back_to_the_landing_page(main, monkeypatch):
+    # The landing page (/) explains EsteCoach, so the demo dropped its own pitch and reviewer
+    # strip: one line says what it is, and links back home and to early access.
     own = page(main)[0]
-    assert "/#early-access" not in own and "How it was built" not in own
+    assert "demo-bar" not in own and "/#early-access" not in own
     monkeypatch.setenv("ESTECOACH_DEMO", "1")
     shown, _ = page(main)
-    assert "How it was built" in shown and "linkedin.com/in/" in shown
+    assert "How it was built" not in shown and '<section class="intro">' not in shown and "intro-cards" not in shown
+    bar = shown.index('class="demo-bar"')
+    assert bar < shown.index('id="readiness"')
+    assert '<a href="/">About EsteCoach</a>' in shown and '<a href="/" class="home"' in shown
     assert shown.count('href="/#early-access"') == 2
-    assert shown.index('href="/#early-access"') < shown.index('id="readiness"')
     assert 'href="/demo?day=' in shown and 'href="/?day=' not in shown       # its links stay on /demo
 
 

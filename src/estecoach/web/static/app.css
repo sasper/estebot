@@ -602,3 +602,10 @@ html{scroll-behavior:smooth}
 }
 .land-kinds .land-tracks{align-content:flex-start}
 .land-form.land-panel form{max-width:none}
+.demo-bar{margin:6px 0 18px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:14px;
+  color:var(--text-secondary);background:var(--surface-1)}
+.demo-bar a{font-weight:600}
+.top .home{color:inherit;text-decoration:none}
+/* The calendar is a tile, but a closed one keeps the full row: half a row is too narrow for it. */
+@container (min-width:640px){ .trends > .tile.caltile:not([open]){grid-column:1/-1} }
+.caltile .calhead-row{justify-content:flex-end}

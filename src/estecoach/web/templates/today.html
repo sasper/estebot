@@ -24,7 +24,7 @@
 <div class="main">
   {% set here = base ~ "?day=" ~ day ~ "&" if not is_today else base ~ "?" %}
   <header class="top" id="top">
-    <h1>{{ brand.wordmark() }}</h1>
+    <a href="/" class="home" aria-label="EsteCoach home"><h1>{{ brand.wordmark() }}</h1></a>
     {# the demo person has nothing private to hide, so the demo has no toggle #}
     {% if demo %}{% elif present %}<a class="chip on" href="{{ here }}present=0" title="Notes and medical details are hidden. Click to show everything.">Presentation</a>
     {% else %}<a class="chip" href="{{ here }}present=1" title="Hide notes and medical details, for showing the page to someone">Present</a>{% endif %}
@@ -33,36 +33,9 @@
     {% else %}<a class="chip" href="/auth/login">Sign in</a>{% endif %}{% endif %}
   </header>
   {# The public demo opens with what this is and what to look at; the person's own page doesn't. #}
+  {# The landing page (/) explains EsteCoach; the demo just says what it is and links back. #}
   {% if demo %}
-  <section class="intro">
-    <p class="intro-pitch">Your fitness coach who's seen every set you've lifted.</p>
-    <p class="intro-note">It reads your training, sleep, food and weight, and tells you how hard to go and what to lift. Every number comes from its own algorithms, never an AI guess.</p>
-    <p class="intro-demo">A live demo on a made-up athlete, rebuilt every day.</p>
-    <div class="intro-links">
-      <a class="intro-btn" href="https://github.com/sasper/estecoach">See the code</a>
-      <a class="intro-more" href="#readiness">Jump to today &darr;</a>
-      <a class="intro-more" href="/#early-access">Get early access</a>
-    </div>
-    {# For people reviewing the project rather than training with it; closed, so the call stays near the top. #}
-    <details class="intro-build">
-      <summary>Reviewing this as a portfolio piece? How it was built</summary>
-      <p>EsteCoach turns a lifter's workouts, sleep, food and weight into one call a day: built for one athlete, shown here on a made-up one.</p>
-      <p><b>Three rules:</b> no personal data in the code repo; every number comes from EsteCoach's own tested code, and the AI only explains it; one implementation per metric.</p>
-      <p>Designed and built by Stephen Sper.</p>
-      <p>Process, decisions and what broke along the way: <a href="https://github.com/sasper/estecoach/blob/main/HISTORY.md">HISTORY.md</a></p>
-      <p class="intro-build-links"><a href="https://github.com/sasper/estecoach">GitHub</a> · <a href="https://github.com/sasper/estecoach/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a> · <a href="https://github.com/sasper/estecoach/blob/main/HISTORY.md">HISTORY.md</a> · <a href="https://www.linkedin.com/in/stephensper">LinkedIn</a></p>
-    </details>
-    <div class="intro-cards">
-      <a class="intro-card" href="#calendar"><span class="n">01</span><b>Four apps in. One clean day out.</b>
-        <span>Workouts from Hevy, food from Cronometer, 2&nbsp;GB of Apple Health and a live phone feed, pulled every day and lined up into one tidy record per day.</span></a>
-      <a class="intro-card" href="https://github.com/sasper/estecoach"><span class="n">02</span><b>Messy data, fixed at the source.</b>
-        <span>Weights that switched units mid-history. Renamed exercises. Two apps logging the same day. Every fix is a dated rule, never a hand edit, so years of history rebuild exactly.</span></a>
-      <a class="intro-card" href="#readiness"><span class="n">03</span><b>A call that grades itself.</b>
-        <span>Seven signals are tracked, but only the ones your own sessions show matter get a vote, and every call is checked against how the session went.</span></a>
-      <a class="intro-card" href="#ask"><span class="n">04</span><b>Ask your data anything.</b>
-        <span>Plain-English questions, answered from EsteCoach's own numbers, not the AI's imagination. {{ "Live in this demo." if chat_on else "Off in this demo." }}</span></a>
-    </div>
-  </section>
+  <p class="demo-bar">This is the demo, on a made-up lifter. <a href="/">About EsteCoach</a> · <a href="/#early-access">Get early access</a></p>
   {% endif %}
   <p class="sub" style="margin-bottom:10px">{{ "Today" if is_today else "Looking back" }} · {{ day_label }}</p>
   <nav class="daynav">
@@ -171,41 +144,11 @@
 
   <div class="col-trends">
   <div class="trends">
-  <details class="card tile" data-tile="recovery">
-    <summary><div class="thead"><h2>{{ icon("recovery") }}Recovery</h2><div class="tline">HRV {{ "%.0f"|format(r.hrv7) if r.hrv7 is not none else "–" }} · resting HR {{ "%.0f"|format(r.rhr7) if r.rhr7 is not none else "–" }} · slept {{ "%.1f"|format(r.last_sleep) if r.last_sleep is not none else "–" }} h</div></div>{{ sparks.hrv|safe }}</summary>
-    <div class="metrics">
-      <div class="metric"><div class="k">HRV 7-day</div><div class="v">
-        {{ "%.0f"|format(r.hrv7) if r.hrv7 else "–" }}{% if r.hrv_baseline %}<span class="muted" style="font-size:13px;font-weight:400"> / {{ "%.0f"|format(r.hrv_baseline) }}</span>{% endif %}</div></div>
-      <div class="metric"><div class="k">Resting HR</div><div class="v">
-        {{ "%.0f"|format(r.rhr7) if r.rhr7 else "–" }}</div></div>
-      <div class="metric"><div class="k">Sleep</div><div class="v">
-        {{ "%.1f"|format(r.last_sleep) ~ "h" if r.last_sleep else "–" }}</div></div>
-      <div class="metric"><div class="k">Load ratio</div><div class="v">
-        {{ "%.2f"|format(r.acwr) if r.acwr else "–" }}</div></div>
-      <div class="metric"><div class="k">Days since rest</div><div class="v">{{ r.streak_now }}<span class="muted" style="font-size:13px;font-weight:400">{% if r.last_rest %} · rest {{ r.last_rest|shortdate }}{% endif %}{% if r.today_open %} · today not logged yet{% elif r.streak_now != r.streak %} · {{ r.streak }} before today{% endif %}</span></div></div>
-    </div>
-    {% if checkin %}
-    {% set parts = [] %}
-    {% if checkin.back_reported %}{% set _ = parts.append("back " ~ checkin.back) %}{% endif %}
-    {% if checkin.energy is not none %}{% set _ = parts.append("energy " ~ checkin.energy ~ "/3") %}{% endif %}
-    {% if checkin.inter_set_recovery is not none %}{% set _ = parts.append("recovery between sets " ~ checkin.inter_set_recovery ~ "/3") %}{% endif %}
-    {% if checkin.sick %}{% set _ = parts.append("sick") %}{% endif %}
-    {% if checkin.injured %}{% set _ = parts.append("injured") %}{% endif %}
-    {% if parts or checkin.note %}
-    <p class="muted" style="font-size:13px;margin:12px 0 0">From your {{ "check-in" if present else "notes" }}{{ " (answered here)" if checkin.source == "manual" }}{{ ", " ~ checkin.date|shortdate if checkin.date != day }}:
-      {{ parts|join(", ") }}{% if checkin.note %} — “{{ checkin.note }}”{% endif %}</p>{% endif %}
-    {% endif %}
-    <div class="multiples">
-      {% for title, svg in multiples %}<div><h3>{{ title }}</h3>{{ svg|safe }}</div>{% endfor %}
-    </div>
-    <p class="muted" style="font-size:12.5px;margin:10px 0 0">
-    {% call info() %}<p>Spinal load by day type, from your own sessions:
-      {% for k, v in axial.items() %}<b>{{ k }}</b> {{ "%.2f"|format(v) }}{{ " · " if not loop.last }}{% endfor %} (0–3).</p>{% endcall %}
-  </details>
 
-  <div class="card" id="calendar">
+  {# A tile like the others: it folds, and the page remembers. Closed it keeps the full row. #}
+  <details class="card tile caltile" data-tile="calendar" id="calendar" open>
+    <summary><div class="thead"><h2>{{ icon("calendar") }}Training calendar</h2>{% if calendar %}<div class="tline">{{ calendar[-1].title }}</div>{% endif %}</div></summary>
     <div class="calhead-row">
-      <h2>{{ icon("calendar") }}Training calendar</h2>
       {% set mp, mn = month_nav %}
       <nav class="calnav" aria-label="Calendar months">
         <a href="{{ base }}?day={{ mp[1] }}#calendar" aria-label="Previous month">&lsaquo; {{ mp[0] }}</a>
@@ -251,8 +194,39 @@
       {% endfor %}
     </div>
     {% call info() %}<p>Hover a day for its sessions; click to open the page as of that day.</p>{% endcall %}
-  </div>
+  </details>
 
+  <details class="card tile" data-tile="recovery">
+    <summary><div class="thead"><h2>{{ icon("recovery") }}Recovery</h2><div class="tline">HRV {{ "%.0f"|format(r.hrv7) if r.hrv7 is not none else "–" }} · resting HR {{ "%.0f"|format(r.rhr7) if r.rhr7 is not none else "–" }} · slept {{ "%.1f"|format(r.last_sleep) if r.last_sleep is not none else "–" }} h</div></div>{{ sparks.hrv|safe }}</summary>
+    <div class="metrics">
+      <div class="metric"><div class="k">HRV 7-day</div><div class="v">
+        {{ "%.0f"|format(r.hrv7) if r.hrv7 else "–" }}{% if r.hrv_baseline %}<span class="muted" style="font-size:13px;font-weight:400"> / {{ "%.0f"|format(r.hrv_baseline) }}</span>{% endif %}</div></div>
+      <div class="metric"><div class="k">Resting HR</div><div class="v">
+        {{ "%.0f"|format(r.rhr7) if r.rhr7 else "–" }}</div></div>
+      <div class="metric"><div class="k">Sleep</div><div class="v">
+        {{ "%.1f"|format(r.last_sleep) ~ "h" if r.last_sleep else "–" }}</div></div>
+      <div class="metric"><div class="k">Load ratio</div><div class="v">
+        {{ "%.2f"|format(r.acwr) if r.acwr else "–" }}</div></div>
+      <div class="metric"><div class="k">Days since rest</div><div class="v">{{ r.streak_now }}<span class="muted" style="font-size:13px;font-weight:400">{% if r.last_rest %} · rest {{ r.last_rest|shortdate }}{% endif %}{% if r.today_open %} · today not logged yet{% elif r.streak_now != r.streak %} · {{ r.streak }} before today{% endif %}</span></div></div>
+    </div>
+    {% if checkin %}
+    {% set parts = [] %}
+    {% if checkin.back_reported %}{% set _ = parts.append("back " ~ checkin.back) %}{% endif %}
+    {% if checkin.energy is not none %}{% set _ = parts.append("energy " ~ checkin.energy ~ "/3") %}{% endif %}
+    {% if checkin.inter_set_recovery is not none %}{% set _ = parts.append("recovery between sets " ~ checkin.inter_set_recovery ~ "/3") %}{% endif %}
+    {% if checkin.sick %}{% set _ = parts.append("sick") %}{% endif %}
+    {% if checkin.injured %}{% set _ = parts.append("injured") %}{% endif %}
+    {% if parts or checkin.note %}
+    <p class="muted" style="font-size:13px;margin:12px 0 0">From your {{ "check-in" if present else "notes" }}{{ " (answered here)" if checkin.source == "manual" }}{{ ", " ~ checkin.date|shortdate if checkin.date != day }}:
+      {{ parts|join(", ") }}{% if checkin.note %} — “{{ checkin.note }}”{% endif %}</p>{% endif %}
+    {% endif %}
+    <div class="multiples">
+      {% for title, svg in multiples %}<div><h3>{{ title }}</h3>{{ svg|safe }}</div>{% endfor %}
+    </div>
+    <p class="muted" style="font-size:12.5px;margin:10px 0 0">
+    {% call info() %}<p>Spinal load by day type, from your own sessions:
+      {% for k, v in axial.items() %}<b>{{ k }}</b> {{ "%.2f"|format(v) }}{{ " · " if not loop.last }}{% endfor %} (0–3).</p>{% endcall %}
+  </details>
   <details class="card tile" data-tile="weight" open>
     <summary><div class="thead"><h2>{{ icon("weight") }}Body weight</h2><div class="tline"><b>{{ "%.1f"|format(ws.current) if ws.current is not none else "–" }} lb</b>{% if ws.rate is not none %} · <span class="nowrap">{{ "%+.2f"|format(ws.rate) }} lb a week, 4-week fit</span>{% endif %}</div></div>{{ sparks.weight|safe }}</summary>
     <div class="verdict">
