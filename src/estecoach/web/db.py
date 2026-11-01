@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS e1rm (
 CREATE TABLE IF NOT EXISTS lift_set (
   date TEXT, exercise TEXT, set_idx INT, weight_lb REAL, reps INT, rpe REAL, set_type TEXT);
 CREATE INDEX IF NOT EXISTS idx_lift_set ON lift_set(exercise, date);
+-- By day too: grading every session looks up each day's exercises and its main lifts, and
+-- without this each lookup scanned the whole table (1 Nov 2026: the server stopped
+-- answering for minutes while it graded ~1,100 sessions after a restart).
+CREATE INDEX IF NOT EXISTS idx_lift_set_date ON lift_set(date);
 
 -- ---- authored state (the part no sensor can produce)
 CREATE TABLE IF NOT EXISTS workout (
