@@ -12,13 +12,12 @@
   <h2>Sign-up requests</h2>
   {% if not rows %}<p class="muted">None yet.</p>{% else %}
   <table class="reqs">
-    <tr><th>When</th><th>Who</th><th>Phone</th><th>Lifts</th><th>Food</th><th>Note</th><th></th></tr>
+    <tr><th>When</th><th>Who</th><th>Tracks today</th><th></th></tr>
     {% for r in rows %}
     <tr class="{{ 'seen' if r.reviewed_at }}">
       <td>{{ r.at[:16]|replace("T", " ") }}</td>
       <td><b>{{ r.name }}</b><br><a href="mailto:{{ r.email }}">{{ r.email }}</a></td>
-      <td>{{ r.phone or "–" }}</td><td>{{ r.tracker or "–" }}</td><td>{{ "Cronometer" if r.cronometer else "–" }}</td>
-      <td>{{ r.note or "" }}</td>
+      <td>{{ r.tracks or "" }}</td>
       <td>{% if r.reviewed_at %}reviewed{% else %}<form method="post" action="/signups/{{ r.id }}/reviewed"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="chip">Mark reviewed</button></form>{% endif %}</td>
     </tr>
     {% endfor %}

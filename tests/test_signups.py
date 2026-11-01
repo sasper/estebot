@@ -32,8 +32,7 @@ def _post(main, form, ip="203.0.113.7"):
     return asyncio.run(main.signup_submit(r))
 
 
-GOOD = {"name": "Ada Lift", "email": "ada@example.com", "phone": "iPhone", "tracker": "Hevy",
-        "cronometer": "yes", "note": "Training for a meet"}
+GOOD = {"name": "Ada Lift", "email": "ada@example.com", "tracks": "Lifts in Hevy"}
 
 
 def test_a_request_is_kept_and_its_details_never_reach_the_log(main, store, caplog):
@@ -41,7 +40,8 @@ def test_a_request_is_kept_and_its_details_never_reach_the_log(main, store, capl
         r = _post(main, GOOD)
     assert r.status_code == 200 and "Thanks, Ada." in r.body.decode()
     (row,) = signups.listing()
-    assert (row["email"], row["tracker"], row["cronometer"]) == ("ada@example.com", "Hevy", 1)
+    assert (row["email"], row["tracks"]) == ("ada@example.com", "Lifts in Hevy")
+    assert set(row) == {"id", "at", "name", "email", "tracks", "reviewed_at"}      # nothing else is kept
     assert "ada@example.com" not in caplog.text and "Ada" not in caplog.text
 
 
@@ -81,3 +81,14 @@ def test_the_demo_never_keeps_requests_in_its_own_folder(store):
     # Requests sit in $ESTECOACH_SIGNUPS (the volume), not the demo's folder, which is
     # deleted and written again at every machine start.
     assert signups.path() == store / "signups.sqlite"
+
+
+
+def test_the_form_asks_for_no_health_details_and_says_where_it_goes(main):
+    req = Request({"type": "http", "method": "GET", "path": "/signup", "query_string": b"", "headers": []})
+    html = main.signup_form(req).body.decode()
+    names = set(__import__("re").findall(r'<(?:input|textarea|select)[^>]*\bname="(\w+)"', html))
+    assert names == {"name", "email", "tracks", "website"}                 # website is the bot trap
+    assert "Comes to me. Not shared, not sold." in html and 'href="/privacy"' in html
+    page = main.privacy(Request({"type": "http", "method": "GET", "path": "/privacy", "query_string": b"", "headers": []}))
+    assert page.status_code == 200 and "isn't shared, sold" in page.body.decode()

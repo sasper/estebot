@@ -430,7 +430,7 @@ def _reviews_signups(p):
 
 
 def _signup_page(request, status=200, **kw):
-    ctx = dict(phones=signups.PHONES, trackers=signups.TRACKERS, form={}, error=None, done=None)
+    ctx = dict(form={}, error=None, done=None)
     ctx.update(kw)
     return tpl.TemplateResponse(request, "signup.html", ctx, status_code=status)
 
@@ -457,6 +457,11 @@ async def signup_submit(request: Request):
     signups.save(row)
     log.warning("sign-up request saved")          # no name or email in the log
     return _signup_page(request, done=row["name"].split()[0])
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+def privacy(request: Request):
+    return tpl.TemplateResponse(request, "privacy.html", {})
 
 
 @app.get("/signups", response_class=HTMLResponse)

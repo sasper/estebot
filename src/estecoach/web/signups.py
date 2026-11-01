@@ -10,9 +10,9 @@ from pathlib import Path
 
 from estecoach import config
 
-PHONES = ("iPhone", "Android")
-TRACKERS = ("Hevy", "Jefit", "Another app", "I don't log lifts yet")
-LIMITS = {"name": 80, "email": 120, "note": 600}
+# Name, email and one optional answer. No health details: a sign-up list is not a place for
+# them, and asking for none keeps it a plain contact list.
+LIMITS = {"name": 80, "email": 120, "tracks": 300}
 PER_HOUR = 5                       # requests from one address; a person needs one
 _EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 _recent = {}                       # address -> times of its recent requests, this process only
@@ -33,7 +33,7 @@ def connect():
     con.row_factory = sqlite3.Row
     con.execute("""CREATE TABLE IF NOT EXISTS signup (
         id INTEGER PRIMARY KEY, at TEXT NOT NULL, name TEXT NOT NULL, email TEXT NOT NULL,
-        phone TEXT, tracker TEXT, cronometer INT, note TEXT, reviewed_at TEXT)""")
+        tracks TEXT, reviewed_at TEXT)""")
     return con
 
 
@@ -45,11 +45,8 @@ def clean(form):
         raise Invalid("Add your name.")
     if not _EMAIL.fullmatch(email):
         raise Invalid("That email doesn't look right.")
-    phone = form.get("phone") if form.get("phone") in PHONES else None
-    tracker = form.get("tracker") if form.get("tracker") in TRACKERS else None
-    return {"name": name, "email": email, "phone": phone, "tracker": tracker,
-            "cronometer": 1 if form.get("cronometer") == "yes" else 0,
-            "note": (form.get("note") or "").strip()[:LIMITS["note"]] or None}
+    return {"name": name, "email": email,
+            "tracks": (form.get("tracks") or "").strip()[:LIMITS["tracks"]] or None}
 
 
 def allowed(address, now=None):
@@ -65,10 +62,8 @@ def allowed(address, now=None):
 
 def save(row):
     with connect() as con:
-        con.execute("INSERT INTO signup (at, name, email, phone, tracker, cronometer, note) "
-                    "VALUES (?,?,?,?,?,?,?)",
-                    (datetime.now().isoformat(timespec="seconds"), row["name"], row["email"],
-                     row["phone"], row["tracker"], row["cronometer"], row["note"]))
+        con.execute("INSERT INTO signup (at, name, email, tracks) VALUES (?,?,?,?)",
+                    (datetime.now().isoformat(timespec="seconds"), row["name"], row["email"], row["tracks"]))
 
 
 def listing():

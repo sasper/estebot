@@ -28,15 +28,11 @@
     <input type="text" id="name" name="name" maxlength="80" required value="{{ form.name or '' }}" autocomplete="name">
     <label for="email">Email</label>
     <input type="email" id="email" name="email" maxlength="120" required value="{{ form.email or '' }}" autocomplete="email">
-    <label>Your phone</label>
-    <div class="seg">{% for v in phones %}<label><input type="radio" name="phone" value="{{ v }}"{{ " checked" if form.phone == v }}><span>{{ v }}</span></label>{% endfor %}</div>
-    <label>Where you log your lifts</label>
-    <div class="seg">{% for v in trackers %}<label><input type="radio" name="tracker" value="{{ v }}"{{ " checked" if form.tracker == v }}><span>{{ v }}</span></label>{% endfor %}</div>
-    <label class="flag"><input type="checkbox" name="cronometer" value="yes"{{ " checked" if form.cronometer == "yes" }}><span>I log food in Cronometer</span></label>
-    <label for="note">Anything we should know? <span class="muted" style="font-weight:400">(optional)</span></label>
-    <textarea id="note" name="note" maxlength="600" placeholder="What you're training for, how often you lift">{{ form.note or '' }}</textarea>
+    <label for="tracks">What do you track today? <span class="muted" style="font-weight:400">(optional)</span></label>
+    <input type="text" id="tracks" name="tracks" maxlength="300" value="{{ form.tracks or '' }}" placeholder="For example: lifts in Hevy, food in Cronometer">
     {# Left empty by people; filled in by form-filling bots, whose requests are dropped. #}
     <div class="hp" aria-hidden="true"><label for="website">Website</label><input type="text" id="website" name="website" tabindex="-1" autocomplete="off"></div>
+    <p class="small muted" style="margin:18px 0 0">Comes to me. Not shared, not sold. <a href="/privacy">Privacy note</a></p>
     <button type="submit" class="intro-btn" style="border:0;cursor:pointer;font:inherit;font-weight:650">Request access</button>
   </form>
   {% endif %}
