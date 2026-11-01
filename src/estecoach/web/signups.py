@@ -31,6 +31,9 @@ PER_HOUR = 5                       # requests from one address; a person needs o
 _EMAIL = re.compile(r"[^@\s]{1,64}@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 _recent = {}                       # address -> times of its recent requests, this process only
 log = logging.getLogger("estecoach")
+# Resend sits behind Cloudflare, which refuses Python's own User-Agent (error 1010, a 403)
+# before the key is even read: the first live sign-up's email failed that way.
+USER_AGENT = "estecoach/1 (+https://estecoach.app)"
 
 
 class Invalid(ValueError):
@@ -141,12 +144,13 @@ def _send(subject, text):
     if os.environ.get("RESEND_API_KEY"):
         req = urllib.request.Request("https://api.resend.com/emails", method="POST",
             data=json.dumps({"from": sender, "to": [to], "subject": subject, "text": text}).encode(),
-            headers={"Authorization": f"Bearer {os.environ['RESEND_API_KEY']}", "Content-Type": "application/json"})
+            headers={"Authorization": f"Bearer {os.environ['RESEND_API_KEY']}", "Content-Type": "application/json",
+                     "User-Agent": USER_AGENT})
     elif os.environ.get("POSTMARK_TOKEN"):
         req = urllib.request.Request("https://api.postmarkapp.com/email", method="POST",
             data=json.dumps({"From": sender, "To": to, "Subject": subject, "TextBody": text}).encode(),
             headers={"X-Postmark-Server-Token": os.environ["POSTMARK_TOKEN"],
-                     "Content-Type": "application/json", "Accept": "application/json"})
+                     "Content-Type": "application/json", "Accept": "application/json", "User-Agent": USER_AGENT})
     else:
         return "no email key"
     with urllib.request.urlopen(req, timeout=15) as r:
@@ -162,6 +166,6 @@ def notify(row, new):
                         f"{row['name'] or '(no name)'} <{row['email']}>\nTracks: {row['tracks'] or '-'}\n\n"
                         f"{row['note'] or ''}\n\nAll requests: /admin/signups")
         except Exception as e:                     # never let a notification break a sign-up
-            how = f"email failed: {type(e).__name__}"
+            how = f"email failed: {type(e).__name__}" + (f" {e.code}" if hasattr(e, "code") else "")
         log.warning("sign-up %s (%s)", what, how)    # no name or address in the log
     threading.Thread(target=run, daemon=True).start()

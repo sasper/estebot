@@ -137,3 +137,21 @@ def test_the_hero_shows_a_training_day_with_a_mix_of_signals(monkeypatch):
     assert landing.pick_day(None, {}, "2026-11-01") == "2026-10-20"      # as planned beats take it easy
     calls.pop("2026-10-29"); calls.pop("2026-10-20")
     assert landing.pick_day(None, {}, "2026-11-01") == "2026-10-30"      # one flagged is the fallback
+
+
+def test_the_owner_email_names_its_user_agent(monkeypatch):
+    # 1 Nov 2026: Cloudflare in front of Resend turned away the first live notification
+    # (403, error 1010) because urllib's default User-Agent is on its block list.
+    sent = []
+    class Reply:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+    monkeypatch.setattr(signups.urllib.request, "urlopen", lambda req, timeout: sent.append(req) or Reply())
+    monkeypatch.setenv("ESTECOACH_NOTIFY_TO", "me@example.com")
+    monkeypatch.setenv("ESTECOACH_NOTIFY_FROM", "EsteCoach <signups@example.com>")
+    for key in ("RESEND_API_KEY", "POSTMARK_TOKEN"):
+        monkeypatch.delenv("RESEND_API_KEY", raising=False); monkeypatch.delenv("POSTMARK_TOKEN", raising=False)
+        monkeypatch.setenv(key, "x")
+        assert signups._send("s", "t") == "sent (200)"
+    assert [r.get_header("User-agent") for r in sent] == [signups.USER_AGENT] * 2
