@@ -189,3 +189,32 @@ session type, both from data already there.
    against the 30 before. "Lately vs before" blurs it.
 9. **Status for no reading:** "No concern / Watch / Concern" needs a fourth word for no data.
    "No reading yet" fits.
+
+## Phase 3: decided (starts after Tuesday's post)
+
+Pain-or-injury check-in in place of the back level. Recorded here so the decisions don't
+live only in a chat.
+
+- **No rucking clause.** Non-lifting sessions aren't planned (section 6), so the rules only
+  look at the planned lifting session.
+- **Back is used** when any planned exercise has `AXIAL` 2 or more (`engine.py:647`). Other
+  areas map from `lift_session.muscle_groups` through one config file the owner can edit.
+- **Migration of existing back levels:** ok → none, tired → 1, sore → 2, spasm → 3. A
+  spasm-to-severity-3 day stays a rest day, so historical calls don't change.
+- **Back severity by level (confirmed 1 Nov 2026):**
+  - **1 (was "tired")**: a note only. No load change, scored normally, and still counts as
+    fine for the check-in reason to go hard.
+  - **2 or worse, on a day with any planned lift at AXIAL 2 or more**: the 60% load rule
+    (`core.DELOAD_BACK`), and the day isn't scored, as now.
+  - **2, on a day with no such lifts**: a note. The plan loads normally.
+  - **3**: rest.
+
+  Today a "tired" back triggers the 60% load and an unscored day (`BACK_FLAGGED`,
+  `engine.py:863`). Phase 3 drops that.
+
+## Open decisions
+
+- **Scoring take-it-easy days.** From 2 Nov 2026 they use lighter targets and aren't scored
+  (section 4), so the recorded take-it-easy row stops growing. Proposed: score them against
+  their lighter targets as a separate "finished the lighter plan" measure, kept out of the
+  evidence for votes. After Tuesday's post.
