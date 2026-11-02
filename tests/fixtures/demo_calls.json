@@ -1,0 +1,7606 @@
+[
+{
+"day": "2025-10-25",
+"verdict": "normal",
+"score": 50,
+"levels": {
+"load": null,
+"effort": null,
+"sleep": null,
+"recovery": null,
+"feel": null,
+"nutrition": null,
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-10-26",
+"verdict": "normal",
+"score": 53,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": null,
+"feel": null,
+"nutrition": null,
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-10-27",
+"verdict": "normal",
+"score": 57,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": null,
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-10-28",
+"verdict": "normal",
+"score": 60,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": null,
+"feel": "green",
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-10-29",
+"verdict": "normal",
+"score": 57,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": null,
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-10-30",
+"verdict": "normal",
+"score": 57,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": null,
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-10-31",
+"verdict": "normal",
+"score": 57,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": null,
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-01",
+"verdict": "normal",
+"score": 57,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": null,
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-02",
+"verdict": "normal",
+"score": 60,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": null,
+"feel": "green",
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-03",
+"verdict": "normal",
+"score": 57,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": null,
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-04",
+"verdict": "normal",
+"score": 55,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": null,
+"feel": null,
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-05",
+"verdict": "normal",
+"score": 59,
+"levels": {
+"load": "red",
+"effort": null,
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-06",
+"verdict": "normal",
+"score": 60,
+"levels": {
+"load": "red",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "red",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-07",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "red",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-08",
+"verdict": "normal",
+"score": 62,
+"levels": {
+"load": "red",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-09",
+"verdict": "normal",
+"score": 62,
+"levels": {
+"load": "red",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-10",
+"verdict": "normal",
+"score": 62,
+"levels": {
+"load": "red",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-11",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "red",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-12",
+"verdict": "normal",
+"score": 62,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-13",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-14",
+"verdict": "normal",
+"score": 62,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": null,
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-15",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-16",
+"verdict": "normal",
+"score": 62,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": null,
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-17",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "amber",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-18",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-19",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "amber",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-20",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-21",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-22",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-23",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-24",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-25",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-26",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-27",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-28",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-29",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-11-30",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": null
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-01",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-02",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-03",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-04",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "amber",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-05",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-06",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-07",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": "red",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-08",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": "red",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-09",
+"verdict": "light",
+"score": 39,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-10",
+"verdict": "light",
+"score": 37,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": null,
+"pace": "green"
+},
+"voting": [],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-11",
+"verdict": "normal",
+"score": 62,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": null,
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-12",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-13",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-14",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-15",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-16",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-17",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-18",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-19",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-20",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-21",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-22",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-23",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-24",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-25",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-26",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-27",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-28",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-29",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-30",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2025-12-31",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-01",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-02",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-03",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-04",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-05",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-06",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-07",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-08",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-09",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-10",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-11",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-12",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-13",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-14",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-15",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-16",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-17",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-18",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-19",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-20",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-21",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-22",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-23",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-24",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-25",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-26",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-27",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-28",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-29",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-30",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-01-31",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-01",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-02",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-03",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-04",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-05",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-06",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-07",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-08",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-09",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-10",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-11",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-12",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-13",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-14",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-15",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-16",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-17",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-18",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-19",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-20",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-21",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-22",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-23",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-24",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-25",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-26",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-27",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-02-28",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-01",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-02",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-03",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-04",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-05",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "red",
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-06",
+"verdict": "light",
+"score": 37,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": "red",
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-07",
+"verdict": "light",
+"score": 35,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "red",
+"feel": null,
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-08",
+"verdict": "light",
+"score": 37,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "red",
+"feel": "amber",
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-09",
+"verdict": "normal",
+"score": 60,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-10",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-11",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-12",
+"verdict": "normal",
+"score": 64,
+"levels": {
+"load": "amber",
+"effort": "amber",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-13",
+"verdict": "normal",
+"score": 65,
+"levels": {
+"load": "amber",
+"effort": "amber",
+"sleep": "green",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-14",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-15",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-16",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-17",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-18",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-19",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-20",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-21",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-22",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-23",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-24",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-25",
+"verdict": "normal",
+"score": 74,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-26",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-27",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-28",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-29",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-30",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-03-31",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-01",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-02",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-03",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-04",
+"verdict": "light",
+"score": 44,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-05",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-06",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-07",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-08",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-09",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-10",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-11",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "amber",
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-12",
+"verdict": "hard",
+"score": 96,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-04-13",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-14",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-04-15",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-16",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-17",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-18",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-19",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-04-20",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-21",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-04-22",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-23",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-24",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-25",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-26",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-27",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-28",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-04-29",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-04-30",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-01",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-05-02",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-03",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-04",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-05-05",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-06",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-07",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-08",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-09",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-10",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-05-11",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-12",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-13",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-14",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-15",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-16",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-17",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-18",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-19",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-20",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-21",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-22",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-23",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-05-24",
+"verdict": "rest",
+"score": 19,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "red",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"injured today"
+],
+"rest": true,
+"positive": null
+},
+{
+"day": "2026-05-25",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"injured today"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-26",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"injured yesterday, and no clean check-in today"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-27",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-28",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-29",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-30",
+"verdict": "light",
+"score": 39,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-05-31",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-01",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-02",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-03",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-04",
+"verdict": "light",
+"score": 44,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-05",
+"verdict": "light",
+"score": 44,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-06-06",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-07",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-08",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-09",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-10",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-11",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-12",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-06-13",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-14",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-15",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-16",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-17",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-06-18",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-19",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-20",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-21",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-06-22",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-06-23",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-24",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-25",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-26",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-27",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-28",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-06-29",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-06-30",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-01",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-02",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-03",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-04",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-07-05",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-06",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-07",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-08",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-09",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-07-10",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-11",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-12",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-13",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-14",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-15",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-16",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-17",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-18",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-19",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-20",
+"verdict": "light",
+"score": 44,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-07-21",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-22",
+"verdict": "rest",
+"score": 15,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": "red",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-23",
+"verdict": "rest",
+"score": 14,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-24",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-25",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-07-26",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-07-27",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-28",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-29",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-30",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-07-31",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-01",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-08-02",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-08-03",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-04",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-05",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-08-06",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-07",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-08",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-09",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-08-10",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-08-11",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-12",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-13",
+"verdict": "rest",
+"score": 21,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "red",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"injured today"
+],
+"rest": true,
+"positive": null
+},
+{
+"day": "2026-08-14",
+"verdict": "light",
+"score": 49,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"injured yesterday, and no clean check-in today"
+],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-08-15",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-16",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-08-17",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-18",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-19",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-20",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-21",
+"verdict": "light",
+"score": 44,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-22",
+"verdict": "light",
+"score": 44,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-23",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-24",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-25",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-26",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-27",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-28",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-29",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-30",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-08-31",
+"verdict": "normal",
+"score": 72,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-01",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-02",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-03",
+"verdict": "hard",
+"score": 98,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-09-04",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-05",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-09-06",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-07",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-08",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-09",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-10",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-11",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-12",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-13",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-14",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-15",
+"verdict": "hard",
+"score": 96,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-09-16",
+"verdict": "normal",
+"score": 67,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-17",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-18",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-19",
+"verdict": "light",
+"score": 44,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "amber",
+"recovery": "amber",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-09-20",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-21",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-22",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-23",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-24",
+"verdict": "light",
+"score": 42,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-25",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-09-26",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-27",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-28",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-29",
+"verdict": "rest",
+"score": 17,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": "red",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-09-30",
+"verdict": "rest",
+"score": 15,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "red",
+"recovery": "green",
+"feel": "red",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-01",
+"verdict": "rest",
+"score": 12,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "red",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-02",
+"verdict": "rest",
+"score": 9,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "red",
+"recovery": "red",
+"feel": null,
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [
+"sick today or yesterday"
+],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-03",
+"verdict": "light",
+"score": 35,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": null,
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-04",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-05",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-06",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "amber",
+"effort": "green",
+"sleep": "green",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-07",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-08",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-09",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-10",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-10-11",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-12",
+"verdict": "normal",
+"score": 71,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-13",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-14",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "amber",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-15",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-10-16",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-17",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-18",
+"verdict": "light",
+"score": 46,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": "amber",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-19",
+"verdict": "light",
+"score": 40,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "red",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-20",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-21",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "amber",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-22",
+"verdict": "hard",
+"score": 98,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+},
+{
+"day": "2026-10-23",
+"verdict": "normal",
+"score": 69,
+"levels": {
+"load": "green",
+"effort": "amber",
+"sleep": "green",
+"recovery": "green",
+"feel": null,
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": null
+},
+{
+"day": "2026-10-24",
+"verdict": "hard",
+"score": 100,
+"levels": {
+"load": "green",
+"effort": "green",
+"sleep": "green",
+"recovery": "green",
+"feel": "green",
+"nutrition": "green",
+"pace": "green"
+},
+"voting": [
+"sleep",
+"recovery",
+"feel"
+],
+"holds": [],
+"rest": false,
+"positive": "you checked in this morning with energy 3/3"
+}
+]

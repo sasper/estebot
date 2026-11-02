@@ -613,3 +613,52 @@ html{scroll-behavior:smooth}
 /* The calendar is a tile, but a closed one keeps the full row: half a row is too narrow for it. */
 @container (min-width:640px){ .trends > .tile.caltile:not([open]){grid-column:1/-1} }
 .caltile .calhead-row{justify-content:flex-end}
+/* Why today's call: the rule as a ladder, today's rung lit. */
+.whycall .charttitle{margin:20px 0 8px}
+.whycall .charttitle:first-of-type{margin-top:4px}
+.rungs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;counter-reset:rung}
+.rungs li{counter-increment:rung;display:grid;grid-template-columns:22px 120px 1fr;gap:4px 10px;align-items:baseline;
+  padding:9px 12px;border:1px solid var(--line);border-radius:10px;color:var(--text-secondary);font-size:14px}
+.rungs li::before{content:counter(rung);color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
+.rungs li b{color:var(--text-primary);font-weight:600}
+.rungs li.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--text-primary)}
+.rungs li.on b{color:var(--accent)}
+@media(max-width:560px){ .rungs li{grid-template-columns:18px 1fr} .rungs li span{grid-column:2} }
+table.evidence .small{font-size:12.5px}
+/* Why today's call */
+.whycall .why-verdict{font-size:17px;line-height:1.45;margin:2px 0 6px;color:var(--text-primary)}
+.whycall .charttitle .muted{font-weight:400;margin-left:6px}
+.sigs{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+@container (min-width:620px){ .sigs{grid-template-columns:1fr 1fr} }
+.sig{border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.sig-head{display:flex;align-items:center;gap:8px}
+.sig-head .dot{width:9px;height:9px;border-radius:50%;background:var(--lv);flex:none}
+.sig-name{font-weight:600}
+.sig-head .info{margin:0}
+.sig-status{margin-left:auto;font-size:13px;font-weight:600;color:var(--lv)}
+.sig.lv-green .sig-status,.sig.lv-none .sig-status{color:var(--text-muted)}
+.sig-today{margin:6px 0 0;font-size:14px;color:var(--text-secondary)}
+.sig-effect{margin:4px 0 0;font-size:13.5px;color:var(--text-primary)}
+table.plain td,table.plain th{padding:7px 12px 7px 0;text-align:left;vertical-align:top;font-size:14px}
+table.plain th{font-size:12px;color:var(--text-muted);font-weight:600}
+.whycall details.numbers{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+.whycall details.numbers > summary{cursor:pointer;font-weight:600;color:var(--accent);list-style:none}
+.whycall details.numbers > summary::-webkit-details-marker{display:none}
+.whycall details.numbers > summary::before{content:"\203A";display:inline-block;margin-right:8px;transition:transform .15s}
+.whycall details.numbers[open] > summary::before{transform:rotate(90deg)}
+.sig-head{position:relative} .sig .tip{display:inline-block}
+.sig .tip > summary{list-style:none;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);
+  font-size:11px;line-height:16px;text-align:center;color:var(--text-muted);cursor:pointer}
+.sig .tip > summary::-webkit-details-marker{display:none}
+.sig .tip > p{position:absolute;z-index:5;left:0;right:0;top:calc(100% + 6px);margin:0;padding:8px 10px;
+  font-size:13px;line-height:1.4;border:1px solid var(--line);border-radius:8px;background:var(--surface-1);color:var(--text-primary)}
+.sig-status{white-space:nowrap} .sig-name{min-width:0}
+/* The numbers tables stack on a phone: one card per row, each cell under its column name. */
+@media (max-width:600px){
+  table.evidence.stack,table.evidence.stack tbody,table.evidence.stack tr,table.evidence.stack td{display:block;width:auto}
+  table.evidence.stack tr:first-child{display:none}
+  table.evidence.stack tr{border-top:1px solid var(--line);padding:10px 0}
+  table.evidence.stack td{border:0;padding:2px 0}
+  table.evidence.stack td:first-child{font-weight:600}
+  table.evidence.stack td[data-l]::before{content:attr(data-l) ": ";color:var(--text-muted)}
+}

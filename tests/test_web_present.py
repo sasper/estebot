@@ -63,17 +63,13 @@ def test_the_cookie_keeps_presentation_mode_on_until_it_is_turned_off(main):
     assert DOSE_NOTE in shown and "present=0" in cookie
 
 
-def test_private_predictions_are_dropped_and_back_status_leaves_the_feel_signal(main):
+def test_back_status_leaves_the_feel_signal(main):
     ctx = {"r": {"signals": [{"area": "feel", "level": "amber", "reasons": ["back sore today"]},
                              {"area": "sleep", "level": "green", "reasons": ["7.5 h asleep"]}]},
            "checkin": None, "plan": None, "calendar": [], "notes": [],
            "nut": {"supplements": ["Fish oil"], "gaps": [{"nutrient": "Iron", "note": "x"}],
-                   "near_limit": [{"nutrient": "Zinc"}]},
-           "preds": [{"id": "P-1", "title": "Strength holds through the cut"},
-                     {"id": "P-2", "title": "A personal claim", "private": True},
-                     {"id": "P-3", "title": "HRV rises", "private": False}]}
+                   "near_limit": [{"nutrient": "Zinc"}]}}
     c = main.presentable(ctx)
-    assert [p["id"] for p in c["preds"]] == ["P-1", "P-3"]
     assert c["r"]["signals"][0]["reasons"] == ["from the daily check-in"]
     assert c["r"]["signals"][1]["reasons"] == ["7.5 h asleep"]
     assert c["nut"]["supplements"] == [] and c["nut"]["near_limit"] == []
@@ -520,3 +516,17 @@ def test_a_future_day_does_not_say_looking_back(main):
     ahead = (date.today() + timedelta(days=1)).isoformat()
     html = main.today(req, ahead, None).body.decode()
     assert "Ahead, from what&#39;s logged so far" in html and "Looking back" not in html
+
+
+def test_why_today_s_call_reads_plainly_until_the_numbers_are_asked_for(main):
+    # 1 Nov 2026: the panel read like a stats readout. The default view has no jargon; the
+    # ranges and the engine's own lines sit behind "Show the numbers".
+    import re
+    html = today_page(main)
+    tile = html.split('data-tile="evidence"')[1].split("</details>\n  </details>")[0]
+    default, numbers = tile.split('<details class="numbers">')
+    text = __import__("html").unescape(re.sub(r"<[^>]+>", " ", default))
+    assert "Why today's call" in text and "First match wins." in text and "Show the numbers" not in text
+    assert not re.search(r"\b(RPE|votes?|flagged|pts|kcal|context|earned)\b", text, re.I), text
+    assert "Show the numbers" in numbers and "pts" in numbers
+    assert 'data-tile="predictions"' not in html
