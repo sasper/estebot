@@ -75,8 +75,7 @@
       <fieldset><legend>Lower back</legend>
         <div class="seg">{% for v in back_levels %}<label><input type="radio" name="back" value="{{ v }}"{{ " checked" if ci.back_reported and ci.back == v }}><span>{{ v }}</span></label>{% endfor %}</div>
       </fieldset>
-      {% for name, label, words in [("energy", "Energy", ["wiped", "low", "ok", "great"]),
-                                    ("inter_set_recovery", "Recovery between sets", ["very slow", "slow", "ok", "normal"])] %}
+      {% for name, label, words in [("energy", "Energy", ["wiped", "low", "ok", "great"])] %}
       <fieldset><legend>{{ label }}</legend>
         <div class="seg">{% for v in [0, 1, 2, 3] %}<label><input type="radio" name="{{ name }}" value="{{ v }}"{{ " checked" if ci[name] == v }}><span>{{ words[v] }}</span></label>{% endfor %}</div>
       </fieldset>
@@ -213,7 +212,6 @@
     {% set parts = [] %}
     {% if checkin.back_reported %}{% set _ = parts.append("back " ~ checkin.back) %}{% endif %}
     {% if checkin.energy is not none %}{% set _ = parts.append("energy " ~ checkin.energy ~ "/3") %}{% endif %}
-    {% if checkin.inter_set_recovery is not none %}{% set _ = parts.append("recovery between sets " ~ checkin.inter_set_recovery ~ "/3") %}{% endif %}
     {% if checkin.sick %}{% set _ = parts.append("sick") %}{% endif %}
     {% if checkin.injured %}{% set _ = parts.append("injured") %}{% endif %}
     {% if parts or checkin.note %}

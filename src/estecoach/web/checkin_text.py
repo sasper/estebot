@@ -1,7 +1,7 @@
 """A check-in said in a sentence, read onto the tap card's own choices.
 
 Self-report is the input the research backs most for readiness, and the one with the
-fewest days in the data: tapping four questions every morning doesn't happen. Writing
+fewest days in the data: tapping through questions every morning doesn't happen. Writing
 "slept badly, back tight, busy day" does. The model only picks, for each question, which
 of the tap card's words the sentence says ("not said" when it doesn't); it produces no
 number. What it picks is kept as a draft that prefills the tap card, and nothing counts
@@ -17,7 +17,6 @@ from estecoach.web import chat
 
 # The tap card's words, in order of the values it saves (0-3); back's are its levels.
 ENERGY = ("wiped", "low", "ok", "great")
-RECOVERY = ("very slow", "slow", "ok", "normal")
 BACK = ("ok", "tired", "sore", "spasm")
 NOT_SAID = "not said"
 MAX_CHARS = 400
@@ -35,12 +34,10 @@ SCHEMA = {
                  "description": "Lower back: ok, tired, sore, or spasm"},
         "energy": {"type": "string", "enum": [NOT_SAID, *ENERGY],
                    "description": "Overall energy today"},
-        "inter_set_recovery": {"type": "string", "enum": [NOT_SAID, *RECOVERY],
-                               "description": "How well they recovered between sets in their last session"},
         "sick": {"type": "boolean"},
         "injured": {"type": "boolean"},
     },
-    "required": ["back", "energy", "inter_set_recovery", "sick", "injured"],
+    "required": ["back", "energy", "sick", "injured"],
     "additionalProperties": False,
 }
 
@@ -55,7 +52,6 @@ def to_fields(picked):
     back = picked.get("back")
     return {"back": back if back in BACK else None,
             "energy": pick(ENERGY, "energy"),
-            "inter_set_recovery": pick(RECOVERY, "inter_set_recovery"),
             "sick": bool(picked.get("sick")), "injured": bool(picked.get("injured"))}
 
 

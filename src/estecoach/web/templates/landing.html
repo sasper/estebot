@@ -51,7 +51,7 @@
       <li class="land-panel"><span class="land-num">1</span><h3>{{ icon("connect") }}Connect what you already use</h3>
         <p>Apple Health for sleep, HRV, resting heart rate and weight. Hevy for lifting. Cronometer for food. Pulled in automatically.</p></li>
       <li class="land-panel"><span class="land-num">2</span><h3>{{ icon("checkin") }}Check in, get one call</h3>
-        <p>4 taps after you wake up. Then one call: go hard, go as planned, take it easy, or rest, with the reasons written out.</p></li>
+        <p>A couple of taps after you wake up. Then one call: go hard, go as planned, take it easy, or rest, with the reasons written out.</p></li>
       <li class="land-panel"><span class="land-num">3</span><h3>{{ icon("session") }}Open Hevy and lift</h3>
         <p>Your coach has already picked today's training. Your Hevy routine is updated from your own signals, with a target for every exercise.</p></li>
     </ol>
@@ -79,7 +79,7 @@
         <section class="card tapcheck"><div class="taphead"><h2>Check-in</h2><span class="small muted">read from what you wrote, check and save</span></div>
           <div class="tapsay"><input readonly tabindex="-1" value="Slept great, back is fine, legs fresh"><button type="button" tabindex="-1">Read it</button></div>
           <div class="tap">
-          {% for label, words, pick in [("Lower back", ["ok", "tired", "sore", "spasm"], 0), ("Energy", ["wiped", "low", "ok", "great"], 3), ("Recovery between sets", ["very slow", "slow", "ok", "normal"], 3)] %}
+          {% for label, words, pick in [("Lower back", ["ok", "tired", "sore", "spasm"], 0), ("Energy", ["wiped", "low", "ok", "great"], 3)] %}
           <fieldset><legend>{{ label }}</legend><div class="seg">{% for w in words %}<label><input type="radio" disabled{{ " checked" if loop.index0 == pick }}><span>{{ w }}</span></label>{% endfor %}</div></fieldset>
           {% endfor %}
           <div class="tapfoot"><label class="flag"><input type="checkbox" tabindex="-1"><span>Sick</span></label>

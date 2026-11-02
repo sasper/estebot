@@ -1362,13 +1362,13 @@
 {
 "day": "2026-01-07",
 "verdict": "normal",
-"score": 72,
+"score": 71,
 "levels": {
 "load": "green",
 "effort": "green",
 "sleep": "green",
 "recovery": "green",
-"feel": "amber",
+"feel": null,
 "nutrition": "green",
 "pace": "green"
 },
@@ -3141,8 +3141,7 @@
 "pace": "green"
 },
 "voting": [
-"sleep",
-"feel"
+"sleep"
 ],
 "holds": [],
 "rest": false,
@@ -3162,8 +3161,7 @@
 "pace": "green"
 },
 "voting": [
-"sleep",
-"feel"
+"sleep"
 ],
 "holds": [],
 "rest": false,
@@ -3183,8 +3181,7 @@
 "pace": "green"
 },
 "voting": [
-"sleep",
-"feel"
+"sleep"
 ],
 "holds": [],
 "rest": false,
@@ -3204,8 +3201,7 @@
 "pace": "green"
 },
 "voting": [
-"sleep",
-"feel"
+"sleep"
 ],
 "holds": [],
 "rest": false,
@@ -3225,8 +3221,7 @@
 "pace": "green"
 },
 "voting": [
-"sleep",
-"feel"
+"sleep"
 ],
 "holds": [],
 "rest": false,
@@ -3246,8 +3241,7 @@
 "pace": "green"
 },
 "voting": [
-"sleep",
-"feel"
+"sleep"
 ],
 "holds": [],
 "rest": false,
@@ -3267,8 +3261,7 @@
 "pace": "green"
 },
 "voting": [
-"sleep",
-"feel"
+"sleep"
 ],
 "holds": [],
 "rest": false,

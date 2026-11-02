@@ -23,10 +23,10 @@ def test_the_model_picks_the_cards_words_and_never_a_number(con):
     # Rule 2: no model produces a figure that gets acted on. The schema offers only the tap
     # card's words, and "not said" leaves a question unanswered, as an untapped one is.
     from estecoach.web import checkin_text
-    fake = FakeClaude({"back": "sore", "energy": "low", "inter_set_recovery": "not said",
+    fake = FakeClaude({"back": "sore", "energy": "low",
                        "sick": False, "injured": False})
     f = checkin_text.read(con, "slept badly, back tight, busy day", TODAY, client=fake)
-    assert f == {"back": "sore", "energy": 1, "inter_set_recovery": None, "sick": False, "injured": False}
+    assert f == {"back": "sore", "energy": 1, "sick": False, "injured": False}
     schema = fake.requests[0]["output_config"]["format"]["schema"]["properties"]
     assert schema["energy"]["enum"] == ["not said", "wiped", "low", "ok", "great"]
     assert all(p.get("type") in ("string", "boolean") for p in schema.values())
@@ -34,7 +34,7 @@ def test_the_model_picks_the_cards_words_and_never_a_number(con):
 
 def test_reading_a_check_in_is_metered_and_capped_with_the_chat(con, monkeypatch):
     from estecoach.web import chat, checkin_text
-    picks = {"back": "not said", "energy": "great", "inter_set_recovery": "ok", "sick": False, "injured": False}
+    picks = {"back": "not said", "energy": "great", "sick": False, "injured": False}
     checkin_text.read(con, "feeling great", TODAY, client=FakeClaude(picks))
     assert chat.spent_today(con, TODAY) > 0
     monkeypatch.setenv("ESTECOACH_CHAT_DAILY_USD", "0")

@@ -90,7 +90,7 @@ def test_the_public_demo_is_read_only(main, con, monkeypatch):
     assert "present=1" not in shown          # nothing private on the demo, so no toggle
 
     assert main.set_goal(None, 150.0, "").status_code == 403
-    assert main.checkin(None, DAY, "ok", 0, 3, 3, "").status_code == 403
+    assert main.checkin(None, DAY, "ok", 0, 3, "").status_code == 403
     assert con.execute("SELECT COUNT(*) FROM setting").fetchone()[0] == 0
     assert con.execute("SELECT source FROM checkin WHERE date=?", (DAY,)).fetchone()[0] == "notes"
 
@@ -143,9 +143,9 @@ def test_every_weight_rate_on_the_page_names_its_window(main):
 TAP_NOTE = "Slept badly, legs heavy"     # invented
 
 
-def save(main, day, back=None, energy=None, recovery=None, note="", sick=False, injured=False):
+def save(main, day, back=None, energy=None, note="", sick=False, injured=False):
     # Called directly, a route's unset parameters are Form() objects, so pass every one.
-    return main.checkin(None, day, back, 0, energy, recovery, note, sick, injured)
+    return main.checkin(None, day, back, 0, energy, note, sick, injured)
 
 
 def today_page(main, query=""):
@@ -170,10 +170,10 @@ def test_the_tap_card_is_there_every_day_without_a_note(main):
 def test_a_tap_check_in_is_saved_prefilled_and_read_by_the_verdict(main, con):
     from estecoach.analysis import engine
     today = date.today().isoformat()
-    assert save(main, today, "sore", 1, 2, TAP_NOTE).status_code == 303
+    assert save(main, today, "sore", 1, TAP_NOTE).status_code == 303
     row = con.execute("SELECT * FROM checkin WHERE date=?", (today,)).fetchone()
     assert (row["source"], row["back"], row["back_reported"], row["energy"],
-            row["inter_set_recovery"], row["note"], row["sick"]) == ("manual", "sore", 1, 1, 2, TAP_NOTE, 0)
+            row["inter_set_recovery"], row["note"], row["sick"]) == ("manual", "sore", 1, 1, None, TAP_NOTE, 0)
     feel = next(x for x in engine.readiness(con, today, {})["signals"] if x["area"] == "feel")
     assert feel["level"] == "amber" and "energy 1/3 today" in feel["reasons"]
 
@@ -208,7 +208,7 @@ def test_saving_the_card_answers_a_note_that_needed_review(main, con):
     # review-only form and is prefilled from that row.
     html, _ = page(main)
     assert "Check this." in html and 'value="sore" checked' in card(html)
-    save(main, DAY, "tired", 2, 2, "")
+    save(main, DAY, "tired", 2, "")
     row = con.execute("SELECT * FROM checkin WHERE date=?", (DAY,)).fetchone()
     assert (row["source"], row["needs_review"], row["back"]) == ("manual", 0, "tired")
     assert 'id="checkin"' not in page(main)[0]   # a past day, now answered: no card
@@ -216,7 +216,7 @@ def test_saving_the_card_answers_a_note_that_needed_review(main, con):
 
 def test_presentation_and_demo_modes_leave_the_tap_card_out(main, con, monkeypatch):
     today = date.today().isoformat()
-    save(main, today, "spasm", 1, 1, TAP_NOTE, sick=True, injured=True)
+    save(main, today, "spasm", 1, TAP_NOTE, sick=True, injured=True)
     normal = today_page(main)
     assert TAP_NOTE in normal and "injured" in normal
 
@@ -227,7 +227,7 @@ def test_presentation_and_demo_modes_leave_the_tap_card_out(main, con, monkeypat
     monkeypatch.setenv("ESTECOACH_DEMO", "1")
     shown = today_page(main, "present=0")
     assert 'action="/checkin"' not in shown and 'id="checkin"' not in shown
-    assert save(main, today, "ok", 3, 3, "").status_code == 403
+    assert save(main, today, "ok", 3, "").status_code == 403
     assert con.execute("SELECT back FROM checkin WHERE date=?", (today,)).fetchone()[0] == "spasm"
 
 
@@ -301,7 +301,7 @@ def test_a_check_in_said_in_a_sentence_is_only_a_draft_until_saved(main, con, mo
     from estecoach.web import checkin_text
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
     monkeypatch.setattr(checkin_text, "read", lambda con, text, today: {
-        "back": "sore", "energy": 1, "inter_set_recovery": None, "sick": False, "injured": False})
+        "back": "sore", "energy": 1, "sick": False, "injured": False})
     today = date.today().isoformat()
     req = Request({"type": "http", "method": "POST", "path": "/checkin/text", "headers": []})
     assert main.checkin_from_text(req, today, TAP_NOTE, "").status_code == 303
@@ -310,7 +310,7 @@ def test_a_check_in_said_in_a_sentence_is_only_a_draft_until_saved(main, con, mo
     tap = html.split('action="/checkin" class="tap"')[1].split("</form>")[0]
     assert "read from what you wrote" in html and 'action="/checkin/text"' in html
     assert 'value="sore" checked' in tap and 'name="energy" value="1" checked' in tap and TAP_NOTE in tap
-    save(main, today, "sore", 1, None, TAP_NOTE)
+    save(main, today, "sore", 1, TAP_NOTE)
     assert con.execute("SELECT 1 FROM checkin_draft WHERE date=?", (today,)).fetchone() is None
     assert con.execute("SELECT source FROM checkin WHERE date=?", (today,)).fetchone()["source"] == "manual"
 
@@ -428,7 +428,7 @@ def test_before_the_morning_upload_the_page_says_what_the_call_waits_for(main, c
     assert calls.waiting_for(con, seven) == ["last night's sleep", "this morning's check-in"]
     # The call itself stays behind the check-in until it's saved; once it is, the night's
     # sleep is still to come.
-    save(main, today.isoformat(), "ok", 2, 2)
+    save(main, today.isoformat(), "ok", 2)
     assert calls.waiting_for(con, seven) == ["last night's sleep"]
     html = today_page(main)
     contrib = html.split('class="contrib"')[1].split("</div>")[0]

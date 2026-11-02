@@ -206,10 +206,6 @@ def energy_cues(text):
         else: hi = True
     return lo, hi
 
-# Inter-set recovery reads separately from systemic energy - see db.py.
-RECOV_POOR = re.compile(r"recovery[^.]{0,25}(hard|slow|poor|rough)|"
-                        r"(longer|more time|extra time)[^.]{0,20}between[^.]{0,15}sets|"
-                        r"needed?[^.]{0,20}rest[^.]{0,20}between", re.I)
 
 def parse_subjective(con):
     rows = con.execute(
@@ -233,7 +229,6 @@ def parse_subjective(con):
         elif BACK_SORE.search(text):  back = "sore"
         elif BACK_TIRED.search(text): back = "tired"
         lo, hi = energy_cues(text)
-        recov = 1 if RECOV_POOR.search(text) else None
         energy, review = None, 0
         # A sick note reads as energy 0 by the same rule as the sick toggle on the page.
         # Low-energy wording is a cue, not an answer, so it does not lift that to 1.
@@ -242,19 +237,18 @@ def parse_subjective(con):
         elif sick:     energy = core.checkin_energy(None, sick=True)
         elif lo:       energy = 1
         elif hi:       energy = 3
-        if back is None and energy is None and recov is None and not review:
+        if back is None and energy is None and not review:
             continue
         con.execute(
-            """INSERT INTO checkin (date, back, soreness, energy, inter_set_recovery, note, source,
+            """INSERT INTO checkin (date, back, soreness, energy, note, source,
                                     needs_review, back_reported)
-               VALUES (?,?,?,?,?,?,'derived',?,?)
+               VALUES (?,?,?,?,?,'derived',?,?)
                ON CONFLICT(date) DO UPDATE SET
                  back=excluded.back, back_reported=excluded.back_reported,
                  energy=COALESCE(excluded.energy, checkin.energy),
-                 inter_set_recovery=COALESCE(excluded.inter_set_recovery, checkin.inter_set_recovery),
                  note=excluded.note, source='derived',
                  needs_review=excluded.needs_review""",
-            (day, back or "ok", None, energy, recov, text[:400], review, 1 if back else 0))
+            (day, back or "ok", None, energy, text[:400], review, 1 if back else 0))
         written += 1
     print(f"   {'subjective':14s} {written:>5} derived check-ins")
 
