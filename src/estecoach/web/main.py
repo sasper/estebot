@@ -17,7 +17,7 @@ from estecoach.analysis import calls, engine as an, nutrition, predictions
 import anthropic
 from starlette.concurrency import run_in_threadpool
 
-from estecoach.web import auth, chat, checkin_text, db, charts, examples, landing, people, signups
+from estecoach.web import auth, call_panel, chat, checkin_text, db, charts, examples, landing, people, signups
 
 log = logging.getLogger("estecoach")
 HERE = os.path.dirname(__file__)
@@ -175,7 +175,7 @@ def _context(request, p, day=None):
             refs=[(r["rhr_baseline"] + 3, "baseline + 3")] if r["rhr_baseline"] else [])),
         ("Sleep (hours asleep)", charts.line_chart(
             [{"name": "Sleep", "points": rs["sleep"], "slot": 1}], **small, fmt="{:.1f}",
-            refs=[(5, "under 5 h: strain")])),
+            refs=[(5, "under 5 h: concern")])),
         ("Load ratio (7-day vs 28-day)", charts.line_chart(
             [{"name": "Load ratio", "points": rs["acwr"], "slot": 1}], **small, fmt="{:.1f}",
             refs=[(0.8, "0.8 light week"), (1.5, "1.5 injury risk")])),
@@ -260,7 +260,10 @@ def _context(request, p, day=None):
 def _render(request, ctx, present, base):
     on = request.cookies.get(PRESENT_COOKIE) == "1" if present is None else present == "1"
     ctx = dict(ctx, base=base)
-    resp = tpl.TemplateResponse(request, "today.html", presentable(ctx) if on else dict(ctx, present=False))
+    page = presentable(ctx) if on else dict(ctx, present=False)
+    # Built after presentation mode has taken the private parts out, so its words can't put them back.
+    page["panel"] = call_panel.build(page["r"], page["ev"], page.get("recorded"), page["present"])
+    resp = tpl.TemplateResponse(request, "today.html", page)
     if present is not None:
         resp.set_cookie(PRESENT_COOKIE, "1" if on else "0", max_age=365 * 86400,
                         samesite="lax", httponly=True)

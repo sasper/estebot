@@ -293,13 +293,16 @@ def default_day(con, today):
         return today
     return latest
 
-def _signal(area, level, reasons):
+def _signal(area, level, reasons, facts=None):
     """reasons: plain strings, or (level, text) for a part with its own level; those are
     put worst first, so the part that set the signal's level is the one read first.
-    Reasons say what was measured against what, in words; thresholds stay in the code."""
+    Reasons say what was measured against what, in words; thresholds stay in the code.
+    facts: the same measurements as numbers, for a page that words them its own way
+    (web/call_panel.py). Nothing reads them to decide anything."""
     rank = lambda r: -core.LEVELS.index(r[0]) if isinstance(r, tuple) and r[0] else 0
     rs = sorted((r for r in reasons if r and (not isinstance(r, tuple) or r[1])), key=rank)
-    return {"area": area, "level": level, "reasons": [r[1] if isinstance(r, tuple) else r for r in rs]}
+    return {"area": area, "level": level, "reasons": [r[1] if isinstance(r, tuple) else r for r in rs],
+            "facts": facts or {}}
 
 def _load_signal(con, prior):
     r = acwr(con, prior)
@@ -325,7 +328,9 @@ def _load_signal(con, prior):
                                  "but the training days all about the same length") + f" (monotony {mono:.1f})"
              if lv_m != "green"
              else f"{rests}, with a mix of longer and shorter sessions (monotony {mono:.1f})")
-    return _signal("load", core.worst(lv_r, lv_m), [(lv_r, ratio), (lv_m, alike)]), r
+    return _signal("load", core.worst(lv_r, lv_m), [(lv_r, ratio), (lv_m, alike)],
+                   dict(ratio=r, week_min=acute, usual_min=chronic, monotony=mono, rest_days=rest,
+                        ratio_level=lv_r, monotony_level=lv_m)), r
 
 def _effort_signal(con, prior):
     """Session RPE lately vs the month before: the same work feeling harder is fatigue."""
@@ -335,10 +340,11 @@ def _effort_signal(con, prior):
     recent = rpe(s(d(prior) - timedelta(days=6)), prior)
     base = rpe(s(d(prior) - timedelta(days=34)), s(d(prior) - timedelta(days=7)))
     if len(recent) < 2 or len(base) < 4:
-        return _signal("effort", None, ["not enough sessions with RPE yet"])
+        return _signal("effort", None, ["not enough sessions with RPE yet"], dict(enough=False))
     m, bm = st.mean(recent), st.mean(base)
     lv = "red" if m - bm >= 1.5 else "amber" if (m - bm >= 0.75 or m >= 9.0) else "green"
-    return _signal("effort", lv, [f"sessions felt RPE {m:.1f} over the last 7 days vs {bm:.1f} in the 4 weeks before"])
+    return _signal("effort", lv, [f"sessions felt RPE {m:.1f} over the last 7 days vs {bm:.1f} in the 4 weeks before"],
+                   dict(enough=True, week=m, before=bm))
 
 def _sleep_signal(con, day):
     nights = lambda a, b: [x["asleep_hr"] for x in con.execute(
@@ -356,7 +362,8 @@ def _sleep_signal(con, day):
         lv_3 = "red" if gap > 1.5 else "amber" if gap > 0.75 else "green"
     return _signal("sleep", core.worst(lv_l, lv_3), [
         (lv_l, last is not None and f"{last:.1f} h last night"),
-        (lv_3, lv_3 and f"{st.mean(three):.1f} h a night over the last 3 nights vs {st.mean(base):.1f} h over the 30 before")]), last
+        (lv_3, lv_3 and f"{st.mean(three):.1f} h a night over the last 3 nights vs {st.mean(base):.1f} h over the 30 before")],
+        dict(last=last, three=st.mean(three) if lv_3 else None, base=st.mean(base) if lv_3 else None)), last
 
 def _recovery_signal(con, day):
     # This week against the 30 days before it, never including it: a baseline that holds
@@ -374,7 +381,9 @@ def _recovery_signal(con, day):
         lv_r = "red" if rhr7 > rmu + 5 else "amber" if rhr7 > rmu + 3 else "green"
     sig = _signal("recovery", core.worst(lv_h, lv_r), [
         (lv_h, z is not None and f"HRV {hrv7:.0f} over the last 7 days vs {mu:.0f} over the 30 before"),
-        (lv_r, lv_r and f"resting HR {rhr7:.0f} vs {rmu:.0f}, same windows")])
+        (lv_r, lv_r and f"resting HR {rhr7:.0f} vs {rmu:.0f}, same windows")],
+        dict(hrv=hrv7 if z is not None else None, hrv_usual=mu if z is not None else None,
+             rhr=rhr7 if lv_r else None, rhr_usual=rmu if lv_r else None))
     return sig, dict(hrv7=hrv7, hrv_baseline=mu, hrv_z=z, rhr7=rhr7, rhr_baseline=rmu)
 
 def _feel_signal(con, day):
@@ -402,7 +411,11 @@ def _feel_signal(con, day):
         levels.append("amber"); reasons.append(f"recovery between sets poor on {len(poor)} of 14 days")
     if not levels:
         reasons.append("no check-in today yet")
-    return _signal("feel", core.worst(*levels), reasons), ci, poor
+    return _signal("feel", core.worst(*levels), reasons, dict(
+        checked_in=bool(ci), energy=ci["energy"] if ci else None,
+        back=(ci["back"] or "ok") if ci and ci["back_reported"] else None,
+        slow_recovery=bool(ci and ci["inter_set_recovery"] is not None and ci["inter_set_recovery"] <= 1),
+        slow_days=len(poor))), ci, poor
 
 def _nutrition_signal(con, day, goals, body_lb, rate, days=4):
     """The last few complete days against maintenance as the scale implies it, and protein
@@ -413,7 +426,8 @@ def _nutrition_signal(con, day, goals, body_lb, rate, days=4):
     kc, n = nutrition.intake(con, prior, days)
     pr = nutrition.protein(con, prior, body_lb, days)
     if n < 2:
-        return _signal("nutrition", None, [f"under 2 complete days logged in the last {days}"])
+        return _signal("nutrition", None, [f"under 2 complete days logged in the last {days}"],
+                       dict(logged=n, days=days))
     maint = nutrition.maintenance(con, prior, rate)
     target = nutrition.protein_target(goals, body_lb)
     levels, reasons = [], []
@@ -425,20 +439,23 @@ def _nutrition_signal(con, day, goals, body_lb, rate, days=4):
     if target and pr["mean"] is not None:
         levels.append("red" if pr["mean"] < 0.6 * target else "amber" if pr["mean"] < 0.8 * target else "green")
         reasons.append((levels[-1], f"protein {pr['mean']:.0f} g a day over the same days vs {target:.0f} g target"))
-    return _signal("nutrition", core.worst(*levels), reasons)
+    return _signal("nutrition", core.worst(*levels), reasons,
+                   dict(logged=n, days=days, intake=kc, maintain=maint,
+                        protein=pr["mean"], protein_target=target))
 
 def _pace_signal(con, day, goals):
     lo, hi = (goals or {}).get("min_loss_pct_per_week", 0.5), (goals or {}).get("max_loss_pct_per_week", 1.0)
     m = weight_changes(con, day, lo, hi)["mom"]
     if m.get("pct") is None:
-        return _signal("pace", None, ["not enough weigh-ins for a 4-week comparison"])
+        return _signal("pace", None, ["not enough weigh-ins for a 4-week comparison"], dict(max_pct=hi))
     lv = "red" if m["pct"] > 1.5 * hi else "amber" if m["pct"] > hi else "green"
     # Readiness only asks whether the loss is fast enough to cost recovery. Said as a bare
     # "good" beside the weight card's "slower than planned", it read as a contradiction.
     return _signal("pace", lv, [f"losing {m['pct']:.2f}% of body weight a week (last 4 weeks vs the 4 before)"
                                 + (", fast enough to cost recovery" if lv != "green" else
                                    f": not fast enough to cost recovery (above {hi:g}% a week); "
-                                   "this checks too fast, not too slow")])
+                                   "this checks too fast, not too slow")],
+                   dict(pct=m["pct"], max_pct=hi))
 
 POSITIVE_LAST_SESSION = 0.8   # share of targets met that makes a strong last session
 

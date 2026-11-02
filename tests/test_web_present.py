@@ -516,3 +516,17 @@ def test_a_future_day_does_not_say_looking_back(main):
     ahead = (date.today() + timedelta(days=1)).isoformat()
     html = main.today(req, ahead, None).body.decode()
     assert "Ahead, from what&#39;s logged so far" in html and "Looking back" not in html
+
+
+def test_why_today_s_call_reads_plainly_until_the_numbers_are_asked_for(main):
+    # 1 Nov 2026: the panel read like a stats readout. The default view has no jargon; the
+    # ranges and the engine's own lines sit behind "Show the numbers".
+    import re
+    html = today_page(main)
+    tile = html.split('data-tile="evidence"')[1].split("</details>\n  </details>")[0]
+    default, numbers = tile.split('<details class="numbers">')
+    text = __import__("html").unescape(re.sub(r"<[^>]+>", " ", default))
+    assert "Why today's call" in text and "First match wins." in text and "Show the numbers" not in text
+    assert not re.search(r"\b(RPE|votes?|flagged|pts|kcal|context|earned)\b", text, re.I), text
+    assert "Show the numbers" in numbers and "pts" in numbers
+    assert 'data-tile="predictions"' not in html
