@@ -214,6 +214,24 @@ def pace(rate_per_week: float | None, body_lb: float | None,
 # place and not the other.
 SICK = re.compile(r"\bsick\b|\bill\b|\bflu\b|fever|covid|headache|migraine|stomach bug|vomit", re.I)
 
+# A word right after a negation in the same clause: "no spasms", "not injured", "didn't tweak
+# it", "without any spasm". A note saying the spasms had stopped read as a spasm, which made
+# the day a rest day and held the next.
+_NEGATION = re.compile(r"(?:\b(?:no|not|never|without|zero)\b|n't)(?:\s+\w+){0,2}\s+$", re.I)
+_CLAUSE = re.compile(r"[.;!?\n]|\b(?:but|however|though|although)\b", re.I)
+
+
+def affirmed(pattern: re.Pattern, text: str) -> bool:
+    """Whether `pattern` matches somewhere in `text` that isn't negated: within two words
+    after no / not / never / without / -n't in the same clause, or followed by "-free"
+    ("spasm-free"). "No pain but spasms again" still counts: "but" starts a new clause."""
+    for m in pattern.finditer(text or ""):
+        before = _CLAUSE.split(text[max(0, m.start() - 60):m.start()])[-1]
+        if _NEGATION.search(before) or re.match(r"\w*[- ]free\b", text[m.end():m.end() + 12], re.I):
+            continue
+        return True
+    return False
+
 
 def checkin_energy(energy: int | None, sick: bool) -> int | None:
     """Energy (0-3) for a check-in. Being sick is the lowest energy there is, so a sick day

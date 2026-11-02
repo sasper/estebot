@@ -215,6 +215,10 @@ def parse_subjective(con):
     rows = con.execute(
         "SELECT start_date, note FROM annotation WHERE source='health-context.txt' ORDER BY start_date"
     ).fetchall()
+    # Derived rows are rebuilt from the notes every time, like the other derived tables: a
+    # rule fixed later (a negated "no spasms" read as a spasm) must also fix the days it
+    # already wrote. Manual rows are never touched.
+    con.execute("DELETE FROM checkin WHERE source = 'derived'")
     byday = {}
     for r in rows:
         byday.setdefault(r["start_date"], []).append(r["note"] or "")
@@ -225,7 +229,7 @@ def parse_subjective(con):
         if existing and existing["source"] == "manual":
             continue                      # never clobber something the user typed
         back = None
-        if BACK_SPASM.search(text):   back = "spasm"
+        if core.affirmed(BACK_SPASM, text): back = "spasm"
         elif BACK_SORE.search(text):  back = "sore"
         elif BACK_TIRED.search(text): back = "tired"
         lo, hi = energy_cues(text)

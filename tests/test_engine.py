@@ -529,3 +529,23 @@ def test_main_lifts_come_from_config_and_anchors_still_pick_the_version():
     t = Training.from_config({"main_lifts": {"pull A": ["Sumo Deadlift", "Barbell Hang Clean"]}})
     assert t.mains_for("pull", "A") == ("Sumo Deadlift", "Barbell Hang Clean")
     assert t.mains_for("pull", "B") == ("Pendlay Row", "Barbell Bent-Over Row")   # anchors by default
+
+
+def test_a_note_saying_the_spasms_stopped_is_not_a_spasm(con):
+    # 1 Nov 2026: "spasm" anywhere in a note read as a back spasm (rest) and an injury (a
+    # held next day), "no spasms" included, and a derived row once written stayed after
+    # the rule was fixed.
+    import importlib
+    from estecoach.analysis import engine
+    from estecoach.web import ingest
+    ingest = importlib.reload(ingest)
+    con.execute("INSERT INTO checkin (date, back, source, back_reported) VALUES ('2026-10-20', 'spasm', 'derived', 1)")
+    con.executemany("INSERT INTO annotation (start_date, type, note, source) VALUES (?,?,?,?)", [
+        ("2026-10-20", "context", "feeling much better, no spasming today", "health-context.txt"),
+        ("2026-10-21", "context", "spasm-free again, didn't tweak anything", "health-context.txt"),
+        ("2026-10-22", "context", "no pain yesterday but spasms again this morning", "health-context.txt")])
+    ingest.parse_subjective(con)
+    backs = dict(con.execute("SELECT date, back FROM checkin WHERE back_reported = 1").fetchall())
+    assert backs == {"2026-10-22": "spasm"}           # the stale derived row is gone too
+    hurt = engine.unwell_days(con, "2026-10-19", "2026-10-23")
+    assert sorted(d for d, e in hurt.items() if e["injured"]) == ["2026-10-22"]
