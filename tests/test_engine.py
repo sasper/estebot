@@ -549,3 +549,21 @@ def test_a_note_saying_the_spasms_stopped_is_not_a_spasm(con):
     assert backs == {"2026-10-22": "spasm"}           # the stale derived row is gone too
     hurt = engine.unwell_days(con, "2026-10-19", "2026-10-23")
     assert sorted(d for d, e in hurt.items() if e["injured"]) == ["2026-10-22"]
+
+
+def test_yesterdays_spasm_does_not_decide_today_and_a_clean_check_in_lifts_the_hold(con):
+    # 1 Nov 2026: a spasm checked in one day made the next day a rest day before its own
+    # check-in existed, borrowed from the day before. Rest after spasms, then a light session
+    # once the back is ok, is what's done; only a check-in saying so can lift the hold.
+    from estecoach.analysis import engine
+    con.execute("INSERT INTO checkin (date, back, energy, injured, source, back_reported) "
+                "VALUES ('2026-11-01', 'spasm', 1, 1, 'manual', 1)")
+    r = engine.readiness(con, "2026-11-02", GOALS)
+    feel = next(x for x in r["signals"] if x["area"] == "feel")
+    assert r["checkin"] is None and feel["level"] is None and not r["forced_rest"]
+    assert r["holds"] == ["injured yesterday, and no clean check-in today"] and r["verdict"] == "light"
+    con.execute("INSERT INTO checkin (date, back, energy, injured, source, back_reported) "
+                "VALUES ('2026-11-02', 'ok', 2, 0, 'manual', 1)")
+    assert engine.readiness(con, "2026-11-02", GOALS)["holds"] == []
+    con.execute("UPDATE checkin SET back = 'sore' WHERE date = '2026-11-02'")
+    assert engine.readiness(con, "2026-11-02", GOALS)["holds"]             # sore isn't clean

@@ -378,16 +378,17 @@ def _recovery_signal(con, day):
     return sig, dict(hrv7=hrv7, hrv_baseline=mu, hrv_z=z, rhr7=rhr7, rhr_baseline=rmu)
 
 def _feel_signal(con, day):
-    """The latest check-in from the last two days (notes become check-ins at each sync)."""
-    ci = con.execute("SELECT * FROM checkin WHERE date BETWEEN ? AND ? ORDER BY date DESC LIMIT 1",
-                     (s(d(day) - timedelta(days=1)), day)).fetchone()
+    """This day's check-in only (notes become check-ins at each sync). Until it exists, how you
+    feel has no reading: yesterday's answers describe yesterday, and borrowing them made a
+    spasm one evening call the next day a rest day before the morning's check-in."""
+    ci = con.execute("SELECT * FROM checkin WHERE date = ?", (day,)).fetchone()
     poor = [r["date"] for r in con.execute(
         """SELECT date FROM checkin WHERE date <= ? AND date >= ?
              AND inter_set_recovery IS NOT NULL AND inter_set_recovery <= 1 ORDER BY date""",
         (day, s(d(day) - timedelta(days=13))))]
     levels, reasons = [], []
     if ci:
-        when = "today" if ci["date"] == day else "yesterday"
+        when = "today"
         if ci["energy"] is not None:
             lv = "red" if ci["energy"] <= 0 else "amber" if ci["energy"] == 1 else "green"
             levels.append(lv); reasons.append(f"energy {ci['energy']}/3 {when}")
@@ -400,7 +401,7 @@ def _feel_signal(con, day):
     if len(poor) >= 3:
         levels.append("amber"); reasons.append(f"recovery between sets poor on {len(poor)} of 14 days")
     if not levels:
-        reasons.append("nothing in your notes for today or yesterday")
+        reasons.append("no check-in today yet")
     return _signal("feel", core.worst(*levels), reasons), ci, poor
 
 def _nutrition_signal(con, day, goals, body_lb, rate, days=4):
@@ -483,8 +484,13 @@ def readiness(con, day, goals, voting="auto", graded=None):
     unwell = unwell_days(con, prior, day)
     if any(e["sick"] for e in unwell.values()):
         holds.append("sick today or yesterday")
-    if any(e["injured"] for e in unwell.values()):
-        holds.append("injured today or yesterday")
+    # Injured yesterday holds today too, unless this morning's check-in says the back is ok
+    # and nothing is hurt: a day of rest after spasms, then a light session, is the norm.
+    clean = bool(ci and ci["back_reported"] and (ci["back"] or "ok") == "ok" and not ci["injured"])
+    if unwell.get(day, {}).get("injured"):
+        holds.append("injured today")
+    elif unwell.get(prior, {}).get("injured") and not clean:
+        holds.append("injured yesterday, and no clean check-in today")
     if ramp:
         holds.append("back from a near-idle stretch")
     # Reasons to go hard, each (present, words); only those whose record earned it count. Only

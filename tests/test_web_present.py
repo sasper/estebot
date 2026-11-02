@@ -512,3 +512,11 @@ def test_a_shared_link_shows_the_card(main):
     assert 'name="twitter:card" content="summary_large_image"' in html
     from pathlib import Path
     assert (Path(main.__file__).parent / "static" / "social-card.png").stat().st_size > 100_000
+
+
+def test_a_future_day_does_not_say_looking_back(main):
+    # 1 Nov 2026: tomorrow's page, reached with the arrow, was headed "Looking back".
+    req = Request({"type": "http", "method": "GET", "path": "/", "query_string": b"", "headers": []})
+    ahead = (date.today() + timedelta(days=1)).isoformat()
+    html = main.today(req, ahead, None).body.decode()
+    assert "Ahead, from what&#39;s logged so far" in html and "Looking back" not in html

@@ -37,7 +37,7 @@
   {% if demo %}
   <p class="demo-bar">This is the demo, on a made-up lifter. <a href="/">About EsteCoach</a> · <a href="/#early-access">Get early access</a></p>
   {% endif %}
-  <p class="sub" style="margin-bottom:10px">{{ "Today" if is_today else "Looking back" }} · {{ day_label }}</p>
+  <p class="sub" style="margin-bottom:10px">{{ "Today" if is_today else "Ahead, from what's logged so far" if is_future else "Looking back" }} · {{ day_label }}</p>
   <nav class="daynav">
     <a href="{{ base }}?day={{ prev_day }}">&larr;</a>
     <form method="get" action="{{ base }}"><input type="date" name="day" value="{{ day }}" onchange="this.form.submit()"></form>
