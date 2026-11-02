@@ -190,7 +190,7 @@ def _context(request, p, day=None):
     pattern = an.recommend_pattern(con, day, r["checkin"], training=p.training)
     plan = an.training_plan(con, day, r["verdict"], r["checkin"], training=p.training)
     axial = an.axial_by_day_type(con, day, training=p.training)
-    checkin = r["checkin"]               # the row the verdict used: today's, else yesterday's
+    checkin = r["checkin"]               # the row the verdict used: this day's, or None
     # The tap card prefills from this day's own row, never yesterday's: carrying yesterday's
     # answers forward would save them as today's with one tap.
     day_ci = con.execute("SELECT * FROM checkin WHERE date=?", (day,)).fetchone()
@@ -247,7 +247,7 @@ def _context(request, p, day=None):
         day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
         said=request.query_params.get("said"),
         review_days=review_days, prev_day=prev_day, next_day=next_day, month_nav=month_nav,
-        is_today=is_today, waiting=_waiting_lines(waits, cfg, now), waiting_for=list(waits.values()),
+        is_today=is_today, is_future=day > date.today().isoformat(), waiting=_waiting_lines(waits, cfg, now), waiting_for=list(waits.values()),
         hevy=hevy_card, signups_waiting=signups.count() if _reviews_signups(p) else 0, doses_today=an.doses_today(con, day) if is_today else [],
         demo=demo,
         signin=auth.settings() is not None, email=p.email, chat_on=chat_on, chat_resting=resting,
