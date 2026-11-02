@@ -452,3 +452,16 @@ def test_e1rm_counts_reps_left_only_near_failure():
     assert e1rm(275, 6, 9.5) == pytest.approx(275 * (1 + 6.5 / 30))
     assert e1rm(205, 8, 6) == e1rm(205, 8) == pytest.approx(205 * (1 + 8 / 30))
     assert e1rm(255, 2, 9) > e1rm(205, 8, 6)
+
+
+def test_affirmed_skips_negated_mentions():
+    # 1 Nov 2026: "no spasming today" was read as a spasm.
+    import re
+    from estecoach.core import affirmed
+    spasm = re.compile(r"spasm", re.I)
+    for said in ("back spasm this morning", "spasms again", "no pain but a spasm at noon",
+                 "not great. spasm while bending"):
+        assert affirmed(spasm, said), said
+    for said in ("no spasms", "no back spasms today", "not spasming", "didn't spasm",
+                 "without any spasm", "spasm-free day", "spasm free", "never had a spasm"):
+        assert not affirmed(spasm, said), said

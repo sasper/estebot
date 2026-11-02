@@ -269,7 +269,7 @@ def unwell_days(con, start, end):
                FROM annotation WHERE start_date <= ? AND COALESCE(end_date, start_date) >= ?
                ORDER BY start_date""", (end, start)):
         text = r["note"] or ""
-        sick, injured = bool(core.SICK.search(text)), r["type"] == "injury" or bool(INJURED.search(text))
+        sick, injured = bool(core.SICK.search(text)), r["type"] == "injury" or core.affirmed(INJURED, text)
         if not (sick or injured):
             continue
         for x in daterange(max(r["start_date"], start), min(r["end_date"], end)):
