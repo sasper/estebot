@@ -412,23 +412,23 @@
 
     <details class="numbers">
       <summary>Show the numbers</summary>
-      <p class="small muted">Each workout scores the share of its targets met, compared with your workouts within {{ N.phase_days }} days either side, so a good or bad stretch doesn't look like a signal's effect. <b>pts</b> are percentage points of targets: days a signal was flagged minus days it was clear. "Likely" is a 95% range. A signal votes once the whole range is below zero, with at least {{ N.min_n }} days on each side; a reason to go hard is earned once its whole range is above zero. {{ N.sessions }} workouts are scored.</p>
-      <div class="tablewrap"><table class="evidence">
+      <p class="small muted">Each workout scores the share of its targets met, compared with your workouts within {{ N.phase_days }} days either side, so a good or bad stretch doesn't look like a signal's effect. <b>pts</b> are percentage points of targets: days a signal showed Watch or Concern minus days it showed No concern. "Likely" is a 95% range. A signal counts once the whole range is below zero, with at least {{ N.min_n }} days on each side; a reason to go hard is proven once its whole range is above zero. {{ N.sessions }} workouts are scored.</p>
+      <div class="tablewrap"><table class="evidence stack">
         <tr><th>Signal</th><th>Today, as measured</th><th>In the call</th><th>Record</th></tr>
         {% for x in P.counted + P.watching %}
-        <tr><td>{{ x.label }}</td><td>{{ x.reasons|join("; ") }}</td><td>{{ "votes" if x.counted else "context" }}</td><td>{{ x.effect_numbers }}</td></tr>
+        <tr><td>{{ x.label }}</td><td data-l="Today">{{ x.reasons|join("; ") }}</td><td data-l="In the call">{{ "counts" if x.counted else "watching" }}</td><td data-l="Record">{{ x.effect_numbers }}</td></tr>
         {% endfor %}
         {% for g in P.reasons %}
-        <tr><td>Reason to go hard</td><td>{{ g.words or "–" }}</td><td>{{ "earned" if g.proven.startswith("Yes") else "not earned" }}</td><td>{{ g.numbers }}</td></tr>
+        <tr><td>Reason to go hard</td><td data-l="Today">{{ g.words or "–" }}</td><td data-l="In the call">{{ "proven" if g.proven.startswith("Yes") else "not yet" }}</td><td data-l="Record">{{ g.numbers }}</td></tr>
         {% endfor %}
       </table></div>
       <h3 class="charttitle">Targets met after each call</h3>
-      <div class="tablewrap"><table class="evidence">
+      <div class="tablewrap"><table class="evidence stack">
         <tr><th>Call</th><th>What the app told you</th><th>If today's rules had run all along</th></tr>
         {% for g in P.track %}
         <tr><td>{{ g.word }}</td>
-          <td>{% if g.recorded %}{{ "%.0f"|format(g.recorded.hit * 100) }}% <span class="muted">({{ g.recorded.n }})</span>{% else %}–{% endif %}</td>
-          <td>{% if g.replay %}{{ "%.0f"|format(g.replay.hit * 100) }}% <span class="muted">({{ g.replay.n }})</span>{% else %}–{% endif %}</td></tr>
+          <td data-l="What the app told you">{% if g.recorded %}{{ "%.0f"|format(g.recorded.hit * 100) }}% <span class="muted">({{ g.recorded.n }})</span>{% else %}–{% endif %}</td>
+          <td data-l="If today's rules had run all along">{% if g.replay %}{{ "%.0f"|format(g.replay.hit * 100) }}% <span class="muted">({{ g.replay.n }})</span>{% else %}–{% endif %}</td></tr>
         {% endfor %}
       </table></div>
       <p class="small muted">What the app told you: the calls as they were made each morning, the real test{% if demo and P.track %}; the made-up lifter's are backfilled, each from only the data before it{% endif %}. If today's rules had run all along: every past workout replayed through today's rules, which were fitted on those same workouts, so it flatters them.</p>
