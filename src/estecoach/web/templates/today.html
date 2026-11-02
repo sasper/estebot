@@ -250,7 +250,7 @@
         {% endif %}</tr>
       {% endfor %}
     </table>
-    {% call info() %}<p>The goal date is a straight line at today's pace. Loss usually slows, so it's the pace you're on, not a promise.</p><p>The headline is the 14-day average, since one morning swings &plusmn;1.5 lb on water. The <b>4-week fit</b> is a line through the last 4 weeks of weigh-ins. The two rows compare averages instead: the last 7 days against the 7 before, and the last 4 weeks against the 4 before, so they land near the fit but not on it. The weight prediction fits its own line since the cut started.</p><p>Planned pace: losing {{ pace_range[0] }}–{{ pace_range[1] }}% of body weight a week (estecoach.toml).
+    {% call info() %}<p>The goal date is a straight line at today's pace. Loss usually slows, so it's the pace you're on, not a promise.</p><p>The headline is the 14-day average, since one morning swings &plusmn;1.5 lb on water. The <b>4-week fit</b> is a line through the last 4 weeks of weigh-ins. The two rows compare averages instead: the last 7 days against the 7 before, and the last 4 weeks against the 4 before, so they land near the fit but not on it.</p><p>Planned pace: losing {{ pace_range[0] }}–{{ pace_range[1] }}% of body weight a week (estecoach.toml).
       {% if wc.trend == "slowing" %}<b>The last 7 days lost less</b> than the 4-week pace.
       {% elif wc.trend == "speeding_up" %}<b>The last 7 days lost more</b> than the 4-week pace.{% endif %}
       A single week moves 2–3 lb on water and glycogen alone, so the 4-week line is the one to act on.</p>{% endcall %}
@@ -361,50 +361,70 @@
     {% endif %}
   </details>
 
-  <details class="card tile" data-tile="predictions">
-    <summary><div class="thead"><h2>{{ icon("predictions") }}Predictions</h2><div class="tline">{{ preds|length }} open</div></div></summary>
-    <div class="tablewrap">
-    <table class="preds">
-      <tr><th>Prediction</th><th>Resolves</th><th class="n">So far</th><th>Target</th><th>Data coverage</th></tr>
-      {% for p in preds %}
-      <tr>
-        <td><span class="muted">{{ p.id }}</span> {{ p.title }}
-          {% if p.progress and p.progress.detail %}<div class="muted small">{{ p.progress.detail }}</div>{% endif %}
-          {% if p.caveat %}<div class="muted small">{{ p.caveat }}</div>{% endif %}</td>
-        <td class="nowrap" data-k="Resolves">{{ p.resolves|shortdate if p.resolves else "–" }}{% if p.days_left is defined %}<div class="muted small">{{ p.days_left }} days</div>{% endif %}</td>
-        <td class="n" data-k="So far">{% if p.progress and p.progress.value %}{{ p.progress.value }}
-          <div><span class="pill {{ 'pill-ok' if p.progress.inside else 'pill-warn' }}">{{ "currently inside" if p.progress.inside else "currently outside" }}</span></div>
-          {% elif p.progress %}<span class="muted">no data yet</span>{% else %}<span class="muted">judged in the ledger</span>{% endif %}</td>
-        <td class="small text" data-k="Target">{{ p.progress.target if p.progress else "–" }}</td>
-        <td class="small text" data-k="Data coverage">{% if p.coverage %}{% set c = p.coverage %}<span class="pill {{ 'pill-ok' if c.on_track else 'pill-warn' }}">{{ "enough data" if c.on_track else "data behind" }}</span>
-          <div class="muted">{{ c.label }}: {{ c.logged }} so far ({{ c.need }} needed{% if p.resolves %} by {{ p.resolves|shortdate }}{% endif %}){% if c.excused %}, {{ c.excused }} excused{% endif %}{% if c.gap is not none %}; longest gap {{ c.gap }} (max {{ c.max_gap }}){% endif %}</div>{% else %}<span class="muted">–</span>{% endif %}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="5" class="muted">No open predictions in ledger.md.</td></tr>
-      {% endfor %}
-    </table>
-    </div>
-    {% call info() %}<p>Interim progress only. Each prediction resolves in ledger.md by its criterion as written, including the judgement calls a number can't make.</p><p><b>Data coverage</b> says whether enough days are being logged for the prediction to be judged at all, not whether it is coming true.</p>{% endcall %}
-  </details>
-
+  {# How the seven areas became today's call. Every figure is the engine's: r.rule names the
+     rule core.call_rule says decided it, ev is the evidence each area's vote rests on. #}
   {% set STATUS = {"predicts worse sessions": "votes", "no effect seen": "no effect seen", "goes with better sessions": "goes with better days", "not enough data": "not enough data yet"} %}
-  <details class="card tile" data-tile="evidence">
-    <summary><div class="thead"><h2>{{ icon("recovery") }}Is the call working?</h2><div class="tline">{{ ev.voting|length }} of {{ ev.areas|length }} areas vote · {{ ev.sessions }} sessions graded</div></div></summary>
-    <p class="sub">Each session is graded on the share of its targets met, against the sessions within {{ ev.phase_days }} days of it. Points are the difference between days an area was flagged and days it was clear.</p>
-    <div class="tablewrap"><table class="evidence">
-      <tr><th>Area</th><th>Flagged / clear days</th><th>Flagged vs clear</th><th>Status</th></tr>
-      {% for a, e in ev.areas.items() %}
-      <tr class="{{ 'on' if e.votes }}"><td>{{ AREA[a] }}</td><td>{{ e.n_flagged }} / {{ e.n_clear }}</td>
-        <td>{% if e.diff is not none %}{{ "%+.0f"|format(e.diff * 100) }} pts <span class="muted">({{ "%+.0f"|format(e.lo * 100) }} to {{ "%+.0f"|format(e.hi * 100) }})</span>{% else %}–{% endif %}</td>
-        <td>{{ STATUS[e.status] }}</td></tr>
+  {% set names = (r.rule_areas or [])|map("extract", AREA)|map("lower")|list %}
+  {% set nvote = r.voting|length %}
+  {% set BECAUSE = {
+    "spasm": ("a health note in today's check-in means rest" if present else "today's check-in says the back is spasming, and a spasm means rest"),
+    "two_red": (names|join(" and ")) ~ " are both in strain",
+    "one_red": (names|join(", ")) ~ " is in strain",
+    "two_amber": (names|join(" and ")) ~ " are both on watch",
+    "hold": "a safety rule holds the day: " ~ (r.holds|join("; ")),
+    "earned_hard": "nothing that votes is flagged, and " ~ (r.positive or ""),
+    "one_amber": (names|join(", ")) ~ " is on watch, and one isn't enough to ease off",
+    "no_reason": "nothing that votes is flagged, and no reason to go hard has earned it today",
+    "no_votes": "no area has earned a vote yet, so the day stays as planned"} %}
+  {% set RUNGS = [
+    ("rest", "Rest", ("a health note in today's check-in" if present else "a back spasm in today's check-in") ~ ", or 2 voting areas in strain"),
+    ("light", "Take it easy", "1 voting area in strain, 2 on watch, or a safety rule"),
+    ("hard", "Go hard", "no voting area flagged, plus a reason to go hard that has earned it"),
+    ("normal", "Go as planned", "anything else")] %}
+  <details class="card tile howcall" data-tile="evidence">
+    <summary><div class="thead"><h2>{{ icon("steps") }}How today's call was made</h2>
+      <div class="tline">{{ verdict_words[r.verdict] }} · {{ nvote }} of {{ r.signals|length }} areas vote</div></div></summary>
+
+    <h3 class="charttitle">The rule, checked top to bottom</h3>
+    <ol class="rungs">
+      {% for key, word, when in RUNGS %}
+      <li class="{{ 'on' if r.verdict == key }}"><b>{{ word }}</b><span>{{ when }}</span>
+        {% if r.verdict == key %}<p class="because">Today: {{ BECAUSE[r.rule] }}.</p>{% endif %}</li>
       {% endfor %}
-      {% for k, e in ev.hard_reasons.items() %}
-      <tr class="{{ 'on' if e.supports }}"><td>Reason to go hard: {{ k }}</td><td>{{ e.n_flagged }} / {{ e.n_clear }}</td>
-        <td>{% if e.diff is not none %}{{ "%+.0f"|format(e.diff * 100) }} pts <span class="muted">({{ "%+.0f"|format(e.lo * 100) }} to {{ "%+.0f"|format(e.hi * 100) }})</span>{% else %}–{% endif %}</td>
-        <td>{{ "earns going hard" if e.supports else STATUS[e.status] }}</td></tr>
+    </ol>
+
+    <h3 class="charttitle">The seven areas</h3>
+    <p class="sub">An area gets a vote once your sessions on its flagged days have gone worse than on its clear days. The rest are shown as context and don't move the call.</p>
+    <div class="tablewrap"><table class="evidence areas">
+      <tr><th>Area</th><th>Today</th><th>In the call</th><th>Sessions when flagged vs clear</th></tr>
+      {% for x in (r.signals|selectattr("area", "in", r.voting)|list) + (r.signals|rejectattr("area", "in", r.voting)|list) %}
+      {% set e = ev.areas.get(x.area) %}
+      <tr class="lv-{{ x.level or 'none' }}{{ ' on' if x.area in r.voting }}">
+        <td><span class="dot"></span>{{ AREA[x.area] }}</td>
+        <td><b>{{ LEVEL[x.level] }}</b>{% if x.reasons %}<div class="muted small">{{ x.reasons[0] }}</div>{% endif %}</td>
+        <td>{{ "votes" if x.area in r.voting else "context" }}{% if e and x.area not in r.voting %}<div class="muted small">{{ STATUS[e.status] }}</div>{% endif %}</td>
+        <td>{% if e and e.diff is not none %}{{ "%+.0f"|format(e.diff * 100) }} pts <span class="muted">({{ "%+.0f"|format(e.lo * 100) }} to {{ "%+.0f"|format(e.hi * 100) }})</span>
+          <div class="muted small">{{ e.n_flagged }} flagged, {{ e.n_clear }} clear days</div>{% else %}<span class="muted">–</span>{% endif %}</td>
+      </tr>
       {% endfor %}
     </table></div>
-    <h3 class="charttitle">Targets met after each call</h3>
+
+    <h3 class="charttitle">Reasons to go hard</h3>
+    <div class="tablewrap"><table class="evidence">
+      <tr><th>Reason</th><th>Today</th><th>Earned?</th><th>Sessions with it vs without</th></tr>
+      {% for k, e in ev.hard_reasons.items() %}{% set today_r = r.hard_reasons.get(k) %}
+      <tr class="{{ 'on' if e.supports }}"><td>{{ k|capitalize }}</td>
+        <td>{% if today_r %}{{ "yes" if today_r[0] else "no" }}<div class="muted small">{{ today_r[1] }}</div>{% else %}<span class="muted">nothing yet</span>{% endif %}</td>
+        <td>{{ "earned" if e.supports else STATUS[e.status] }}</td>
+        <td>{% if e.diff is not none %}{{ "%+.0f"|format(e.diff * 100) }} pts <span class="muted">({{ "%+.0f"|format(e.lo * 100) }} to {{ "%+.0f"|format(e.hi * 100) }})</span>{% else %}<span class="muted">–</span>{% endif %}</td></tr>
+      {% endfor %}
+    </table></div>
+
+    <h3 class="charttitle">Safety rules</h3>
+    <p class="small">{% if r.holds %}Holding today: {{ r.holds|join("; ") }}.{% else %}None today.{% endif %}
+      <span class="muted">{% if present %}A health note today or yesterday{% else %}Sick or injured today, injured yesterday without a clean check-in this morning,{% endif %} or back from a near-idle stretch: these make it a take-it-easy day whatever the record says.</span></p>
+
+    <h3 class="charttitle">Is it working? Targets met after each call</h3>
     <div class="tablewrap"><table class="evidence">
       <tr><th>Call</th><th>Recorded calls</th><th>Under today's rules, all history</th></tr>
       {% for v in ["hard", "normal", "light", "rest"] if v in recorded or v in ev.verdicts %}
@@ -413,7 +433,7 @@
         <td>{% if v in ev.verdicts %}{{ "%.0f"|format(ev.verdicts[v].hit * 100) }}% <span class="muted">({{ ev.verdicts[v].n }})</span>{% else %}–{% endif %}</td></tr>
       {% endfor %}
     </table></div>
-    {% call info() %}<p>The call is graded against what happened after it. <b>Recorded calls</b> are the calls as they were made each morning; they are the real test, and they start empty.{% if demo and recorded %} The made-up athlete has no mornings, so theirs are backfilled: each day's call made from only the data before it.{% endif %} <b>Under today's rules</b> replays every past session through the current votes; it was fitted on the same sessions, so it flatters the rule. If go-hard and take-it-easy days don't end up apart, the call isn't earning its place.</p>{% endcall %}
+    {% call info() %}<p>Each session is graded on the share of its targets met, against the sessions within {{ ev.phase_days }} days of it, so a good or bad stretch as a whole doesn't read as an area's effect. <b>Points</b> are the difference between an area's flagged days and its clear days, with the range the data allows; {{ ev.sessions }} sessions are graded.</p><p><b>Recorded calls</b> are the calls as they were made each morning; they are the real test, and they start empty.{% if demo and recorded %} The made-up athlete has no mornings, so theirs are backfilled: each day's call made from only the data before it.{% endif %} <b>Under today's rules</b> replays every past session through the current votes; it was fitted on the same sessions, so it flatters the rule. If go-hard and take-it-easy days don't end up apart, the call isn't earning its place.</p>{% endcall %}
   </details>
 
   <details class="card tile" data-tile="load">

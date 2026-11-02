@@ -510,9 +510,9 @@ def readiness(con, day, goals, voting="auto", graded=None):
     else:
         voting, hard_ok = list(voting), []
     positive = next((words for k, (on, words) in reasons.items() if on and k in hard_ok), None)
-    verdict = core.evidence_call(levels, voting, spasm, holds, positive)
+    verdict, rule, rule_areas = core.call_rule(levels, voting, spasm, holds, positive)
     return {
-        "date": day, "verdict": verdict, "score": core.readiness_score(levels, verdict),
+        "date": day, "verdict": verdict, "rule": rule, "rule_areas": rule_areas, "score": core.readiness_score(levels, verdict),
         "signals": signals, "ramp": ramp, "checkin": ci, "voting": voting, "holds": holds,
         "positive": positive, "hard_reasons": reasons, "forced_rest": spasm,
         "subjective_review": bool(ci["needs_review"]) if ci and ci["date"] == day else False,

@@ -7,7 +7,7 @@ results the page shows. Nothing is calculated here; numbers are only formatted.
 """
 from datetime import date, timedelta
 
-from estecoach.analysis import engine as an, nutrition, predictions
+from estecoach.analysis import engine as an, nutrition
 from estecoach.web import charts
 
 AREA = {"load": "training load", "effort": "effort", "sleep": "sleep", "recovery": "HRV and resting heart rate",
@@ -66,15 +66,6 @@ def _squat(con, day, goals, st, specs):
          f"({span}) was {then:.0f} lb" + (f", at a body weight of {then_w:.0f} lb" if then_w else "")
          + f". Your best over the last {st['weeks']} weeks is {now['e1rm']:.0f} lb at {st['body_lb']:.0f} lb, "
          f"{(now['e1rm'] - then) / then * 100:+.1f}%: {now['ratio']:.2f}× body weight, which rates {now['level']}.")
-    if spec:
-        p = predictions.e1rm_median_change(con, an, spec, day)
-        pct = p["per"].get("Barbell Squat")
-        mine = f"{(now['e1rm'] - then) / then * 100:+.1f}"
-        if pct is not None and f"{pct:+.1f}" == mine:
-            a += " The predictions table shows the same figure for squat (P-002)."
-        elif pct is not None:
-            a += (f" P-002 has squat at {pct:+.1f}% from the same start because it takes your best at any "
-                  f"point since {date.fromisoformat(p['window'][0]):%-d %b %Y}; this takes the last {st['weeks']} weeks.")
     a += ("\n\nStrength going up while body weight comes down is the cut working: you're holding on "
           "to muscle while the fat comes off." if up else
           "\n\nOn a cut, holding strength is a win; check that protein is on target and the "

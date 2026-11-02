@@ -291,17 +291,32 @@ def evidence_call(levels: dict[str, str | None], voting, forced_rest: bool = Fal
       normal anything else, including every day with nothing measured
     Verdict keys stay those of combine_signals; the page words them go hard / go as
     planned / take it easy / rest."""
+    return call_rule(levels, voting, forced_rest, holds, positive)[0]
+
+
+def call_rule(levels, voting, forced_rest=False, holds=(), positive=None):
+    """evidence_call with the rule that decided it: (verdict, rule, areas). The page's "How
+    today's call was made" words the rule; it never works one out, so it can't disagree
+    with the call. Rules: spasm, two_red, one_red, two_amber, hold, earned_hard, one_amber
+    (amber in one voting area: not enough), no_reason (nothing flagged, no earned reason to
+    go hard), no_votes. `areas` are the voting areas behind it, in `voting` order."""
     if forced_rest:
-        return "rest"
-    vals = [levels.get(a) for a in voting if levels.get(a)]
-    reds, ambers = vals.count("red"), vals.count("amber")
-    if reds >= 2:
-        return "rest"
-    if reds == 1 or ambers >= 2 or holds:
-        return "light"
-    if ambers == 0 and positive:
-        return "hard"
-    return "normal"
+        return "rest", "spasm", []
+    reds = [a for a in voting if levels.get(a) == "red"]
+    ambers = [a for a in voting if levels.get(a) == "amber"]
+    if len(reds) >= 2:
+        return "rest", "two_red", reds
+    if reds:
+        return "light", "one_red", reds
+    if len(ambers) >= 2:
+        return "light", "two_amber", ambers
+    if holds:
+        return "light", "hold", []
+    if not ambers and positive:
+        return "hard", "earned_hard", []
+    if ambers:
+        return "normal", "one_amber", ambers
+    return "normal", ("no_reason" if voting else "no_votes"), []
 
 
 # Each verdict owns a band of the 0-100 readiness score, so the number can never contradict

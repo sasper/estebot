@@ -613,3 +613,20 @@ html{scroll-behavior:smooth}
 /* The calendar is a tile, but a closed one keeps the full row: half a row is too narrow for it. */
 @container (min-width:640px){ .trends > .tile.caltile:not([open]){grid-column:1/-1} }
 .caltile .calhead-row{justify-content:flex-end}
+/* How today's call was made: the rule as a ladder, today's rung lit, then the areas behind it. */
+.howcall .charttitle{margin:20px 0 8px}
+.howcall .charttitle:first-of-type{margin-top:4px}
+.rungs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;counter-reset:rung}
+.rungs li{counter-increment:rung;display:grid;grid-template-columns:22px 120px 1fr;gap:4px 10px;align-items:baseline;
+  padding:9px 12px;border:1px solid var(--line);border-radius:10px;color:var(--text-secondary);font-size:14px}
+.rungs li::before{content:counter(rung);color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
+.rungs li b{color:var(--text-primary);font-weight:600}
+.rungs li.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--text-primary)}
+.rungs li.on b{color:var(--accent)}
+.rungs .because{grid-column:2/-1;margin:2px 0 0;font-size:14px;color:var(--text-primary)}
+@media(max-width:560px){ .rungs li{grid-template-columns:18px 1fr} .rungs li span{grid-column:2} }
+table.evidence.areas .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--lv);margin-right:8px}
+table.evidence.areas tr:not(.on) .dot{opacity:.45}
+table.evidence.areas tr.on td:nth-child(3){color:var(--accent);font-weight:600}
+table.evidence.areas tr.on td:last-child{color:inherit;font-weight:400}
+table.evidence .small{font-size:12.5px}

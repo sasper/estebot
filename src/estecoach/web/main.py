@@ -133,9 +133,7 @@ def _context(request, p, day=None):
     day = day or an.default_day(con, date.today().isoformat())
     r = an.readiness(con, day, goals)
 
-    ledger = cfg.data_file("ledger.md")
-    specs = predictions.load_specs(cfg.data_file("predictions.toml"))
-    preds = predictions.panel(con, an, ledger.read_text() if ledger.exists() else "", specs, day)
+    specs = predictions.load_specs(cfg.data_file("predictions.toml"))    # the squat example's baseline
 
     # weight: raw points + 14-day rolling trend
     since = (date.fromisoformat(day) - timedelta(days=120)).isoformat()
@@ -241,7 +239,7 @@ def _context(request, p, day=None):
     ctx = dict(verdict_text=verdict_text, verdict_words=VERDICT_TEXT, ev=ev, recorded=recorded,
         ring=charts.signal_ring(r["signals"], r["score"], r["verdict"], voting=r["voting"]),
         day_label=date.fromisoformat(day).strftime("%a %-d %b %Y"),
-        day=day, r=r, preds=preds, wchart=wchart, load_charts=load_charts,
+        day=day, r=r, wchart=wchart, load_charts=load_charts,
         multiples=multiples, sparks=sparks, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=goals.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,
         pattern=pattern, plan=plan, axial=axial, checkin=checkin,
         day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
@@ -279,8 +277,7 @@ def presentable(ctx):
     """A copy of the page context with the private parts taken out. Drops: every note's text
     (check-in, recent context, calendar tooltips), the sick/injured calendar rings, back
     status and the sick/injured flags wherever they show, the supplement list and
-    per-nutrient notes, the upper-limit table (it is about supplement doses) and predictions
-    marked private, and every medication name (calendar and check-in card). The template also
+    per-nutrient notes, the upper-limit table (it is about supplement doses), and every medication name (calendar and check-in card). The template also
     drops the forms on `present`, and the check-in card's
     prefill (`day_ci`) goes here, so its note and toggles never reach the HTML.
     Numbers are untouched."""
@@ -310,9 +307,6 @@ def presentable(ctx):
     c["doses_today"] = []
     c["nut"] = dict(ctx["nut"], supplements=[], near_limit=[],
                     gaps=[dict(g, note=None) for g in ctx["nut"]["gaps"]])
-    # predictions.toml marks the private ones; guessing from their wording would need a
-    # list of exactly the words that should stay out of a public repo.
-    c["preds"] = [p for p in ctx["preds"] if not p.get("private")]
     return c
 
 
