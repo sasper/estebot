@@ -34,6 +34,7 @@ LOG_FIELDS = ("date", "written_at", "source", "routine_id", "routine", "plan", "
               "deload", "changes", "before")
 NOTE = "EsteCoach:"
 OLD_NOTES = ("EsteBot:",)   # lines written before the rename, replaced like our own
+HEAVY = 0.8     # a set at 80% or more of the top weight is a heavy set, not a ramp
 VERDICT_TEXT = {"hard": "Go hard", "normal": "Go as planned", "light": "Take it easy", "rest": "Rest day"}
 
 # What a routine read returns that an update doesn't take. Anything else that turns up is a
@@ -185,6 +186,13 @@ def changes_for(rt, plan, verdict, canon, active_correction=lambda name: False):
                     # not all three. A new weight goes on every top set.
                     if abs(hevy.kg_to_lb(top) - goal["weight_lb"]) < 0.05 and not item.get("reps_range"):
                         tops = [min(reversed(tops), key=lambda s: s.get("reps") or 0)]
+                    # A lighter target (easing back in after easy days) is for every heavy
+                    # set, not only the old top ones: a 270 x 6 under 300 x 2, 3 stayed at 270
+                    # when the 300s went to 270 x 4-5, and the session was lifted as three
+                    # sets at the target (2 Nov 2026). Heavy is HEAVY of the old top weight or
+                    # more; ramp and light back-off sets keep their weights.
+                    if goal["weight_lb"] < hevy.kg_to_lb(top) - 0.05:
+                        tops = [s for s in normal if s["weight_kg"] >= HEAVY * top]
                     for s in tops:
                         s["weight_kg"] = lb_to_kg(goal["weight_lb"])
                         s["reps"] = None
@@ -203,7 +211,8 @@ def preview(routine_title, changes, skipped):
             b = [x for x, y in zip(c["before"], c["after"]) if x != y]
             a = [y for x, y in zip(c["before"], c["after"]) if x != y]
             if a:
-                moved.append(f"{c['exercise']} top set {b[0]} → {a[0]}")
+                n = f"{len(a)} sets " if len(a) > 1 and len(set(a)) == 1 else ""
+                moved.append(f"{c['exercise']} top set {b[-1]} → {n}{a[-1]}")
         elif c["what"] == "deload":
             moved.append(f"{c['exercise']} → {', '.join(c['after'])}")
     notes = len([c for c in changes if c["what"] == "note"])
