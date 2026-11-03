@@ -472,7 +472,7 @@ def signup_form():
 async def signup_submit(request: Request):
     """The landing page's early-access form. Anyone may ask; the checks are for bots: same
     origin, a small body, a hidden field people leave empty, five requests an hour from one
-    address, and an email that looks like one. A repeated email updates its row. The page's
+    address, an email that looks like one, and none of a paid form-filler's tells (signups.spam). A repeated email updates its row. The page's
     script asks for JSON and shows the answer in place; without it, the page comes back."""
     wants_json = "application/json" in (request.headers.get("accept") or "")
     def answer(status, message=None, error=None, form=None):
@@ -497,6 +497,9 @@ async def signup_submit(request: Request):
         row = signups.clean(form)
     except signups.Invalid as e:
         return answer(400, error=str(e), form=form)
+    if why := signups.spam(row):
+        signups.log.warning("sign-up dropped (%s)", why)            # no name or address in the log
+        return answer(200, message="Got it. I'll be in touch.")
     signups.notify(row, signups.save(row))
     return answer(200, message="Got it. I'll be in touch.")
 
