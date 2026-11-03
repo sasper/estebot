@@ -80,6 +80,22 @@ def test_a_normal_day_writes_the_top_set_and_a_note_and_nothing_else():
         "Will change Push A - Bench: Barbell Bench Press top set 205 × 4 → 210 × 2–3; Machine Chest Fly top set 105 × 8 → 105 × 9.")
 
 
+def test_a_lighter_target_goes_on_every_heavy_set():
+    # Easing back in: 205 x 4 becomes 185. The 185 x 6 under it is a heavy set (80% of 205 or
+    # more) and gets the target too; the warm-up, the 155 ramp and the 155 back-off stay.
+    ease = dict(BENCH, target="185 × 3–5", goal={"weight_lb": 185, "reps": 3}, reps_range=[3, 5])
+    new, changes, _ = H.changes_for(RT, plan(ease), "normal", canon)
+    r = {"start": 3, "end": 5}
+    assert sets_lb(new, "Bench Press (Barbell)") == [
+        (95, 15, None, "warmup"), (155, 10, None, "normal"), (185, None, r, "normal"),
+        (185, None, r, "normal"), (155, 8, None, "normal")]
+    assert H.preview(RT["title"], changes, []).startswith(
+        "Will change Push A - Bench: Barbell Bench Press top set 205 × 4 → 2 sets 185 × 3–5.")
+    # A heavier target is for the top set only, as before.
+    up, _, _ = H.changes_for(RT, plan(BENCH), "normal", canon)
+    assert sets_lb(up, "Bench Press (Barbell)")[2] == (185, 6, None, "normal")
+
+
 def test_a_note_is_replaced_not_stacked():
     once, _, _ = H.changes_for(RT, plan(BENCH), "hard", canon)
     twice, _, _ = H.changes_for(once, plan(dict(BENCH, target="215 × 1–2")), "normal", canon)
