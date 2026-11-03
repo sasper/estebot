@@ -12,7 +12,7 @@ from estecoach import core
 
 # Row labels, sentence names and the adjective for a flagged day, per area. Training load is
 # flagged when it's well above or well below usual, so its days are "unusual-load", and how
-# you feel covers the back and recovery between sets as well as energy, so "rough check-in".
+# you feel covers the back as well as energy, so "rough check-in".
 LABEL = {"sleep": "Sleep", "recovery": "HRV & resting heart rate", "feel": "How you feel",
          "load": "Training load", "effort": "Effort", "nutrition": "Nutrition",
          "pace": "Weight-loss pace"}
@@ -100,17 +100,12 @@ def today_line(x, present=False):
         return "; ".join(parts) or "Not enough readings yet"
     if a == "feel":
         if not f.get("checked_in"):
-            return "No check-in yet today" + (f"; slow recovery between sets on {f['slow_days']} of the last 14 days"
-                                              if f.get("slow_days", 0) >= 3 else "")
+            return "No check-in yet today"
         parts = []
         if f.get("energy") is not None:
             parts.append(f"Energy {f['energy']} of 3")
         if f.get("back") and not present:
             parts.append(BACK.get(f["back"], f["back"]))
-        if f.get("slow_recovery"):
-            parts.append("slow recovery between sets")
-        if f.get("slow_days", 0) >= 3:
-            parts.append(f"slow recovery between sets on {f['slow_days']} of the last 14 days")
         return "Today: " + ", ".join(parts) if parts else "Checked in today"
     if a == "load":
         if f.get("ratio") is None:

@@ -545,7 +545,7 @@ def admin_signup_delete(request: Request, sid: int, csrf: str = Form("")):
 @app.post("/checkin")
 def checkin(request: Request, day: str = Form(...), back: str | None = Form(None),
             soreness: int = Form(0), energy: int | None = Form(None),
-            inter_set_recovery: int | None = Form(None), note: str = Form(""),
+            note: str = Form(""),
             sick: bool = Form(False), injured: bool = Form(False), skip: list[str] | None = Form(None),
             csrf: str = Form("")):
     p = people.for_request(request)
@@ -566,7 +566,7 @@ def checkin(request: Request, day: str = Form(...), back: str | None = Form(None
     con.execute("""INSERT INTO checkin
                      (date, back, back_reported, soreness, energy, inter_set_recovery, note,
                       sick, injured, skip, source, needs_review, saved_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,'manual',0,?)
+                   VALUES (?,?,?,?,?,NULL,?,?,?,?,'manual',0,?)
                    ON CONFLICT(date) DO UPDATE SET
                      back=excluded.back, back_reported=excluded.back_reported,
                      soreness=excluded.soreness, energy=excluded.energy,
@@ -574,7 +574,7 @@ def checkin(request: Request, day: str = Form(...), back: str | None = Form(None
                      note=excluded.note, sick=excluded.sick, injured=excluded.injured,
                      skip=excluded.skip, source='manual', needs_review=0, saved_at=excluded.saved_at""",
                 (day, back if reported else "ok", int(reported), soreness, energy,
-                 scale(inter_set_recovery), note.strip()[:400] or None, int(sick), int(injured),
+                 note.strip()[:400] or None, int(sick), int(injured),
                  json.dumps(sorted({s[:80] for s in skip if s.strip()})[:20]) if isinstance(skip, list) and skip else None,
                  datetime.now().isoformat(timespec="seconds")))
     con.execute("DELETE FROM checkin_draft WHERE date=?", (day,))
@@ -605,9 +605,9 @@ def checkin_from_text(request: Request, day: str = Form(...), text: str = Form("
         log.warning("check-in not read: %s", e)
         return RedirectResponse(f"/?day={day}&said=failed#checkin", status_code=303)
     con.execute("""INSERT OR REPLACE INTO checkin_draft
-                     (date, back, energy, inter_set_recovery, sick, injured, note)
-                   VALUES (?,?,?,?,?,?,?)""",
-                (day, f["back"], f["energy"], f["inter_set_recovery"], int(f["sick"]),
+                     (date, back, energy, sick, injured, note)
+                   VALUES (?,?,?,?,?,?)""",
+                (day, f["back"], f["energy"], int(f["sick"]),
                  int(f["injured"]), text.strip()[:checkin_text.MAX_CHARS]))
     con.commit()
     return RedirectResponse(f"/?day={day}#checkin", status_code=303)

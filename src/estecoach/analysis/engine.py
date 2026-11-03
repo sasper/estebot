@@ -389,12 +389,10 @@ def _recovery_signal(con, day):
 def _feel_signal(con, day):
     """This day's check-in only (notes become check-ins at each sync). Until it exists, how you
     feel has no reading: yesterday's answers describe yesterday, and borrowing them made a
-    spasm one evening call the next day a rest day before the morning's check-in."""
+    spasm one evening call the next day a rest day before the morning's check-in.
+    Recovery between sets is no longer read (2 Nov 2026): the check-in comes before the
+    session, so the answer was about the last one, which the effort and load signals cover."""
     ci = con.execute("SELECT * FROM checkin WHERE date = ?", (day,)).fetchone()
-    poor = [r["date"] for r in con.execute(
-        """SELECT date FROM checkin WHERE date <= ? AND date >= ?
-             AND inter_set_recovery IS NOT NULL AND inter_set_recovery <= 1 ORDER BY date""",
-        (day, s(d(day) - timedelta(days=13))))]
     levels, reasons = [], []
     if ci:
         when = "today"
@@ -405,17 +403,11 @@ def _feel_signal(con, day):
             back = ci["back"] or "ok"
             lv = {"spasm": "red", "sore": "amber"}.get(back, "green")
             levels.append(lv); reasons.append(f"back {back} {when}")
-        if ci["inter_set_recovery"] is not None and ci["inter_set_recovery"] <= 1:
-            levels.append("amber"); reasons.append(f"recovery between sets poor {when}")
-    if len(poor) >= 3:
-        levels.append("amber"); reasons.append(f"recovery between sets poor on {len(poor)} of 14 days")
     if not levels:
         reasons.append("no check-in today yet")
     return _signal("feel", core.worst(*levels), reasons, dict(
         checked_in=bool(ci), energy=ci["energy"] if ci else None,
-        back=(ci["back"] or "ok") if ci and ci["back_reported"] else None,
-        slow_recovery=bool(ci and ci["inter_set_recovery"] is not None and ci["inter_set_recovery"] <= 1),
-        slow_days=len(poor))), ci, poor
+        back=(ci["back"] or "ok") if ci and ci["back_reported"] else None)), ci
 
 def _nutrition_signal(con, day, goals, body_lb, rate, days=4):
     """The last few complete days against maintenance as the scale implies it, and protein
@@ -479,7 +471,7 @@ def readiness(con, day, goals, voting="auto", graded=None):
     load, r_acwr = _load_signal(con, prior)
     sleep, last_sleep = _sleep_signal(con, day)
     recovery, rec = _recovery_signal(con, day)
-    feel, ci, poor = _feel_signal(con, day)
+    feel, ci = _feel_signal(con, day)
     signals = [load, _effort_signal(con, prior), sleep, recovery, feel,
                _nutrition_signal(con, day, goals, ws["current"], ws["rate"]),
                _pace_signal(con, day, goals)]
@@ -533,7 +525,7 @@ def readiness(con, day, goals, voting="auto", graded=None):
         "signals": signals, "ramp": ramp, "checkin": ci, "voting": voting, "holds": holds,
         "positive": positive, "hard_reasons": reasons, "forced_rest": spasm,
         "subjective_review": bool(ci["needs_review"]) if ci and ci["date"] == day else False,
-        "poor_recovery_days": poor, "acwr": r_acwr, **rec,
+        "acwr": r_acwr, **rec,
         "streak": days_since_rest(con, prior), "last_sleep": last_sleep, "today_open": is_open(con, day),
         # an unfinished day counts toward neither: today's training isn't in yet
         "streak_now": days_since_rest(con, prior if is_open(con, day) else day),
