@@ -67,6 +67,23 @@ def clean(form):
             "tracks": ", ".join(tracks) or None, "note": one("note")[:LIMITS["note"]] or None}
 
 
+# Requests that get past the honeypot come from real browsers, often people paid to fill in
+# contact forms. Their tells: every box ticked, a note that names this site or carries a link
+# (someone asking to try it has no reason to), and an SEO pitch. A real request ticks a few.
+MOST_TRACKS = 15
+_PITCH = re.compile(r"https?://|www\.|\b(estecoach|estebot)\.app\b|\bseo\b|google (1st|first) page|"
+                    r"\brankings?\b|\bbacklinks?\b|price list", re.I)
+
+
+def spam(row):
+    """Why a cleaned row looks like a form-filler rather than a person, or None."""
+    if row["tracks"] and row["tracks"].count(", ") + 1 >= MOST_TRACKS:
+        return "most boxes ticked"
+    if row["note"] and _PITCH.search(row["note"]):
+        return "a link or a pitch in the note"
+    return None
+
+
 def allowed(address, now=None):
     """At most PER_HOUR requests an hour from one address."""
     now = now or time.time()

@@ -155,3 +155,20 @@ def test_the_owner_email_names_its_user_agent(monkeypatch):
         monkeypatch.setenv(key, "x")
         assert signups._send("s", "t") == "sent (200)"
     assert [r.get_header("User-agent") for r in sent] == [signups.USER_AGENT] * 2
+
+
+def test_form_filler_requests_are_thanked_but_not_kept(main, store, caplog):
+    # The shapes of the first real ones: every box ticked with an SEO pitch, and gibberish
+    # that names the site. Both came from a real browser, so the honeypot never fired.
+    every_box = [("tracks", t) for t in signups.TRACKS]
+    seo = [("name", "Pat Example"), ("email", "pat@example.com"), ("note",
+           "Hello https://estecoach.app/, We can place your website on Google 1st page.")]
+    gibberish = [("name", "Qx"), ("email", "qx@example.com"), ("note", "Gfhudwgfyehj fuehiqok estecoach.app")]
+    with caplog.at_level(logging.WARNING):
+        for pairs in (seo + every_box, gibberish, [("email", "ticks@example.com")] + every_box):
+            r = _post(main, pairs)
+            assert r.status_code == 200 and b"Got it" in r.body
+    assert signups.listing() == []
+    assert "sign-up dropped" in caplog.text and "example.com" not in caplog.text
+    _post(main, GOOD + [("note", "Cut for a meet, I use Hevy and Cronometer")])
+    assert len(signups.listing()) == 1
