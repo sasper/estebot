@@ -117,13 +117,24 @@ def backfill(con, path, goals, days, today=None, training=None):
 
 def graded(con, rows):
     """{verdict: {"n", "hit"}} over the recorded calls whose day had a session: the
-    self-grade on calls as they were made, not as today's rules would make them."""
-    out = {}
+    self-grade on calls as they were made, not as today's rules would make them. Plus
+    "lighter": take-it-easy days from engine.DELOAD_SINCE scored against their own lighter
+    targets (engine.lighter_outcome), which session_outcome leaves out."""
+    out, lighter = {}, []
+    deloads = engine.deload_days(con)
     for c in rows:
-        o = engine.session_outcome(con, c["date"])
+        o = engine.session_outcome(con, c["date"], deloads=deloads)
         if o is not None:
             out.setdefault(c["verdict"], []).append(o["hit"])
-    return {v: {"n": len(h), "hit": sum(h) / len(h)} for v, h in out.items()}
+        elif c["date"] in deloads and c["verdict"] == "light":
+            # A take-it-easy day since lighter targets began: scored on those, separately.
+            lo = engine.lighter_outcome(con, c["date"], json.loads(c.get("targets") or "[]"))
+            if lo:
+                lighter.append(lo["hit"])
+    got = {v: {"n": len(h), "hit": sum(h) / len(h)} for v, h in out.items()}
+    if lighter:
+        got["lighter"] = {"n": len(lighter), "hit": sum(lighter) / len(lighter)}
+    return got
 
 
 def main(argv):

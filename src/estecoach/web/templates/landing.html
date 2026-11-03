@@ -79,11 +79,9 @@
         <section class="card tapcheck"><div class="taphead"><h2>Check-in</h2><span class="small muted">read from what you wrote, check and save</span></div>
           <div class="tapsay"><input readonly tabindex="-1" value="Slept great, back is fine, legs fresh"><button type="button" tabindex="-1">Read it</button></div>
           <div class="tap">
-          {% for label, words, pick in [("Lower back", ["ok", "tired", "sore", "spasm"], 0), ("Energy", ["wiped", "low", "ok", "great"], 3)] %}
-          <fieldset><legend>{{ label }}</legend><div class="seg">{% for w in words %}<label><input type="radio" disabled{{ " checked" if loop.index0 == pick }}><span>{{ w }}</span></label>{% endfor %}</div></fieldset>
-          {% endfor %}
+          <fieldset><legend>Energy</legend><div class="seg">{% for w in ["wiped", "low", "ok", "great"] %}<label><input type="radio" disabled{{ " checked" if loop.index0 == 3 }}><span>{{ w }}</span></label>{% endfor %}</div></fieldset>
+          <fieldset><legend>Any pain or injury? <span class="muted" style="font-weight:400">Not normal muscle soreness.</span></legend><div class="seg"><label><input type="radio" disabled checked><span>None</span></label><label><input type="radio" disabled><span>Yes</span></label></div></fieldset>
           <div class="tapfoot"><label class="flag"><input type="checkbox" tabindex="-1"><span>Sick</span></label>
-            <label class="flag"><input type="checkbox" tabindex="-1"><span>Injured</span></label>
             <input class="tapnote-in" readonly tabindex="-1" placeholder="Note (optional)"><button type="button" tabindex="-1">Save</button></div>
           </div>
         </section></div>

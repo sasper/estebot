@@ -13,31 +13,39 @@ import json
 
 import anthropic
 
+from estecoach import core
 from estecoach.web import chat
 
 # The tap card's words, in order of the values it saves (0-3); back's are its levels.
 ENERGY = ("wiped", "low", "ok", "great")
-BACK = ("ok", "tired", "sore", "spasm")
+AREAS = dict(core.PAIN_AREAS)                      # key -> the card's words
+LEVELS = core.PAIN_LEVELS                          # 1-3 -> the card's words
 NOT_SAID = "not said"
 MAX_CHARS = 400
 
 SYSTEM = """You read a person's short check-in, written in the morning before they train, about \
 how they feel now, and pick which of the given options it says for each question. Use only what the message says: \
 when it doesn't speak to a question, pick "not said". Don't infer energy from sleep alone, or \
-the back from soreness elsewhere. sick and injured are true only when the message says so \
-(a cold, a stomach bug, a fever; a pulled or tweaked muscle, a sprain)."""
+pain from tiredness. Pain means pain or an injury, not the normal muscle soreness after \
+training: "legs sore from squats" is not pain, "knee hurts on stairs" is. For each area that \
+hurts, pick the level the message supports. sick is true only when the message says so \
+(a cold, a stomach bug, a fever)."""
 
 SCHEMA = {
     "type": "object",
     "properties": {
-        "back": {"type": "string", "enum": [NOT_SAID, *BACK],
-                 "description": "Lower back: ok, tired, sore, or spasm"},
+        "pain": {"type": "string", "enum": [NOT_SAID, "none", "yes"],
+                 "description": "Any pain or injury (not normal muscle soreness)"},
+        "areas": {"type": "array", "description": "Each area that hurts, when pain is yes",
+                  "items": {"type": "object", "additionalProperties": False,
+                            "required": ["area", "level"],
+                            "properties": {"area": {"type": "string", "enum": list(AREAS.values())},
+                                           "level": {"type": "string", "enum": list(LEVELS.values())}}}},
         "energy": {"type": "string", "enum": [NOT_SAID, *ENERGY],
                    "description": "Overall energy today"},
         "sick": {"type": "boolean"},
-        "injured": {"type": "boolean"},
     },
-    "required": ["back", "energy", "sick", "injured"],
+    "required": ["pain", "areas", "energy", "sick"],
     "additionalProperties": False,
 }
 
@@ -49,10 +57,15 @@ class CheckinTextError(Exception):
 def to_fields(picked):
     """The model's picks -> the checkin row's values; "not said" stays unanswered (None)."""
     pick = lambda words, k: words.index(picked[k]) if picked.get(k) in words else None
-    back = picked.get("back")
-    return {"back": back if back in BACK else None,
-            "energy": pick(ENERGY, "energy"),
-            "sick": bool(picked.get("sick")), "injured": bool(picked.get("injured"))}
+    area_key = {v: k for k, v in AREAS.items()}
+    level = {v: k for k, v in LEVELS.items()}
+    hurts = {}
+    for x in picked.get("areas") or []:
+        if x.get("area") in area_key and x.get("level") in level:
+            a = area_key[x["area"]]
+            hurts[a] = max(hurts.get(a, 0), level[x["level"]])
+    pain = {} if picked.get("pain") == "none" else hurts if picked.get("pain") == "yes" and hurts else None
+    return {"pain": pain, "energy": pick(ENERGY, "energy"), "sick": bool(picked.get("sick"))}
 
 
 def read(con, text, today, client=None):

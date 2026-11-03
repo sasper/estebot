@@ -386,28 +386,72 @@ def _recovery_signal(con, day):
              rhr=rhr7 if lv_r else None, rhr_usual=rmu if lv_r else None))
     return sig, dict(hrv7=hrv7, hrv_baseline=mu, hrv_z=z, rhr7=rhr7, rhr_baseline=rmu)
 
-def _feel_signal(con, day):
+PAIN_GROUPS = core.load_pain_groups()
+
+def pain_of(ci):
+    """{area: severity 1-3} from a check-in row; {} for no pain, None when it wasn't asked.
+    Rows from before the pain question (and check-ins derived from notes) have only the
+    back level, which reads as back pain at core.BACK_TO_PAIN: spasm 3, sore 2, tired 1."""
+    if ci is None:
+        return None
+    keys = ci.keys()
+    if "pain" in keys and ci["pain"] is not None:
+        return {a: int(v) for a, v in json.loads(ci["pain"]).items() if int(v) > 0}
+    if ci["back_reported"]:
+        sev = core.BACK_TO_PAIN.get(ci["back"] or "ok", 0)
+        return {"back": sev} if sev else {}
+    return None
+
+def pain_words(pain):
+    """"knees: limits some movements; back: noticeable, doesn't limit me", worst first."""
+    label = dict(core.PAIN_AREAS)
+    order = sorted(pain.items(), key=lambda kv: (-kv[1], [a for a, _ in core.PAIN_AREAS].index(kv[0])))
+    return "; ".join(f"{label[a].lower()}: {core.PAIN_LEVELS[v][0].lower()}{core.PAIN_LEVELS[v][1:]}"
+                     for a, v in order)
+
+def areas_used(con, day, training=None):
+    """The body areas the day's planned workout uses (pain_areas.toml), or None when the
+    workout isn't known. The back is used when any planned exercise has an AXIAL score of 2
+    or more."""
+    plan = _next_session(con, day, training or TRAINING)
+    if not plan or not plan.get("template"):
+        return None
+    exs = plan["template"]["exercises"]
+    used = {"back"} if any(axial_score(e) >= 2 for e in exs) else set()
+    for e in exs:
+        r = con.execute("SELECT muscle_group FROM e1rm WHERE exercise=? AND date<? ORDER BY date DESC LIMIT 1",
+                        (e, day)).fetchone()
+        used |= set(PAIN_GROUPS.get(r["muscle_group"] if r else None, ()))
+    return used
+
+def _feel_signal(con, day, used_areas=None):
     """This day's check-in only (notes become check-ins at each sync). Until it exists, how you
     feel has no reading: yesterday's answers describe yesterday, and borrowing them made a
     spasm one evening call the next day a rest day before the morning's check-in.
     Recovery between sets is no longer read (2 Nov 2026): the check-in comes before the
-    session, so the answer was about the last one, which the effort and load signals cover."""
+    session, so the answer was about the last one, which the effort and load signals cover.
+    Pain (core.pain_rule): 3 anywhere is red, 2 in an area today's workout uses is amber,
+    anything else green. used_areas() -> the areas used, asked only when there's a 2.
+    -> (signal, check-in row, pain rule)"""
+    used_areas = used_areas or (lambda: None)
     ci = con.execute("SELECT * FROM checkin WHERE date = ?", (day,)).fetchone()
+    pain = pain_of(ci)
+    rule = core.pain_rule(pain, used_areas() if pain and any(v == 2 for v in pain.values()) else set())
     levels, reasons = [], []
     if ci:
         when = "today"
         if ci["energy"] is not None:
             lv = "red" if ci["energy"] <= 0 else "amber" if ci["energy"] == 1 else "green"
             levels.append(lv); reasons.append(f"energy {ci['energy']}/3 {when}")
-        if ci["back_reported"]:
-            back = ci["back"] or "ok"
-            lv = {"spasm": "red", "sore": "amber"}.get(back, "green")
-            levels.append(lv); reasons.append(f"back {back} {when}")
+        if pain is not None:
+            # Pain that only limits an area the workout doesn't use is a note, not a flag.
+            levels.append("red" if rule["rest"] else "amber" if rule["light"] else "green")
+            reasons.append(pain_words(pain) + f" {when}" if pain else f"no pain {when}")
     if not levels:
         reasons.append("no check-in today yet")
     return _signal("feel", core.worst(*levels), reasons, dict(
-        checked_in=bool(ci), energy=ci["energy"] if ci else None,
-        back=(ci["back"] or "ok") if ci and ci["back_reported"] else None)), ci
+        checked_in=bool(ci), energy=ci["energy"] if ci else None, pain=pain,
+        pain_rule=rule if pain else None)), ci, rule
 
 def _nutrition_signal(con, day, goals, body_lb, rate, days=4):
     """The last few complete days against maintenance as the scale implies it, and protein
@@ -471,13 +515,14 @@ def readiness(con, day, goals, voting="auto", graded=None):
     load, r_acwr = _load_signal(con, prior)
     sleep, last_sleep = _sleep_signal(con, day)
     recovery, rec = _recovery_signal(con, day)
-    feel, ci = _feel_signal(con, day)
+    feel, ci, pain_rule = _feel_signal(con, day, lambda: areas_used(con, day))
     signals = [load, _effort_signal(con, prior), sleep, recovery, feel,
                _nutrition_signal(con, day, goals, ws["current"], ws["rate"]),
                _pace_signal(con, day, goals)]
-    spasm = bool(ci and ci["back_reported"] and ci["back"] == "spasm")
+    label = dict(core.PAIN_AREAS)
+    spasm = bool(pain_rule["rest"])      # pain that hurts to move, anywhere: rest
     if spasm:
-        feel["reasons"].append("a back spasm means rest, whatever else says (your rule)")
+        feel["reasons"].append("pain that hurts to move means rest, whatever else says")
     levels = {x["area"]: x["level"] for x in signals}
 
     ramp = None
@@ -495,11 +540,20 @@ def readiness(con, day, goals, voting="auto", graded=None):
         holds.append("sick today or yesterday")
     # Injured yesterday holds today too, unless this morning's check-in says the back is ok
     # and nothing is hurt: a day of rest after spasms, then a light session, is the norm.
-    clean = bool(ci and ci["back_reported"] and (ci["back"] or "ok") == "ok" and not ci["injured"])
+    pain = pain_of(ci)
+    clean = pain is not None and not any(v >= 2 for v in pain.values()) and not ci["injured"]
     if unwell.get(day, {}).get("injured"):
         holds.append("injured today")
     elif unwell.get(prior, {}).get("injured") and not clean:
         holds.append("injured yesterday, and no clean check-in today")
+    if pain_rule["light"]:
+        holds.append("pain that limits your " + " and ".join(label[a].lower() for a in pain_rule["light"])
+                     + ", which today's workout uses")
+    # Pain that limited movement yesterday holds today until this morning's check-in says how it is.
+    if ci is None and not unwell.get(prior, {}).get("injured"):
+        y = pain_of(con.execute("SELECT * FROM checkin WHERE date = ?", (prior,)).fetchone())
+        if y and any(v >= 2 for v in y.values()):
+            holds.append("pain yesterday, and no check-in today")
     if ramp:
         holds.append("back from a near-idle stretch")
     # Reasons to go hard, each (present, words); only those whose record earned it count. Only
@@ -524,6 +578,7 @@ def readiness(con, day, goals, voting="auto", graded=None):
         "date": day, "verdict": verdict, "rule": rule, "rule_areas": rule_areas, "score": core.readiness_score(levels, verdict),
         "signals": signals, "ramp": ramp, "checkin": ci, "voting": voting, "holds": holds,
         "positive": positive, "hard_reasons": reasons, "forced_rest": spasm,
+        "pain": pain, "pain_rule": pain_rule,
         "subjective_review": bool(ci["needs_review"]) if ci and ci["date"] == day else False,
         "acwr": r_acwr, **rec,
         "streak": days_since_rest(con, prior), "last_sleep": last_sleep, "today_open": is_open(con, day),
@@ -710,24 +765,20 @@ def latest_checkin(con, day):
         "SELECT * FROM checkin WHERE date <= ? ORDER BY date DESC LIMIT 1", (day,)).fetchone()
 
 def recommend_pattern(con, day, checkin, training=None):
-    """Given back status, which day type is safe today. Returns (pattern, why) or None.
+    """Given pain in the check-in, which day type is safe today. Returns (pattern, why) or None.
     `checkin` is the row readiness() used, so the suggestion and the verdict cite the same
     note."""
-    c = checkin
-    back = (c["back"] if c and c["back_reported"] else None) or "ok"
-    if back == "ok": return None
-    if back == "spasm":       # needs no ranking of day types, so it comes first
-        return ("rest", "Back is spasming. No session — this is the rule you already use.")
+    pain = pain_of(checkin) or {}
+    if any(v >= 3 for v in pain.values()):   # needs no ranking of day types, so it comes first
+        return ("rest", "Rest today. If it isn't improving, get it looked at.")
+    if pain.get("back", 0) < 2:              # a back that's only noticeable is a note
+        return None
     ranked = axial_by_day_type(con, day, training=training)
     if not ranked: return None
     safest = next(iter(ranked))
-    if back == "sore":
-        return (safest, f"Back is sore. {safest.title()} is your lowest spinal-load day "
-                        f"(mean axial {ranked[safest]:.1f} of 3). Avoid rows, carries, cleans, "
-                        f"squats and deadlift variants entirely.")
-    return (safest, f"Back is tired. Favour {safest} today (mean axial "
-                    f"{ranked[safest]:.1f} of 3) over the higher-load rotations "
-                    + ", ".join(f"{k} {v:.1f}" for k, v in list(ranked.items())[1:]) + ".")
+    return (safest, f"Back pain limits some movements. {safest.title()} is your lowest spinal-load day "
+                    f"(mean axial {ranked[safest]:.1f} of 3). Avoid rows, carries, cleans, "
+                    f"squats and deadlift variants entirely.")
 
 
 # Strength standards: which logged exercise stands for each standard lift.
@@ -875,16 +926,20 @@ def doses_today(con, day):
 
 # Light-call days before this held their loads; from it on, a light call is a real deload.
 DELOAD_SINCE = "2026-11-02"
-BACK_FLAGGED = ("tired", "sore", "spasm")
+BACK_FLAGGED = ("sore", "spasm")       # back pain 2 or 3; 1 ("tired") is a note only
 
 def deload_days(con):
-    """Days whose session was a deload: a recorded light call, or a back flagged in the
-    check-in, from DELOAD_SINCE on."""
-    out = {r["date"] for r in con.execute(
-        "SELECT date FROM call_record WHERE verdict='light' AND date >= ?", (DELOAD_SINCE,))}
-    out |= {r["date"] for r in con.execute(
-        f"SELECT date FROM checkin WHERE back_reported=1 AND back IN {BACK_FLAGGED} AND date >= ?",
-        (DELOAD_SINCE,))}
+    """Days whose session was a deload, from DELOAD_SINCE on: a recorded light call, a
+    recorded plan with deload targets (back pain on a day with spinal loading), and a back
+    at pain 2 or more on a day with no recorded call."""
+    out, recorded = set(), set()
+    for r in con.execute("SELECT date, verdict, targets FROM call_record WHERE date >= ?", (DELOAD_SINCE,)):
+        recorded.add(r["date"])
+        if r["verdict"] == "light" or any(t.get("action") == "deload" for t in json.loads(r["targets"] or "[]")):
+            out.add(r["date"])
+    for r in con.execute("SELECT * FROM checkin WHERE date >= ?", (DELOAD_SINCE,)):
+        if r["date"] not in recorded and (pain_of(r) or {}).get("back", 0) >= 2:
+            out.add(r["date"])
     return out
 
 def recorded_goals(con):
@@ -945,6 +1000,19 @@ def session_outcome(con, day, training=None, deloads=None, goals=None):
     if not out:
         return None
     return {"date": day, "exercises": out, "hit": sum(x["met"] for x in out) / len(out)}
+
+def lighter_outcome(con, day, targets):
+    """A deload day against the lighter targets its recorded call gave (calls.csv): for each
+    target with a goal whose exercise was done, whether the day's working sets met it.
+    Kept apart from session_outcome and the evidence: it says whether the lighter plan was
+    finished, not how the day compares with normal ones. -> {"n", "met", "hit"} or None."""
+    done = {}
+    for r in con.execute("""SELECT exercise, weight_lb, reps, rpe FROM lift_set
+                            WHERE date=? AND COALESCE(set_type,'') != 'warmup'""", (day,)):
+        done.setdefault(r["exercise"], []).append((r["weight_lb"], r["reps"], r["rpe"]))
+    met = [core.goal_met(t["goal"], done[t["exercise"]]) for t in targets
+           if t.get("goal") and t["exercise"] in done]
+    return {"n": len(met), "met": sum(met), "hit": sum(met) / len(met)} if met else None
 
 PHASE_DAYS = 45   # a session is compared with the sessions within this many days either side
 
@@ -1022,23 +1090,9 @@ def evidence(con, start, end, goals, training=None, min_sets=LIFT_STREAK_MIN_SET
             "areas": by_area, "voting": voting,
             "hard_reasons": by_reason, "hard": hard, "candidates": candidates, "verdicts": by_verdict}
 
-def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS, training=None):
-    """Which session is next and a target for each exercise. Morning decision: only sessions
-    before `day` count, the same as readiness.
-
-    Next day type follows the last session's in the rotation; the version is the other one from
-    the last session of that type. The exercises are those of the last session of the same
-    version (so a swap like reverse lunges carries forward). Main lifts (training.mains_for)
-    get core.main_progression, everything else core.progression, each on the last normal
-    session of that exercise; deload sessions never set a target.
-
-    A 'light' verdict is a deload of every lift (core.deload at DELOAD); a back flagged in the
-    check-in makes it DELOAD_BACK, every lift still in. Right after a deload, a 'normal' call
-    holds main-lift weights and a 'hard' one progresses as if it never happened; after two or
-    more deloads in a row the first normal session eases back in at core.LAYOFF. A lift marked
-    skip in the check-in is listed as skipped and gets no target. `training` is the person's
-    split; None means this config's."""
-    training = training or TRAINING
+def _next_session(con, day, training, min_sets=LIFT_STREAK_MIN_SETS):
+    """The next session in the rotation, from the sessions before `day`: {kind, variant,
+    template (the last session of that variant, or None), sessions, last}, or None."""
     sessions = []
     for r in con.execute("""SELECT date, muscle_groups FROM lift_session
                             WHERE date < ? AND n_sets >= ? ORDER BY date DESC LIMIT 30""",
@@ -1058,17 +1112,45 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
     prev_variant = same[0]["variant"] if same else None
     variant = names[(names.index(prev_variant) + 1) % len(names)] if prev_variant in names else names[0]
     template = next((x for x in same if x["variant"] == variant), same[0] if same else None)
+    return {"kind": kind, "variant": variant, "template": template, "sessions": sessions, "last": last}
+
+def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS, training=None):
+    """Which session is next and a target for each exercise. Morning decision: only sessions
+    before `day` count, the same as readiness.
+
+    Next day type follows the last session's in the rotation; the version is the other one from
+    the last session of that type. The exercises are those of the last session of the same
+    version (so a swap like reverse lunges carries forward). Main lifts (training.mains_for)
+    get core.main_progression, everything else core.progression, each on the last normal
+    session of that exercise; deload sessions never set a target.
+
+    A 'light' verdict is a deload of every lift (core.deload at DELOAD); a back flagged in the
+    check-in makes it DELOAD_BACK, every lift still in. Right after a deload, a 'normal' call
+    holds main-lift weights and a 'hard' one progresses as if it never happened; after two or
+    more deloads in a row the first normal session eases back in at core.LAYOFF. A lift marked
+    skip in the check-in is listed as skipped and gets no target. `training` is the person's
+    split; None means this config's."""
+    training = training or TRAINING
+    nxt = _next_session(con, day, training, min_sets)
+    if nxt is None:
+        return None
+    kind, variant, template, sessions, last = (nxt[k] for k in ("kind", "variant", "template", "sessions", "last"))
     if template is None:
         return {"kind": kind, "variant": variant, "after": last, "template": None, "exercises": []}
 
     mains = training.mains_for(kind, variant)
     order = sorted(template["exercises"],
                    key=lambda e: (e not in mains, -axial_score(e), template["exercises"].index(e)))
-    back = (checkin["back"] if checkin and checkin["back_reported"] else None) or "ok"
-    # Skips are for the check-in's own day; the back carries over from yesterday's, a skip never does.
+    pain = pain_of(checkin) or {}
+    # Back pain that limits movement takes every lift to DELOAD_BACK, but only on a day that
+    # loads the spine (AXIAL 2 or more); on any other day it is a note and the plan stands.
+    back_deload = pain.get("back", 0) >= 2 and any(axial_score(e) >= 2 for e in order)
+    # Skips are for the check-in's own day; a skip never carries over.
     skip = (set(json.loads(checkin["skip"] or "[]"))
             if checkin and "skip" in checkin.keys() and checkin["date"] == day else set())
-    factor = core.DELOAD_BACK if back in BACK_FLAGGED else core.DELOAD if verdict == "light" else None
+    factor = core.DELOAD_BACK if back_deload else core.DELOAD if verdict == "light" else None
+    label = dict(core.PAIN_AREAS)
+    limited = [a for a, v in pain.items() if v == 2 and not (a == "back" and back_deload)]
     deloads, goals = deload_days(con), recorded_goals(con)
     after_deload = sessions[0]["date"] in deloads
     layoff = factor is None and len(sessions) > 1 and all(x["date"] in deloads for x in sessions[:2])
@@ -1095,10 +1177,12 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
                         goal={"weight_lb": top[0], "reps": top[1]} if top[0] else {"total_reps": sum(r for _, r in d)})
         items.append(item)
     # The deload covers the whole session, so it is said once, not on every exercise.
-    return {"kind": kind, "variant": variant, "main": next((e for e in order if e in mains), None),
+    swap = ("Skip or swap moves that load your " + " and ".join(label[a].lower() for a in
+            [a for a, _ in core.PAIN_AREAS if a in limited]) + ".") if limited else None
+    return {"pain_note": swap,"kind": kind, "variant": variant, "main": next((e for e in order if e in mains), None),
             "after": last, "template": template["date"], "rest": verdict == "rest", "exercises": items,
             "deload": factor,
-            "day_adjust": ("Back flagged: every lift stays in at 60% of last time's sets and weight. "
+            "day_adjust": ("Back pain: every lift stays in at 60% of last time's sets and weight. "
                            "Stop each set by RPE 8, and mark a lift skip in the check-in if it hurts."
                            if factor == core.DELOAD_BACK else
                            "Take it easy: every lift at 80% of last time's sets and weight. "

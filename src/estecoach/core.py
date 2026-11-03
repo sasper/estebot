@@ -297,11 +297,11 @@ def evidence_call(levels: dict[str, str | None], voting, forced_rest: bool = Fal
 def call_rule(levels, voting, forced_rest=False, holds=(), positive=None):
     """evidence_call with the rule that decided it: (verdict, rule, areas). The page's "How
     today's call was made" words the rule; it never works one out, so it can't disagree
-    with the call. Rules: spasm, two_red, one_red, two_amber, hold, earned_hard, one_amber
+    with the call. Rules: pain (3 anywhere in the check-in; was the back spasm), two_red, one_red, two_amber, hold, earned_hard, one_amber
     (amber in one voting area: not enough), no_reason (nothing flagged, no earned reason to
     go hard), no_votes. `areas` are the voting areas behind it, in `voting` order."""
     if forced_rest:
-        return "rest", "spasm", []
+        return "rest", "pain", []
     reds = [a for a in voting if levels.get(a) == "red"]
     ambers = [a for a in voting if levels.get(a) == "amber"]
     if len(reds) >= 2:
@@ -317,6 +317,48 @@ def call_rule(levels, voting, forced_rest=False, holds=(), positive=None):
     if ambers:
         return "normal", "one_amber", ambers
     return "normal", ("no_reason" if voting else "no_votes"), []
+
+
+# ---------------------------------------------------------------- pain or injury
+# The check-in asks "Any pain or injury? (Not normal muscle soreness.)" and, for each area
+# that hurts, how much. Replaced the lower-back level on 2 Nov 2026; old back levels read as
+# back pain at the severity in BACK_TO_PAIN, so a spasm day is still a rest day.
+PAIN_AREAS = (("back", "Back"), ("neck", "Neck and shoulders"), ("arms", "Arms, elbows and wrists"),
+              ("hips", "Hips"), ("knees", "Knees"), ("ankles", "Ankles and feet"), ("other", "Other"))
+PAIN_LEVELS = {1: "Noticeable, doesn't limit me", 2: "Limits some movements",
+               3: "Hurts to move, or I can't train it"}
+BACK_TO_PAIN = {"ok": 0, "tired": 1, "sore": 2, "spasm": 3}
+PAIN_TO_BACK = {0: "ok", 1: "tired", 2: "sore", 3: "spasm"}
+
+
+def load_pain_groups(path=None) -> dict:
+    """{muscle group: [areas]} from pain_areas.toml, the file the owner edits."""
+    import tomllib
+    from pathlib import Path
+    with open(path or Path(__file__).with_name("pain_areas.toml"), "rb") as f:
+        return tomllib.load(f).get("groups", {})
+
+
+def pain_rule(pain: dict | None, used: set | None) -> dict:
+    """What pain reported in today's check-in does to the day. pain: {area: severity 1-3},
+    {} for none, None for not answered. used: the areas today's planned workout uses, None
+    when it isn't known (then every area counts as used; "other" always does).
+
+      3 anywhere                   rest
+      2 in an area the workout uses take it easy
+      2 in an area it doesn't use  a note; the call is unchanged
+      1                            a note
+    -> {"rest": [areas], "light": [areas], "notes": [areas]}, each in PAIN_AREAS order."""
+    out = {"rest": [], "light": [], "notes": []}
+    for a, _ in PAIN_AREAS:
+        sev = (pain or {}).get(a, 0)
+        if sev >= 3:
+            out["rest"].append(a)
+        elif sev == 2 and (used is None or a == "other" or a in used):
+            out["light"].append(a)
+        elif sev >= 1:
+            out["notes"].append(a)
+    return out
 
 
 # Each verdict owns a band of the 0-100 readiness score, so the number can never contradict

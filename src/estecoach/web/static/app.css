@@ -380,6 +380,8 @@ body.chat-open .chat-fab{display:none}
 @container (min-width:520px){
   .tapcheck .tap legend{float:left;width:34%;margin:0;line-height:42px}
   .tapcheck .seg{overflow:hidden}
+  .tapcheck .tap fieldset.pain legend{line-height:1.3;padding:6px 12px 0 0}
+  .tapcheck .pain-areas{margin-left:34%}
 }
 /* Athletic dark: one cyan accent, display numerals, and the day's verdict as a glow. */
 body{background:radial-gradient(1100px 420px at 15% -8%,color-mix(in srgb,var(--accent) var(--halo),transparent),transparent 70%) no-repeat,var(--bg)}
@@ -662,3 +664,12 @@ table.plain th{font-size:12px;color:var(--text-muted);font-weight:600}
   table.evidence.stack td:first-child{font-weight:600}
   table.evidence.stack td[data-l]::before{content:attr(data-l) ": ";color:var(--text-muted)}
 }
+/* The pain question: areas and severity appear once "Yes" is picked. */
+.tap fieldset.pain legend .hint{display:block;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;margin-top:2px}
+.pain-areas{display:none;margin-top:10px}
+.pain:has(input[name=pain][value=yes]:checked) .pain-areas{display:block}
+.pain-areas > p{margin:0 0 8px}
+.pain-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,190px);gap:10px;align-items:center;margin-top:6px}
+.pain-row > span{font-size:14px}
+.pain-row .seg span{min-height:36px}
+@media (max-width:420px){.pain-row{grid-template-columns:1fr}}

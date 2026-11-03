@@ -71,15 +71,23 @@
     <form method="post" action="/checkin" class="tap">{% if csrf %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endif %}
       <input type="hidden" name="day" value="{{ day }}">
       <input type="hidden" name="soreness" value="{{ ci.soreness or 0 }}">
-      {# One row per question, words on the buttons; the values saved are unchanged (0-3). #}
-      <fieldset><legend>Lower back</legend>
-        <div class="seg">{% for v in back_levels %}<label><input type="radio" name="back" value="{{ v }}"{{ " checked" if ci.back_reported and ci.back == v }}><span>{{ v }}</span></label>{% endfor %}</div>
-      </fieldset>
+      {# One row per question, words on the buttons; energy saves 0-3. #}
       {% for name, label, words in [("energy", "Energy", ["wiped", "low", "ok", "great"])] %}
       <fieldset><legend>{{ label }}</legend>
         <div class="seg">{% for v in [0, 1, 2, 3] %}<label><input type="radio" name="{{ name }}" value="{{ v }}"{{ " checked" if ci[name] == v }}><span>{{ words[v] }}</span></label>{% endfor %}</div>
       </fieldset>
       {% endfor %}
+      {# Pain: where and how much, shown once "Yes" is picked (CSS :has). Each area saves 1-3. #}
+      <fieldset class="pain"><legend>Any pain or injury? <span class="hint muted">Not normal muscle soreness.</span></legend>
+        <div class="seg"><label><input type="radio" name="pain" value="none"{{ " checked" if day_pain == {} }}><span>None</span></label><label><input type="radio" name="pain" value="yes"{{ " checked" if day_pain }}><span>Yes</span></label></div>
+        <div class="pain-areas">
+          <p class="small muted">{% for k, w in pain_levels.items() %}<b>{{ k }}</b> {{ w[:1]|lower ~ w[1:] }}{{ " · " if not loop.last }}{% endfor %}</p>
+          {% for key, label in pain_areas %}
+          <div class="pain-row"><span>{{ label }}</span>
+            <div class="seg">{% for v in [0, 1, 2, 3] %}<label><input type="radio" name="pain_{{ key }}" value="{{ v }}"{{ " checked" if day_pain and day_pain.get(key, 0) == v }}><span>{{ "–" if v == 0 else v }}</span></label>{% endfor %}</div></div>
+          {% endfor %}
+        </div>
+      </fieldset>
       {% if doses_today %}
       <fieldset><legend>Medications today</legend>
         <div class="doses small">{% for m in doses_today %}<div>{{ m.name }}: {% if m.logged %}{{ m.logged.status|lower }} {{ m.logged.time }}{% else %}<span class="muted">not logged yet</span>{% endif %}</div>{% endfor %}</div>
@@ -92,7 +100,6 @@
       {% endif %}
       <div class="tapfoot">
         <label class="flag" title="Sick with no energy picked counts as energy 0"><input type="checkbox" name="sick" value="1"{{ " checked" if ci.sick }}><span>Sick{{ when }}</span></label>
-        <label class="flag"><input type="checkbox" name="injured" value="1"{{ " checked" if ci.injured }}><span>Injured{{ when }}</span></label>
         <input class="tapnote-in" name="note" maxlength="400" placeholder="Note (optional)" value="{{ ci.note or '' }}" aria-label="Note">
         <button type="submit">Save</button>
       </div>
@@ -210,8 +217,8 @@
     </div>
     {% if checkin %}
     {% set parts = [] %}
-    {% if checkin.back_reported %}{% set _ = parts.append("back " ~ checkin.back) %}{% endif %}
     {% if checkin.energy is not none %}{% set _ = parts.append("energy " ~ checkin.energy ~ "/3") %}{% endif %}
+    {% if pain_text %}{% set _ = parts.append(pain_text) %}{% endif %}
     {% if checkin.sick %}{% set _ = parts.append("sick") %}{% endif %}
     {% if checkin.injured %}{% set _ = parts.append("injured") %}{% endif %}
     {% if parts or checkin.note %}
@@ -406,6 +413,7 @@
     <p class="small">{{ P.track_text }}</p>
     <div class="tablewrap"><table class="plain">
       {% for g in P.track %}<tr><td>{{ g.word }}{% if g.note %}<div class="muted small">{{ g.note }}</div>{% endif %}</td><td>{{ g.shown }}</td></tr>{% endfor %}
+      {% if P.lighter %}<tr><td>{{ P.lighter.word }}</td><td>{{ P.lighter.shown }}</td></tr>{% endif %}
     </table></div>
 
     <details class="numbers">

@@ -23,18 +23,23 @@ def test_the_model_picks_the_cards_words_and_never_a_number(con):
     # Rule 2: no model produces a figure that gets acted on. The schema offers only the tap
     # card's words, and "not said" leaves a question unanswered, as an untapped one is.
     from estecoach.web import checkin_text
-    fake = FakeClaude({"back": "sore", "energy": "low",
-                       "sick": False, "injured": False})
+    fake = FakeClaude({"pain": "yes", "areas": [{"area": "Back", "level": "Limits some movements"},
+                                                {"area": "Knees", "level": "Noticeable, doesn't limit me"}],
+                       "energy": "low", "sick": False})
     f = checkin_text.read(con, "slept badly, back tight, busy day", TODAY, client=fake)
-    assert f == {"back": "sore", "energy": 1, "sick": False, "injured": False}
+    assert f == {"pain": {"back": 2, "knees": 1}, "energy": 1, "sick": False}
     schema = fake.requests[0]["output_config"]["format"]["schema"]["properties"]
     assert schema["energy"]["enum"] == ["not said", "wiped", "low", "ok", "great"]
-    assert all(p.get("type") in ("string", "boolean") for p in schema.values())
+    # Every answer is one of the card's words or a yes/no; pain areas are a list of word pairs.
+    leaves = [p for k, p in schema.items() if k != "areas"] + list(schema["areas"]["items"]["properties"].values())
+    assert all(p.get("type") in ("string", "boolean") for p in leaves)
+    assert schema["areas"]["items"]["properties"]["level"]["enum"] == [
+        "Noticeable, doesn't limit me", "Limits some movements", "Hurts to move, or I can't train it"]
 
 
 def test_reading_a_check_in_is_metered_and_capped_with_the_chat(con, monkeypatch):
     from estecoach.web import chat, checkin_text
-    picks = {"back": "not said", "energy": "great", "sick": False, "injured": False}
+    picks = {"pain": "not said", "areas": [], "energy": "great", "sick": False}
     checkin_text.read(con, "feeling great", TODAY, client=FakeClaude(picks))
     assert chat.spent_today(con, TODAY) > 0
     monkeypatch.setenv("ESTECOACH_CHAT_DAILY_USD", "0")

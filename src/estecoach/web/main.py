@@ -98,7 +98,7 @@ def _refuse(p, csrf):
 
 # The engine's verdicts, in words. "hard" needs an earned reason to go for every target.
 VERDICT_TEXT = {"hard": "Go hard", "normal": "Go as planned", "light": "Take it easy", "rest": "Rest day"}
-BACK_LEVELS = ("ok", "tired", "sore", "spasm")      # checkin.back, mildest first
+PAIN_AREAS = core.PAIN_AREAS
 
 def _is_visitor(p):
     """Someone who isn't signed in on the hosted site: they get the landing page at /."""
@@ -196,8 +196,9 @@ def _context(request, p, day=None):
     # it clears it, so a draft never sits over what was confirmed.
     draft = con.execute("SELECT * FROM checkin_draft WHERE date=?", (day,)).fetchone()
     if draft:
-        day_ci = dict(draft, source="draft", back_reported=int(draft["back"] is not None),
-                      back=draft["back"] or "ok", soreness=(day_ci["soreness"] if day_ci else 0))
+        day_ci = dict(draft, source="draft", back_reported=int(draft["pain"] is not None),
+                      soreness=(day_ci["soreness"] if day_ci else 0))
+    day_pain = an.pain_of(day_ci) if day_ci else None
 
     # days that still need a subjective answer, so they can be reached from the UI. Only the
     # last week's: an answer only changes that day's call (and the next, through "how you
@@ -236,13 +237,15 @@ def _context(request, p, day=None):
     resting = _chat_resting(request, p) if chat_enabled(p) else None
     chat_on = chat_enabled(p) and not resting
     hevy_card = _hevy_card(p, plan, r["verdict"]) if is_today and not demo else None
-    ctx = dict(verdict_text=verdict_text, verdict_words=VERDICT_TEXT, ev=ev, recorded=recorded,
+    pain_text = (an.pain_words(r["pain"]) if r.get("pain") else "no pain" if r.get("pain") == {} else None)
+    ctx = dict(pain_text=pain_text, verdict_text=verdict_text, verdict_words=VERDICT_TEXT, ev=ev, recorded=recorded,
         ring=charts.signal_ring(r["signals"], r["score"], r["verdict"], voting=r["voting"]),
         day_label=date.fromisoformat(day).strftime("%a %-d %b %Y"),
         day=day, r=r, wchart=wchart, load_charts=load_charts,
         multiples=multiples, sparks=sparks, ws=ws, wc=wc, strength=strength, pace_range=pace_range, nut=nut, calendar=calendar, goals_max=goals.get('max_loss_pct_per_week', 1.0), latest_w=(w[-1][1] if w else None), notes=notes,
         pattern=pattern, plan=plan, axial=axial, checkin=checkin,
-        day_ci=dict(day_ci) if day_ci else None, back_levels=BACK_LEVELS,
+        day_ci=dict(day_ci) if day_ci else None, day_pain=day_pain, pain_areas=PAIN_AREAS,
+        pain_levels=core.PAIN_LEVELS,
         said=request.query_params.get("said"),
         review_days=review_days, prev_day=prev_day, next_day=next_day, month_nav=month_nav,
         is_today=is_today, is_future=day > date.today().isoformat(), waiting=_waiting_lines(waits, cfg, now), waiting_for=list(waits.values()),
@@ -285,22 +288,25 @@ def presentable(ctx):
     prefill (`day_ci`) goes here, so its note and toggles never reach the HTML.
     Numbers are untouched."""
     # The chat is off too, and its history left out: an answer could quote anything in the data.
-    c = dict(ctx, present=True, notes=[], review_days=[], pattern=None, day_ci=None, chat_on=False,
-             chat_history=[])
-    r = c["r"] = dict(ctx["r"], subjective_review=False)
-    # Back status is an injury detail: its reasons go and the rest of the signal stays.
-    r["signals"] = [dict(x, reasons=[t for t in x["reasons"] if "back" not in t] or
-                         ["from the daily check-in"]) if x["area"] == "feel" else x
-                    for x in r["signals"]]
+    c = dict(ctx, present=True, notes=[], review_days=[], pattern=None, day_ci=None, day_pain=None, pain_text=None,
+             chat_on=False, chat_history=[])
+    r = c["r"] = dict(ctx["r"], subjective_review=False, pain=None, pain_rule=None)
+    # Pain is an injury detail: its reasons go and the rest of the signal stays.
+    r["signals"] = [dict(x, reasons=[t for t in x["reasons"] if t.startswith("energy")] or
+                         ["from the daily check-in"], facts=dict(x.get("facts") or {}, pain=None, pain_rule=None))
+                    if x["area"] == "feel" else x for x in r["signals"]]
     # The hold stays (it decided the day), its reason doesn't: sick and injured are medical.
     r["holds"] = [h if h.startswith("back from") else "a health note" for h in ctx["r"].get("holds", [])]
     if r.get("positive", "") and "checked in" in r["positive"]:
         r["positive"] = "a good check-in this morning"
     if ctx["checkin"]:
         c["checkin"] = r["checkin"] = dict(ctx["checkin"], note=None, back_reported=0, needs_review=0,
-                                           sick=0, injured=0)
+                                           sick=0, injured=0, pain=None)
     if ctx["plan"]:
-        c["plan"] = dict(ctx["plan"], exercises=[
+        adj = ctx["plan"].get("day_adjust") or ""
+        c["plan"] = dict(ctx["plan"], day_adjust=re.sub(r"^Back pain: (\w)", lambda m: m[1].upper(), adj) or None,
+                         pain_note="Skip or swap any move that hurts." if ctx["plan"].get("pain_note") else None,
+                         exercises=[
             dict(i, adjust=re.sub(r"^Back \w+: (\w)", lambda m: m[1].upper(), i["adjust"]))
             if i.get("adjust") else i for i in ctx["plan"]["exercises"]])
     # Medication names are left out of the HTML entirely, not hidden: the calendar's doses
@@ -543,11 +549,13 @@ def admin_signup_delete(request: Request, sid: int, csrf: str = Form("")):
 
 
 @app.post("/checkin")
-def checkin(request: Request, day: str = Form(...), back: str | None = Form(None),
-            soreness: int = Form(0), energy: int | None = Form(None),
-            note: str = Form(""),
-            sick: bool = Form(False), injured: bool = Form(False), skip: list[str] | None = Form(None),
-            csrf: str = Form("")):
+def checkin(request: Request, day: str = Form(...), soreness: int = Form(0),
+            energy: int | None = Form(None), note: str = Form(""), sick: bool = Form(False),
+            skip: list[str] | None = Form(None), csrf: str = Form(""), pain: str | None = Form(None),
+            pain_back: int | None = Form(None), pain_neck: int | None = Form(None),
+            pain_arms: int | None = Form(None), pain_hips: int | None = Form(None),
+            pain_knees: int | None = Form(None), pain_ankles: int | None = Form(None),
+            pain_other: int | None = Form(None)):
     p = people.for_request(request)
     if refused := _refuse(p, csrf):
         return refused
@@ -556,26 +564,33 @@ def checkin(request: Request, day: str = Form(...), back: str | None = Form(None
     except ValueError:
         return PlainTextResponse("Bad date.", status_code=400)
     # Every field is a tap, and an untapped one is left unanswered rather than given a
-    # default: a back nobody reported must not read as a green "back ok".
-    reported = back in BACK_LEVELS
+    # default: pain nobody reported must not read as "no pain".
     scale = lambda v: v if v in (0, 1, 2, 3) else None
     energy = core.checkin_energy(scale(energy), sick)
+    sev = dict(back=pain_back, neck=pain_neck, arms=pain_arms, hips=pain_hips, knees=pain_knees,
+               ankles=pain_ankles, other=pain_other)
+    hurts = {a: v for a, v in sev.items() if isinstance(v, int) and v in (1, 2, 3)}
+    # "Yes" with no area picked says nothing about where or how much, so it stays unanswered.
+    answer = {} if pain == "none" else hurts if pain == "yes" and hurts else None
     con = p.connect()
     # A manual save always wins over a derived row and clears the review flag - answering
-    # the question is what resolving it means.
+    # the question is what resolving it means. The back level is written alongside, from
+    # the back's pain, for everything that still reads it.
     con.execute("""INSERT INTO checkin
                      (date, back, back_reported, soreness, energy, inter_set_recovery, note,
-                      sick, injured, skip, source, needs_review, saved_at)
-                   VALUES (?,?,?,?,?,NULL,?,?,?,?,'manual',0,?)
+                      sick, injured, skip, pain, source, needs_review, saved_at)
+                   VALUES (?,?,?,?,?,NULL,?,?,0,?,?,'manual',0,?)
                    ON CONFLICT(date) DO UPDATE SET
                      back=excluded.back, back_reported=excluded.back_reported,
                      soreness=excluded.soreness, energy=excluded.energy,
                      inter_set_recovery=excluded.inter_set_recovery,
                      note=excluded.note, sick=excluded.sick, injured=excluded.injured,
-                     skip=excluded.skip, source='manual', needs_review=0, saved_at=excluded.saved_at""",
-                (day, back if reported else "ok", int(reported), soreness, energy,
-                 note.strip()[:400] or None, int(sick), int(injured),
+                     skip=excluded.skip, pain=excluded.pain, source='manual', needs_review=0,
+                     saved_at=excluded.saved_at""",
+                (day, core.PAIN_TO_BACK[(answer or {}).get("back", 0)], int(answer is not None),
+                 soreness, energy, note.strip()[:400] or None, int(sick),
                  json.dumps(sorted({s[:80] for s in skip if s.strip()})[:20]) if isinstance(skip, list) and skip else None,
+                 None if answer is None else json.dumps(answer, sort_keys=True),
                  datetime.now().isoformat(timespec="seconds")))
     con.execute("DELETE FROM checkin_draft WHERE date=?", (day,))
     con.commit()
@@ -605,10 +620,12 @@ def checkin_from_text(request: Request, day: str = Form(...), text: str = Form("
         log.warning("check-in not read: %s", e)
         return RedirectResponse(f"/?day={day}&said=failed#checkin", status_code=303)
     con.execute("""INSERT OR REPLACE INTO checkin_draft
-                     (date, back, energy, sick, injured, note)
-                   VALUES (?,?,?,?,?,?)""",
-                (day, f["back"], f["energy"], int(f["sick"]),
-                 int(f["injured"]), text.strip()[:checkin_text.MAX_CHARS]))
+                     (date, back, energy, sick, injured, pain, note)
+                   VALUES (?,?,?,?,0,?,?)""",
+                (day, None if f["pain"] is None else core.PAIN_TO_BACK[f["pain"].get("back", 0)],
+                 f["energy"], int(f["sick"]),
+                 None if f["pain"] is None else json.dumps(f["pain"], sort_keys=True),
+                 text.strip()[:checkin_text.MAX_CHARS]))
     con.commit()
     return RedirectResponse(f"/?day={day}#checkin", status_code=303)
 

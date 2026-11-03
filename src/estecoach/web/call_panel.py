@@ -25,7 +25,7 @@ STATUS = {"green": "No concern", "amber": "Watch", "red": "Concern", None: "No r
 VERDICT = {"hard": "Go hard", "normal": "Go as planned", "light": "Take it easy", "rest": "Rest"}
 HRV_TIP = "Heart rate variability: the variation between heartbeats. Higher usually means better recovered."
 TOO_FEW = "Too few days to judge"
-BACK = {"ok": "back fine", "tired": "back tired", "sore": "back sore", "spasm": "back spasming"}
+PAIN_SHORT = {1: "noticeable", 2: "limits some movements", 3: "hurts to move"}
 
 
 # ---------------------------------------------------------------- rounding for reading
@@ -104,8 +104,11 @@ def today_line(x, present=False):
         parts = []
         if f.get("energy") is not None:
             parts.append(f"Energy {f['energy']} of 3")
-        if f.get("back") and not present:
-            parts.append(BACK.get(f["back"], f["back"]))
+        pain = f.get("pain")
+        if pain is not None and not present:
+            label = dict(core.PAIN_AREAS)
+            parts.append("no pain" if not pain else "; ".join(
+                f"{label[a].lower()} {PAIN_SHORT[v]}" for a, v in sorted(pain.items(), key=lambda kv: -kv[1])))
         return "Today: " + ", ".join(parts) if parts else "Checked in today"
     if a == "load":
         if f.get("ratio") is None:
@@ -146,7 +149,10 @@ def today_line(x, present=False):
 def _hold_words(h, present):
     if present or h == "a health note":
         return "a health note" if not h.startswith("back from") else "you're coming back after a quiet stretch"
+    if h.startswith("pain that limits your "):
+        return "you have pain that limits your " + h[len("pain that limits your "):].replace(", which today's workout uses", "") + ", and today's workout uses it"
     return {"injured today": "you're injured today",
+            "pain yesterday, and no check-in today": "you had pain that limited movement yesterday, and there's no check-in yet today",
             "injured yesterday, and no clean check-in today": "you were injured yesterday, and there's no check-in yet saying you're fine",
             "sick today or yesterday": "you were sick today or yesterday",
             "back from a near-idle stretch": "you're coming back after a quiet stretch"}.get(h, h)
@@ -163,8 +169,8 @@ def verdict_line(r, present=False):
     counted = [NAME[a] for a in r.get("voting") or []]
     head = VERDICT[r["verdict"]] + "."
     why = {
-        "spasm": ("A health note in today's check-in means rest." if present
-                  else "Your check-in says your back is spasming, and a spasm means rest."),
+        "pain": ("A health note in today's check-in means rest." if present
+                 else "Your check-in says something hurts to move. Rest today. If it isn't improving, get it looked at."),
         "two_red": f"Your {_join(areas)} both show Concern.",
         "one_red": f"Your {_join(areas)} shows Concern.",
         "two_amber": f"Your {_join(areas)} both need watching.",
@@ -178,7 +184,7 @@ def verdict_line(r, present=False):
 
 
 # ---------------------------------------------------------------- the whole panel
-RUNGS = (("rest", "Rest", "A back spasm in today's check-in, or two counted signals show Concern"),
+RUNGS = (("rest", "Rest", "Pain that hurts to move in today's check-in, or two counted signals show Concern"),
          ("light", "Take it easy", "One counted signal shows Concern, two show Watch, or a safety rule applies"),
          ("hard", "Go hard", "No counted signal shows Watch or Concern, and something that predicts good days for you is present"),
          ("normal", "Go as planned", "Everything else"))
@@ -188,12 +194,15 @@ EXPLAINER = ("EsteCoach watches seven signals. A signal only affects your call o
              "shown here but doesn't count.")
 
 SAFETY = ("These make it a take-it-easy day regardless of other signals: sick today or yesterday, "
-          "injured today, injured yesterday with no check-in this morning saying you're fine, or "
-          "coming back after a quiet stretch.")
+          "injured today, injured yesterday with no check-in this morning saying you're fine, "
+          "pain that limits movement in an area today's workout uses (or yesterday, with no check-in "
+          "yet today), or coming back after a quiet stretch.")
 SAFETY_PRESENT = ("These make it a take-it-easy day regardless of other signals: a health note today "
                   "or yesterday, or coming back after a quiet stretch.")
 
-TRACK_EASY_NOTE = "Since 2 Nov 2026, easy days use lighter targets and aren't scored, so this row covers earlier days."
+TRACK_EASY_NOTE = ("Since 2 Nov 2026, easy days have lighter targets, so this row covers earlier days. "
+                   "Easy days since then are scored on their lighter targets, below, and don't count "
+                   "toward which signals matter.")
 
 
 def build(r, ev, recorded=None, present=False):
@@ -220,7 +229,7 @@ def build(r, ev, recorded=None, present=False):
 
     hr_ev = (ev or {}).get("hard_reasons", {})
     reasons = []
-    for k, label in (("check-in", "You checked in feeling at least OK, with no back or recovery problems"),
+    for k, label in (("check-in", "You checked in feeling at least OK" + ("" if present else ", with no pain that limits today's workout")),
                      ("last session", "Strong last workout: at least 8 of every 10 targets hit")):
         e, now = hr_ev.get(k), (r.get("hard_reasons") or {}).get(k)
         if now is None:
@@ -251,6 +260,9 @@ def build(r, ev, recorded=None, present=False):
                       "shown": f"{got['hit'] * 100:.0f}% of targets hit" if enough else TOO_FEW,
                       "note": TRACK_EASY_NOTE if v == "light" else None,
                       "replay": got, "recorded": rec})
+    lo = (recorded or {}).get("lighter")
+    lighter = ({"word": "Take it easy, lighter targets",
+                "shown": f"{lo['hit'] * 100:.0f}% of the lighter targets hit over {days(lo['n'])}"} if lo else None)
     light, normal = verdicts.get("light"), verdicts.get("normal")
     if (light and normal and light["n"] >= core.EVIDENCE_MIN_N and normal["n"] >= core.EVIDENCE_MIN_N):
         track_text = ("On days the app would say to take it easy, you hit fewer of your usual targets. "
@@ -265,11 +277,11 @@ def build(r, ev, recorded=None, present=False):
             "title": "Why today's call", "verdict": verdict_line(r, present),
             "summary": f"{VERDICT[r['verdict']]} · {len(counted)} of {len(rows)} signals count",
             "counted": counted, "watching": watching,
-            "rungs": [{"key": k, "word": w, "when": (when.replace("A back spasm", "A health note") if present else when),
+            "rungs": [{"key": k, "word": w, "when": (when.replace("Pain that hurts to move", "A health note") if present else when),
                        "on": r["verdict"] == k} for k, w, when in RUNGS],
             "explainer": EXPLAINER, "example": example,
             "reasons": reasons, "holds": holds, "safety": SAFETY_PRESENT if present else SAFETY,
-            "track": track, "track_text": track_text,
+            "track": track, "track_text": track_text, "lighter": lighter,
         },
         "numbers": {"sessions": (ev or {}).get("sessions", 0), "phase_days": (ev or {}).get("phase_days"),
                     "min_n": core.EVIDENCE_MIN_N},

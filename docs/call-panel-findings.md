@@ -190,7 +190,7 @@ session type, both from data already there.
 9. **Status for no reading:** "No concern / Watch / Concern" needs a fourth word for no data.
    "No reading yet" fits.
 
-## Phase 3: decided (starts after Tuesday's post)
+## Phase 3: decided, and built on 2 Nov 2026 (merges after the LinkedIn post)
 
 Pain-or-injury check-in in place of the back level. Recorded here so the decisions don't
 live only in a chat.
@@ -212,9 +212,30 @@ live only in a chat.
   Today a "tired" back triggers the 60% load and an unscored day (`BACK_FLAGGED`,
   `engine.py:863`). Phase 3 drops that.
 
+### As built
+
+- The check-in asks "Any pain or injury? (Not normal muscle soreness.)", None or Yes, and on
+  Yes a severity of 1-3 per area. The Injured toggle is gone from the card; notes that say
+  injured still hold the day as before.
+- `core.pain_rule` is the rule; `engine.pain_of` reads a check-in, falling back to the old
+  back level when the row has no pain answer, so nothing in the database is rewritten.
+- `engine.areas_used`: the back from `AXIAL` 2 or more, every other area from each planned
+  exercise's muscle group through `src/estecoach/pain_areas.toml`. No known workout means
+  every area counts as used, and so does "other".
+- Severity 2 in a used area is a safety hold ("pain that limits your knees, which today's
+  workout uses") and the plan says "Skip or swap moves that load your knees." Back pain 2
+  on a day with spinal loading keeps the 60% rule instead.
+- Severity 2 or more yesterday, with no check-in yet today, is a hold.
+- Calls do move where they should: a sore back (now severity 2) on a spinal-loading day
+  becomes take it easy, as does the day after with no check-in. The demo year has no
+  verdict changes; `tests/fixtures/demo_calls.json` changes only in two days' hold text.
+
+### Scoring take-it-easy days (built with Phase 3)
+
+Easy days from 2 Nov 2026 are scored against the lighter targets their recorded call gave
+(`engine.lighter_outcome`), shown as their own row under "Do the calls match how workouts
+went?" They stay out of `session_outcome` and so out of the evidence for which signals count.
+
 ## Open decisions
 
-- **Scoring take-it-easy days.** From 2 Nov 2026 they use lighter targets and aren't scored
-  (section 4), so the recorded take-it-easy row stops growing. Proposed: score them against
-  their lighter targets as a separate "finished the lighter plan" measure, kept out of the
-  evidence for votes. After Tuesday's post.
+None right now.
