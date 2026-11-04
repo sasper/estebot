@@ -40,13 +40,15 @@ def _call(con, day="2026-10-14"):
 # ---------------------------------------------------------------- the rule itself
 def test_the_pain_rule_by_severity_and_use():
     used = {"back", "knees"}
-    assert core.pain_rule({"knees": 3}, set()) == {"rest": ["knees"], "light": [], "notes": []}
-    assert core.pain_rule({"knees": 2}, used)["light"] == ["knees"]
-    assert core.pain_rule({"arms": 2}, used) == {"rest": [], "light": [], "notes": ["arms"]}
+    none = {"rest": [], "deload": [], "notes": []}
+    assert core.pain_rule({"knees": 3}, used) == dict(none, rest=["knees"])
+    assert core.pain_rule({"knees": 3}, set()) == dict(none, notes=["knees"])   # not loaded today
+    assert core.pain_rule({"knees": 2}, used)["deload"] == ["knees"]
+    assert core.pain_rule({"arms": 2}, used) == dict(none, notes=["arms"])
     assert core.pain_rule({"back": 1, "knees": 1}, used)["notes"] == ["back", "knees"]
-    assert core.pain_rule({"arms": 2}, None)["light"] == ["arms"]           # workout unknown: all used
-    assert core.pain_rule({"other": 2}, set())["light"] == ["other"]        # "other" is always used
-    assert core.pain_rule({}, used) == core.pain_rule(None, used) == {"rest": [], "light": [], "notes": []}
+    assert core.pain_rule({"arms": 2}, None)["deload"] == ["arms"]          # workout unknown: all used
+    assert core.pain_rule({"other": 2}, set())["deload"] == ["other"]       # "other" is always used
+    assert core.pain_rule({}, used) == core.pain_rule(None, used) == none
 
 
 def test_the_mapping_file_names_only_known_areas():
@@ -56,21 +58,43 @@ def test_the_mapping_file_names_only_known_areas():
 
 
 # ---------------------------------------------------------------- the call
-def test_pain_that_hurts_to_move_anywhere_is_rest(con):
+def test_pain_that_hurts_to_move_where_the_workout_loads_is_rest(con):
     from estecoach.analysis import engine
     _calm_week(con); _push_next(con)
-    _check_in(con, "2026-10-14", {"ankles": 3})
+    _check_in(con, "2026-10-14", {"arms": 3})                   # bench loads the arms
     r = _call(con)
     assert (r["verdict"], r["rule"]) == ("rest", "pain")
     assert engine.recommend_pattern(con, "2026-10-14", r["checkin"])[1] == \
         "Rest today. If it isn't improving, get it looked at."
 
 
-def test_back_pain_on_leg_day_is_take_it_easy_and_on_push_day_a_note(con):
+def test_pain_that_hurts_to_move_where_the_workout_doesnt_load_is_a_note(con):
+    from estecoach.analysis import engine
+    _calm_week(con); _push_next(con)
+    _check_in(con, "2026-10-14", {"ankles": 3})                 # push day doesn't load the ankles
+    r = _call(con)
+    assert r["verdict"] == "normal" and r["holds"] == []
+    assert engine.recommend_pattern(con, "2026-10-14", r["checkin"]) is None
+    plan = engine.training_plan(con, "2026-10-14", r["verdict"], r["checkin"])
+    assert plan["day_adjust"] is None and all(e["action"] != "deload" for e in plan["exercises"])
+
+
+def test_back_pain_on_leg_day_deloads_the_squat_and_nothing_else(con):
+    # The squat loads the spine and gets the back's 60%; leg extensions don't, and keep
+    # their target. The call itself stays as the evidence makes it.
+    from estecoach.analysis import engine
     _calm_week(con); _pull_then_legs_next(con)
     _check_in(con, "2026-10-14", {"back": 2})
     r = _call(con)
-    assert r["verdict"] == "light" and r["holds"] == ["pain that limits your back, which today's workout uses"]
+    assert r["verdict"] == "normal" and r["holds"] == []
+    plan = engine.training_plan(con, "2026-10-14", r["verdict"], r["checkin"])
+    by = {e["exercise"]: e for e in plan["exercises"]}
+    assert by["Barbell Squat"]["action"] == "deload" and by["Barbell Squat"]["deload_factor"] == core.DELOAD_BACK
+    assert by["Barbell Squat"]["adjust"] == "Back pain: this lift loads it"
+    assert by["Leg Extension"]["action"] != "deload" and "adjust" not in by["Leg Extension"]
+    assert plan["deload"] is None and plan["pain_deload"] == {"back": core.DELOAD_BACK}
+    assert plan["day_adjust"].startswith(
+        "Pain: lifts that load your back are at 60% of last time's sets and weight. Everything else as planned.")
 
 
 def test_back_pain_on_an_upper_body_day_leaves_the_call_alone(con):
@@ -85,21 +109,34 @@ def test_back_pain_on_an_upper_body_day_leaves_the_call_alone(con):
     assert plan["deload"] is None and plan["exercises"][0]["action"] != "deload"
 
 
-def test_knee_pain_on_leg_day_says_to_swap_moves_and_on_push_day_is_a_note(con):
+def test_knee_pain_on_leg_day_deloads_every_lift_that_loads_the_knees(con):
     from estecoach.analysis import engine
     _calm_week(con); _pull_then_legs_next(con)
     _check_in(con, "2026-10-14", {"knees": 2})
     r = _call(con)
-    assert r["verdict"] == "light" and "knees" in r["holds"][0]
+    assert r["verdict"] == "normal" and r["holds"] == []
     plan = engine.training_plan(con, "2026-10-14", r["verdict"], r["checkin"])
-    assert plan["pain_note"] == "Skip or swap moves that load your knees."
-    assert plan["deload"] == core.DELOAD                        # an ordinary easy day, not the back's 60%
+    assert {e["exercise"]: e.get("deload_factor") for e in plan["exercises"]} == {
+        "Barbell Squat": core.DELOAD, "Leg Extension": core.DELOAD}   # 80%, not the back's 60%
+
+
+def test_back_and_knee_pain_take_each_lift_to_its_lowest(con):
+    from estecoach.analysis import engine
+    _calm_week(con); _pull_then_legs_next(con)
+    _check_in(con, "2026-10-14", {"back": 2, "knees": 2})
+    r = _call(con)
+    plan = engine.training_plan(con, "2026-10-14", r["verdict"], r["checkin"])
+    by = {e["exercise"]: e for e in plan["exercises"]}
+    assert by["Barbell Squat"]["deload_factor"] == core.DELOAD_BACK and by["Leg Extension"]["deload_factor"] == core.DELOAD
+    assert by["Barbell Squat"]["adjust"] == "Back and knees pain: this lift loads them"
+    assert plan["day_adjust"].startswith("Pain: lifts that load your back are at 60% of last time's sets and "
+                                         "weight, and lifts that load your knees at 80%. Everything else as planned.")
 
 
 def test_an_unknown_workout_counts_every_area_as_used(con):
     _calm_week(con)                                             # no lifting history: no plan
-    _check_in(con, "2026-10-14", {"arms": 2})
-    assert _call(con)["verdict"] == "light"
+    _check_in(con, "2026-10-14", {"arms": 3})
+    assert _call(con)["verdict"] == "rest"
 
 
 def test_noticeable_pain_is_a_note_and_still_a_good_check_in(con):
@@ -112,15 +149,6 @@ def test_noticeable_pain_is_a_note_and_still_a_good_check_in(con):
     assert r["hard_reasons"]["check-in"][0]                     # still counts toward going hard
     plan = engine.training_plan(con, "2026-10-14", r["verdict"], r["checkin"])
     assert plan["deload"] is None                               # tired back: no 60% any more
-
-
-def test_back_pain_on_a_spine_day_is_60_percent(con):
-    from estecoach.analysis import engine
-    _calm_week(con); _pull_then_legs_next(con)
-    _check_in(con, "2026-10-14", {"back": 2})
-    r = _call(con)
-    plan = engine.training_plan(con, "2026-10-14", r["verdict"], r["checkin"])
-    assert plan["deload"] == core.DELOAD_BACK and plan["day_adjust"].startswith("Back pain:")
 
 
 def test_pain_yesterday_holds_today_until_a_check_in(con):

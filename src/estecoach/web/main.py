@@ -304,11 +304,12 @@ def presentable(ctx):
                                            sick=0, injured=0, pain=None)
     if ctx["plan"]:
         adj = ctx["plan"].get("day_adjust") or ""
-        c["plan"] = dict(ctx["plan"], day_adjust=re.sub(r"^Back pain: (\w)", lambda m: m[1].upper(), adj) or None,
-                         pain_note="Skip or swap any move that hurts." if ctx["plan"].get("pain_note") else None,
-                         exercises=[
-            dict(i, adjust=re.sub(r"^Back \w+: (\w)", lambda m: m[1].upper(), i["adjust"]))
-            if i.get("adjust") else i for i in ctx["plan"]["exercises"]])
+        # Where the pain is stays out; that some lifts are lighter doesn't.
+        adj = re.sub(r"Pain: lifts that load .*?\. Everything else as planned\.",
+                     "Some lifts are lighter today. Everything else as planned.", adj)
+        c["plan"] = dict(ctx["plan"], day_adjust=adj or None, pain_deload=None, exercises=[
+            dict(i, adjust="lighter today for a health note") if i.get("adjust") else i
+            for i in ctx["plan"]["exercises"]])
     # Medication names are left out of the HTML entirely, not hidden: the calendar's doses
     # and the check-in card's list go.
     c["calendar"] = [dict(m, weeks=[[x and dict(x, unwell=None, doses=[]) for x in w] for w in m["weeks"]])

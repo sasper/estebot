@@ -1,14 +1,14 @@
 # Which body areas a planned workout uses, for the pain check-in (core.pain_rule).
 #
-# Pain that limits movement (severity 2) in an area today's workout uses makes it a
-# take-it-easy day; in an area it doesn't use, it's a note and the plan stands. Severity 3
-# anywhere is rest, and severity 1 is always a note, so this file only matters for 2.
+# Pain that limits movement (severity 2) deloads the lifts that load that area; every other
+# lift keeps its target. Severity 3 in an area today's workout loads is a rest day. Severity
+# 1, and any pain in an area the workout doesn't load, is a note.
 #
-# The back isn't listed here: it counts as used when any planned exercise loads the spine
-# (engine.AXIAL score 2 or more: deadlifts, squats, rows, cleans, carries, overhead presses,
-# pull-ups). Every other area comes from the muscle group each planned exercise is logged
-# under. A group not listed uses no area. "other" is never mapped, so pain there always
-# counts as used, and so does every area when today's workout isn't known.
+# The back isn't listed here: an exercise loads it when its engine.AXIAL score is 2 or more
+# (deadlifts, squats, rows, cleans, carries, overhead presses, pull-ups). Every other area
+# comes from the muscle group the exercise is logged under. A group not listed loads no area.
+# "other" is never mapped, so every lift counts as loading it, and every area counts as used
+# when today's workout isn't known.
 #
 # Areas: neck (neck and shoulders), arms (arms, elbows and wrists), hips, knees, ankles
 # (ankles and feet).

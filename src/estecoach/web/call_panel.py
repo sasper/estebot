@@ -149,8 +149,6 @@ def today_line(x, present=False):
 def _hold_words(h, present):
     if present or h == "a health note":
         return "a health note" if not h.startswith("back from") else "you're coming back after a quiet stretch"
-    if h.startswith("pain that limits your "):
-        return "you have pain that limits your " + h[len("pain that limits your "):].replace(", which today's workout uses", "") + ", and today's workout uses it"
     return {"injured today": "you're injured today",
             "pain yesterday, and no check-in today": "you had pain that limited movement yesterday, and there's no check-in yet today",
             "injured yesterday, and no clean check-in today": "you were injured yesterday, and there's no check-in yet saying you're fine",

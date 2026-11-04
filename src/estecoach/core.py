@@ -344,18 +344,22 @@ def pain_rule(pain: dict | None, used: set | None) -> dict:
     {} for none, None for not answered. used: the areas today's planned workout uses, None
     when it isn't known (then every area counts as used; "other" always does).
 
-      3 anywhere                   rest
-      2 in an area the workout uses take it easy
-      2 in an area it doesn't use  a note; the call is unchanged
-      1                            a note
-    -> {"rest": [areas], "light": [areas], "notes": [areas]}, each in PAIN_AREAS order."""
-    out = {"rest": [], "light": [], "notes": []}
+      3 in an area the workout uses   rest
+      2 in an area the workout uses   the lifts that load it are deloaded (engine.training_plan);
+                                      every other lift, and the call, stay as planned
+      1, or any pain in an area the   a note
+      workout doesn't use
+    A lift that doesn't load the painful area trains as normal, so pain only changes the
+    day through the lifts it touches.
+    -> {"rest": [areas], "deload": [areas], "notes": [areas]}, each in PAIN_AREAS order."""
+    out = {"rest": [], "deload": [], "notes": []}
     for a, _ in PAIN_AREAS:
         sev = (pain or {}).get(a, 0)
-        if sev >= 3:
+        hit = used is None or a == "other" or a in used
+        if sev >= 3 and hit:
             out["rest"].append(a)
-        elif sev == 2 and (used is None or a == "other" or a in used):
-            out["light"].append(a)
+        elif sev == 2 and hit:
+            out["deload"].append(a)
         elif sev >= 1:
             out["notes"].append(a)
     return out

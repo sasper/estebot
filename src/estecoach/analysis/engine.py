@@ -409,20 +409,23 @@ def pain_words(pain):
     return "; ".join(f"{label[a].lower()}: {core.PAIN_LEVELS[v][0].lower()}{core.PAIN_LEVELS[v][1:]}"
                      for a, v in order)
 
+def exercise_areas(con, ex, day):
+    """The body areas one exercise loads (pain_areas.toml): the back when its AXIAL score is
+    2 or more, the rest from the muscle group it is logged under, and "other" always."""
+    r = con.execute("SELECT muscle_group FROM e1rm WHERE exercise=? AND date<? ORDER BY date DESC LIMIT 1",
+                    (ex, day)).fetchone()
+    used = set(PAIN_GROUPS.get(r["muscle_group"] if r else None, ())) | {"other"}
+    if axial_score(ex) >= 2:
+        used.add("back")
+    return used
+
 def areas_used(con, day, training=None):
-    """The body areas the day's planned workout uses (pain_areas.toml), or None when the
-    workout isn't known. The back is used when any planned exercise has an AXIAL score of 2
-    or more."""
+    """The body areas the day's planned workout loads (exercise_areas over its exercises), or
+    None when the workout isn't known."""
     plan = _next_session(con, day, training or TRAINING)
     if not plan or not plan.get("template"):
         return None
-    exs = plan["template"]["exercises"]
-    used = {"back"} if any(axial_score(e) >= 2 for e in exs) else set()
-    for e in exs:
-        r = con.execute("SELECT muscle_group FROM e1rm WHERE exercise=? AND date<? ORDER BY date DESC LIMIT 1",
-                        (e, day)).fetchone()
-        used |= set(PAIN_GROUPS.get(r["muscle_group"] if r else None, ()))
-    return used
+    return set().union(*(exercise_areas(con, e, day) for e in plan["template"]["exercises"]))
 
 def _feel_signal(con, day, used_areas=None):
     """This day's check-in only (notes become check-ins at each sync). Until it exists, how you
@@ -430,13 +433,13 @@ def _feel_signal(con, day, used_areas=None):
     spasm one evening call the next day a rest day before the morning's check-in.
     Recovery between sets is no longer read (2 Nov 2026): the check-in comes before the
     session, so the answer was about the last one, which the effort and load signals cover.
-    Pain (core.pain_rule): 3 anywhere is red, 2 in an area today's workout uses is amber,
-    anything else green. used_areas() -> the areas used, asked only when there's a 2.
+    Pain (core.pain_rule): 3 in an area today's workout uses is red, 2 there is amber,
+    anything else green. used_areas() -> the areas used, asked only when there's a 2 or 3.
     -> (signal, check-in row, pain rule)"""
     used_areas = used_areas or (lambda: None)
     ci = con.execute("SELECT * FROM checkin WHERE date = ?", (day,)).fetchone()
     pain = pain_of(ci)
-    rule = core.pain_rule(pain, used_areas() if pain and any(v == 2 for v in pain.values()) else set())
+    rule = core.pain_rule(pain, used_areas() if pain and any(v >= 2 for v in pain.values()) else set())
     levels, reasons = [], []
     if ci:
         when = "today"
@@ -445,7 +448,7 @@ def _feel_signal(con, day, used_areas=None):
             levels.append(lv); reasons.append(f"energy {ci['energy']}/3 {when}")
         if pain is not None:
             # Pain that only limits an area the workout doesn't use is a note, not a flag.
-            levels.append("red" if rule["rest"] else "amber" if rule["light"] else "green")
+            levels.append("red" if rule["rest"] else "amber" if rule["deload"] else "green")
             reasons.append(pain_words(pain) + f" {when}" if pain else f"no pain {when}")
     if not levels:
         reasons.append("no check-in today yet")
@@ -519,10 +522,9 @@ def readiness(con, day, goals, voting="auto", graded=None):
     signals = [load, _effort_signal(con, prior), sleep, recovery, feel,
                _nutrition_signal(con, day, goals, ws["current"], ws["rate"]),
                _pace_signal(con, day, goals)]
-    label = dict(core.PAIN_AREAS)
-    spasm = bool(pain_rule["rest"])      # pain that hurts to move, anywhere: rest
+    spasm = bool(pain_rule["rest"])      # pain that hurts to move, where today's workout loads: rest
     if spasm:
-        feel["reasons"].append("pain that hurts to move means rest, whatever else says")
+        feel["reasons"].append("pain that hurts to move, where today's workout loads, means rest, whatever else says")
     levels = {x["area"]: x["level"] for x in signals}
 
     ramp = None
@@ -546,9 +548,6 @@ def readiness(con, day, goals, voting="auto", graded=None):
         holds.append("injured today")
     elif unwell.get(prior, {}).get("injured") and not clean:
         holds.append("injured yesterday, and no clean check-in today")
-    if pain_rule["light"]:
-        holds.append("pain that limits your " + " and ".join(label[a].lower() for a in pain_rule["light"])
-                     + ", which today's workout uses")
     # Pain that limited movement yesterday holds today until this morning's check-in says how it is.
     if ci is None and not unwell.get(prior, {}).get("injured"):
         y = pain_of(con.execute("SELECT * FROM checkin WHERE date = ?", (prior,)).fetchone())
@@ -769,7 +768,7 @@ def recommend_pattern(con, day, checkin, training=None):
     `checkin` is the row readiness() used, so the suggestion and the verdict cite the same
     note."""
     pain = pain_of(checkin) or {}
-    if any(v >= 3 for v in pain.values()):   # needs no ranking of day types, so it comes first
+    if core.pain_rule(pain, areas_used(con, day, training))["rest"]:   # needs no ranking, so it comes first
         return ("rest", "Rest today. If it isn't improving, get it looked at.")
     if pain.get("back", 0) < 2:              # a back that's only noticeable is a note
         return None
@@ -1124,8 +1123,9 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
     get core.main_progression, everything else core.progression, each on the last normal
     session of that exercise; deload sessions never set a target.
 
-    A 'light' verdict is a deload of every lift (core.deload at DELOAD); a back flagged in the
-    check-in makes it DELOAD_BACK, every lift still in. Right after a deload, a 'normal' call
+    A 'light' verdict is a deload of every lift (core.deload at DELOAD). Pain at 2 deloads
+    only the lifts that load the painful area (exercise_areas): DELOAD_BACK for the back,
+    DELOAD for any other area; every other lift keeps its target. Right after a deload, a 'normal' call
     holds main-lift weights and a 'hard' one progresses as if it never happened; after two or
     more deloads in a row the first normal session eases back in at core.LAYOFF. A lift marked
     skip in the check-in is listed as skipped and gets no target. `training` is the person's
@@ -1142,15 +1142,13 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
     order = sorted(template["exercises"],
                    key=lambda e: (e not in mains, -axial_score(e), template["exercises"].index(e)))
     pain = pain_of(checkin) or {}
-    # Back pain that limits movement takes every lift to DELOAD_BACK, but only on a day that
-    # loads the spine (AXIAL 2 or more); on any other day it is a note and the plan stands.
-    back_deload = pain.get("back", 0) >= 2 and any(axial_score(e) >= 2 for e in order)
+    sore = {a for a, v in pain.items() if v == 2}        # 3 where the workout loads is a rest day
     # Skips are for the check-in's own day; a skip never carries over.
     skip = (set(json.loads(checkin["skip"] or "[]"))
             if checkin and "skip" in checkin.keys() and checkin["date"] == day else set())
-    factor = core.DELOAD_BACK if back_deload else core.DELOAD if verdict == "light" else None
+    factor = core.DELOAD if verdict == "light" else None
     label = dict(core.PAIN_AREAS)
-    limited = [a for a, v in pain.items() if v == 2 and not (a == "back" and back_deload)]
+    by_area = {}                                          # {area: factor} for the day's note
     deloads, goals = deload_days(con), recorded_goals(con)
     after_deload = sessions[0]["date"] in deloads
     layoff = factor is None and len(sessions) > 1 and all(x["date"] in deloads for x in sessions[:2])
@@ -1168,23 +1166,31 @@ def training_plan(con, day, verdict, checkin=None, min_sets=LIFT_STREAK_MIN_SETS
         u = core.rep_unit(ex)
         item = {"exercise": ex, "main": main, "last_date": when,
                 "last": ", ".join(f"{w:g} × {r}{u}" if w else f"{r}" for w, r, _ in sets), **p}
-        if factor:
-            d = core.deload(sets, factor)
+        hurt = [a for a, _ in core.PAIN_AREAS if a in sore and a in exercise_areas(con, ex, day)]
+        f = min([x for x in (factor, *((core.DELOAD_BACK if a == "back" else core.DELOAD) for a in hurt)) if x],
+                default=None)
+        for a in hurt:
+            by_area[a] = min(by_area.get(a, 1), core.DELOAD_BACK if a == "back" else core.DELOAD)
+        if f:
+            d = core.deload(sets, f)
             top = max(d)
-            item.update(action="deload", deload_sets=d, reps_range=None,
+            item.update(action="deload", deload_sets=d, deload_factor=f, reps_range=None,
                         target=", ".join(f"{w:g} × {r}{u}" if w else f"{r}" for w, r in d),
-                        why=f"{round((1 - factor) * 100)}% off last time ({item['last']}); stop each set by RPE 8",
+                        why=f"{round((1 - f) * 100)}% off last time ({item['last']}); stop each set by RPE 8",
                         goal={"weight_lb": top[0], "reps": top[1]} if top[0] else {"total_reps": sum(r for _, r in d)})
+            if hurt:
+                where = " and ".join(label[a].lower() for a in hurt)
+                item["adjust"] = f"{where[0].upper()}{where[1:]} pain: this lift loads " + ("it" if len(hurt) == 1 else "them")
         items.append(item)
-    # The deload covers the whole session, so it is said once, not on every exercise.
-    swap = ("Skip or swap moves that load your " + " and ".join(label[a].lower() for a in
-            [a for a, _ in core.PAIN_AREAS if a in limited]) + ".") if limited else None
-    return {"pain_note": swap,"kind": kind, "variant": variant, "main": next((e for e in order if e in mains), None),
+    # A whole-session deload is said once, not on every exercise; so is a pain deload.
+    parts = [f"lifts that load your {label[a].lower()} " + (f"are at {round(f * 100)}% of last time's sets and weight"
+             if not k else f"at {round(f * 100)}%") for k, (a, f) in enumerate(by_area.items())]
+    pain_adjust = ("Pain: " + ", and ".join(parts) + ". Everything else as planned. Stop those sets "
+                   "by RPE 8, and mark a lift skip in the check-in if it hurts.") if parts else None
+    return {"pain_deload": by_area or None, "kind": kind, "variant": variant, "main": next((e for e in order if e in mains), None),
             "after": last, "template": template["date"], "rest": verdict == "rest", "exercises": items,
             "deload": factor,
-            "day_adjust": ("Back pain: every lift stays in at 60% of last time's sets and weight. "
-                           "Stop each set by RPE 8, and mark a lift skip in the check-in if it hurts."
-                           if factor == core.DELOAD_BACK else
-                           "Take it easy: every lift at 80% of last time's sets and weight. "
-                           "Stop each set by RPE 8." if factor else
-                           "Go hard: go for every target today." if verdict == "hard" else None)}
+            "day_adjust": " ".join(x for x in (
+                "Take it easy: every lift at 80% of last time's sets and weight. Stop each set by RPE 8."
+                if factor else None, pain_adjust,
+                "Go hard: go for every target today." if verdict == "hard" and not pain_adjust else None) if x) or None}
