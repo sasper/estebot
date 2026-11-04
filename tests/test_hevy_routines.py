@@ -200,3 +200,16 @@ def test_a_note_written_under_the_old_name_is_replaced_too():
 def test_the_jefit_import_tag_keeps_the_wording_the_workouts_carry():
     # The rename changed this string once, and every imported workout stopped being skipped.
     assert hevy.IMPORT_TAG == "Imported from Jefit by EsteBot"
+
+
+def test_a_pain_deload_cuts_only_the_lift_that_loads_the_area(cfg):
+    # Shoulder pain at 2 deloads the press that loads it; the fly beside it keeps its target.
+    press = dict(BENCH, action="deload", target="light", deload_factor=0.8)
+    H.send(cfg, plan(press, FLY), "normal", "k", "auto", "2026-11-02")
+    new = cfg.writes[0]["routine"]
+    bench = next(e for e in new["exercises"] if e["exercise_template_id"] == RT["exercises"][0]["exercise_template_id"])
+    assert len(bench["sets"]) == 4
+    fly = next(e for e in RT["exercises"] if canon(e["title"]) == "Machine Chest Fly")
+    got = next(e for e in new["exercises"] if e["exercise_template_id"] == fly["exercise_template_id"])
+    assert len(got["sets"]) == len(fly["sets"]) and 105 in [round(hevy.kg_to_lb(s["weight_kg"] or 0)) for s in got["sets"]]
+    assert H.load_log(cfg)[0]["deload"] == "0.8"          # so the next write restores the press

@@ -19,6 +19,7 @@ build-backend = "setuptools.build_meta"
 # image) leaves them out and the app fails at import.
 [tool.setuptools.package-data]
 "estecoach.web" = ["templates/*.html", "static/*"]
+"estecoach" = ["pain_areas.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

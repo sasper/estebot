@@ -81,6 +81,9 @@ CREATE TABLE IF NOT EXISTS checkin (
   sick INT NOT NULL DEFAULT 0,
   injured INT NOT NULL DEFAULT 0,
   saved_at TEXT);                        -- local time of the last manual save, for the page
+-- pain (added 2 Nov 2026): {area: severity 1-3} as JSON, '{}' for no pain, NULL when not
+-- asked. It replaced the back level, which a save still writes (core.PAIN_TO_BACK) and which
+-- engine.pain_of reads as back pain when pain is NULL.
 
 -- A check-in said in a sentence and read onto the tap card (web/checkin_text.py). Only a
 -- draft: it prefills the card, and nothing counts until Save writes the checkin row.
@@ -131,7 +134,9 @@ _ADDED_COLUMNS = {
         ("saved_at", "TEXT"),
         # Lifts marked skip in the check-in, as a JSON list of exercise names (1 Nov 2026).
         ("skip", "TEXT"),
+        ("pain", "TEXT"),
     ],
+    "checkin_draft": [("pain", "TEXT")],
 }
 
 def _migrate(con):

@@ -147,8 +147,9 @@ def changes_for(rt, plan, verdict, canon, active_correction=lambda name: False):
     for item in plan["exercises"]:
         if item.get("skipped"):
             skipped.append((item["exercise"], "marked skip in the check-in"))
-    factor = plan.get("deload")
     for item in planned:
+        # A whole-session deload, or this lift's own (pain in an area it loads).
+        factor = item.get("deload_factor") or plan.get("deload")
         at = [k for k, n in enumerate(names) if n == item["exercise"]]
         if not at:
             skipped.append((item["exercise"], "not in this routine"))
@@ -296,7 +297,9 @@ def send(cfg, plan, verdict, key, source, day=None):
     _append_log(cfg, {"date": day, "written_at": datetime.now().isoformat(timespec="seconds"),
                       "source": source, "routine_id": rid, "routine": rt["title"],
                       "plan": f"{plan['kind']} {plan['variant']}", "verdict": verdict,
-                      "deload": plan.get("deload") or "",
+                      # Any lift cut to a deload: the next write puts its sets back first.
+                      "deload": plan.get("deload") or max((i.get("deload_factor") or 0
+                                                          for i in plan["exercises"]), default=0) or "",
                       "changes": json.dumps(changes, ensure_ascii=False),
                       "before": json.dumps(rt, ensure_ascii=False)})
     return preview(rt["title"], changes, skipped)

@@ -143,9 +143,16 @@ def test_every_weight_rate_on_the_page_names_its_window(main):
 TAP_NOTE = "Slept badly, legs heavy"     # invented
 
 
-def save(main, day, back=None, energy=None, note="", sick=False, injured=False):
+def save(main, day, back=None, energy=None, note="", sick=False, pain=None):
     # Called directly, a route's unset parameters are Form() objects, so pass every one.
-    return main.checkin(None, day, back, 0, energy, note, sick, injured)
+    # `back` is the old level, saved as back pain (core.BACK_TO_PAIN); `pain` is {area: 1-3}.
+    from estecoach import core
+    if back is not None:
+        pain = {} if back == "ok" else {"back": core.BACK_TO_PAIN[back]}
+    sev = {a: (pain or {}).get(a) for a, _ in core.PAIN_AREAS}
+    return main.checkin(None, day, 0, energy, note, sick, None, "",
+                        None if pain is None else "yes" if pain else "none",
+                        *(sev[a] for a, _ in core.PAIN_AREAS))
 
 
 def today_page(main, query=""):
@@ -161,7 +168,7 @@ def card(html):
 
 def test_the_tap_card_is_there_every_day_without_a_note(main):
     # A phone-only user never writes a note, so the check-in cannot wait for one to need
-    # review. Nothing is preselected: an untapped back must not save as "back ok".
+    # review. Nothing is preselected: untapped pain must not save as "no pain".
     html = today_page(main)
     assert 'action="/checkin"' in html and 'type="radio" name="energy"' in html
     assert "checked" not in card(html)
@@ -178,7 +185,7 @@ def test_a_tap_check_in_is_saved_prefilled_and_read_by_the_verdict(main, con):
     assert feel["level"] == "amber" and "energy 1/3 today" in feel["reasons"]
 
     html = today_page(main)
-    assert 'value="sore" checked' in card(html) and 'name="energy" value="1" checked' in card(html)
+    assert 'name="pain_back" value="2" checked' in card(html) and 'name="energy" value="1" checked' in card(html)
     assert TAP_NOTE in card(html) and "Checked in" in html
 
 
@@ -198,16 +205,16 @@ def test_a_sick_tap_with_no_energy_reads_as_energy_zero_and_rings_the_calendar(m
 
 def test_an_energy_answer_given_with_the_sick_tap_stands(main, con):
     today = date.today().isoformat()
-    save(main, today, energy=3, sick=True, injured=True)
-    row = con.execute("SELECT energy, sick, injured FROM checkin WHERE date=?", (today,)).fetchone()
-    assert tuple(row) == (3, 1, 1)
+    save(main, today, energy=3, sick=True)
+    row = con.execute("SELECT energy, sick FROM checkin WHERE date=?", (today,)).fetchone()
+    assert tuple(row) == (3, 1)
 
 
 def test_saving_the_card_answers_a_note_that_needed_review(main, con):
     # The fixture's day has a derived row flagged for review. The card replaces the old
     # review-only form and is prefilled from that row.
     html, _ = page(main)
-    assert "Check this." in html and 'value="sore" checked' in card(html)
+    assert "Check this." in html and 'name="pain_back" value="2" checked' in card(html)
     save(main, DAY, "tired", 2, "")
     row = con.execute("SELECT * FROM checkin WHERE date=?", (DAY,)).fetchone()
     assert (row["source"], row["needs_review"], row["back"]) == ("manual", 0, "tired")
@@ -216,13 +223,14 @@ def test_saving_the_card_answers_a_note_that_needed_review(main, con):
 
 def test_presentation_and_demo_modes_leave_the_tap_card_out(main, con, monkeypatch):
     today = date.today().isoformat()
-    save(main, today, "spasm", 1, TAP_NOTE, sick=True, injured=True)
+    save(main, today, "spasm", 1, TAP_NOTE, sick=True)
     normal = today_page(main)
-    assert TAP_NOTE in normal and "injured" in normal
+    assert TAP_NOTE in normal and "hurts to move" in normal
 
     shown = today_page(main, "present=1")
-    for private in ('action="/checkin"', TAP_NOTE, 'name="sick"', "spasm", "injured", "sick", "unwell"):
-        assert private not in shown, private
+    for private in ('action="/checkin"', TAP_NOTE, 'name="sick"', "spasm", "injured", "sick", "unwell",
+                    "hurts to move", "pain"):
+        assert private not in shown, (private, shown[max(0, shown.find(private) - 300):shown.find(private) + 100])
 
     monkeypatch.setenv("ESTECOACH_DEMO", "1")
     shown = today_page(main, "present=0")
@@ -301,7 +309,7 @@ def test_a_check_in_said_in_a_sentence_is_only_a_draft_until_saved(main, con, mo
     from estecoach.web import checkin_text
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
     monkeypatch.setattr(checkin_text, "read", lambda con, text, today: {
-        "back": "sore", "energy": 1, "sick": False, "injured": False})
+        "pain": {"back": 2}, "energy": 1, "sick": False})
     today = date.today().isoformat()
     req = Request({"type": "http", "method": "POST", "path": "/checkin/text", "headers": []})
     assert main.checkin_from_text(req, today, TAP_NOTE, "").status_code == 303
@@ -309,7 +317,7 @@ def test_a_check_in_said_in_a_sentence_is_only_a_draft_until_saved(main, con, mo
     html = today_page(main)
     tap = html.split('action="/checkin" class="tap"')[1].split("</form>")[0]
     assert "read from what you wrote" in html and 'action="/checkin/text"' in html
-    assert 'value="sore" checked' in tap and 'name="energy" value="1" checked' in tap and TAP_NOTE in tap
+    assert 'name="pain_back" value="2" checked' in tap and 'name="energy" value="1" checked' in tap and TAP_NOTE in tap
     save(main, today, "sore", 1, TAP_NOTE)
     assert con.execute("SELECT 1 FROM checkin_draft WHERE date=?", (today,)).fetchone() is None
     assert con.execute("SELECT source FROM checkin WHERE date=?", (today,)).fetchone()["source"] == "manual"
