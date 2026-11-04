@@ -2,10 +2,17 @@
 
 The page recomputes the call on every load, so it drifts as data arrives and as the rules
 change; a call recomputed later would grade today's code on old data. The first call made
-each day is written to calls.csv in the data repo instead, one row per day, and never
-rewritten. The sync commits it with the tidy tables.
+each day is written to calls.csv in the data repo instead, one row per day. The sync commits
+it with the tidy tables.
+
+One exception: a check-in saved again after the call was recorded, before any lifting is
+logged that day, makes the call again (a mis-tap fixed seconds later must not leave a whole
+session at the wrong weights). The new call replaces the row and the one it replaced moves to
+calls_replaced.csv with when and why, so the record still shows every call that was sent.
+Once lifting is logged the day's call stays as it is.
 
     PYTHONPATH=src python -m estecoach.analysis.calls            # record today's call, once
+    PYTHONPATH=src python -m estecoach.analysis.calls --resaved  # the same after a check-in save (web/main.py)
     PYTHONPATH=src python -m estecoach.analysis.calls --report   # each recorded call, then how the session went
     PYTHONPATH=src python -m estecoach.analysis.calls --backfill 90  # the demo only: the last 90 days' calls
 """
@@ -24,6 +31,9 @@ FIELDS = ("date", "recorded_at", "code", "verdict", "score", *AREAS, "acwr", "pl
 # the check-in made at 7. Saving a check-in records the call (web/main.py), so a morning
 # check-in is in it; from noon the call is recorded with whatever there is.
 WAIT_UNTIL = 12
+REPLACED = "calls_replaced.csv"
+REPLACED_FIELDS = (*FIELDS, "replaced_at", "reason")
+RESAVED = "check-in saved again before the session"
 
 
 def waiting(con, now):
@@ -93,6 +103,38 @@ def record(path, row):
     return True
 
 
+def resaved(con, row):
+    """True when the day's check-in was saved after `row` (the day's recorded call) and no
+    lifting is logged that day yet: the call may be made again."""
+    ck = con.execute("SELECT saved_at FROM checkin WHERE date=? AND source='manual'",
+                     (row["date"],)).fetchone()
+    if not ck or not ck["saved_at"] or ck["saved_at"] <= (row.get("recorded_at") or ""):
+        return False
+    return not con.execute("SELECT 1 FROM lift_set WHERE date=? LIMIT 1", (row["date"],)).fetchone()
+
+
+def replace(path, row, reason, now=None):
+    """Swap the day's row in calls.csv for `row`. The row it replaces is appended to
+    calls_replaced.csv with when and why. -> the replaced row."""
+    rows = load(path)
+    old = next(c for c in rows if c["date"] == row["date"])
+    rep = Path(path).with_name(REPLACED)
+    new = not rep.exists()
+    with open(rep, "a", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=REPLACED_FIELDS)
+        if new:
+            w.writeheader()
+        w.writerow({**old, "replaced_at": now or datetime.now().isoformat(timespec="seconds"),
+                    "reason": reason})
+    tmp = Path(path).with_suffix(".tmp")
+    with open(tmp, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS)
+        w.writeheader()
+        w.writerows(row if c["date"] == row["date"] else c for c in rows)
+    tmp.replace(path)
+    return old
+
+
 def backfill(con, path, goals, days, today=None, training=None):
     """For the made-up demo person, who has no mornings to record calls in: each of the last
     `days` days' call, made from the data before it, as the morning would have made it
@@ -149,7 +191,11 @@ def main(argv):
     day = now.date().isoformat()
     # Before making the call, which grades every session: every upload runs this, and only
     # the day's first call is kept.
-    if any(c["date"] == day for c in load(path)):
+    kept = next((c for c in load(path) if c["date"] == day), None)
+    if kept is not None:
+        # Only a check-in save asks to remake the call; an upload never does.
+        if "--resaved" in argv and resaved(con, kept):
+            return _remake(cfg, con, path, kept)
         print(f"{day}: already recorded today; kept the first")
         return 0
     if missing := waiting_for(con, now):
@@ -168,15 +214,38 @@ def main(argv):
     return 0
 
 
-def _prefill_hevy(cfg, plan, verdict):
-    """Today's targets into the Hevy routine, once, carrying the call just recorded. A failure
-    is logged and passed over: the call is recorded either way."""
+def _remake(cfg, con, path, kept):
+    """The day's call made again after a check-in re-save; written, and sent to Hevy, only
+    when it changed."""
+    row, plan = call_and_plan(con, kept["date"], cfg.goals)
+    if (row["verdict"], row["plan"], row["targets"]) == (kept["verdict"], kept["plan"], kept["targets"]):
+        print(f"{kept['date']}: check-in saved again, call unchanged; kept the first")
+        return 0
+    replace(path, row, RESAVED)
+    con.execute("DELETE FROM call_record WHERE date=?", (row["date"],))
+    con.execute("INSERT INTO call_record VALUES (?,?,?,?)",
+                (row["date"], row["verdict"], row["plan"], row["targets"]))
+    con.commit()
+    print(f"{row['date']}: check-in saved again; {kept['verdict']} {kept['score']} replaced by "
+          f"{row['verdict']} {row['score']}")
+    _prefill_hevy(cfg, plan, row["verdict"], again=True)
+    return 0
+
+
+def _prefill_hevy(cfg, plan, verdict, again=False):
+    """Today's targets into the Hevy routine, once, carrying the call just recorded; `again`
+    after a remade call, which writes over the morning's. A failure is logged and passed over:
+    the call is recorded either way."""
     from estecoach import hevy_routines
     from estecoach.parsers import hevy
     if not hevy_routines.enabled(cfg):
         return
     try:
-        done = hevy_routines.auto(cfg, plan, verdict, hevy.api_key(cfg))
+        if again:
+            done = (hevy_routines.send(cfg, plan, verdict, hevy.api_key(cfg), "resave")
+                    if plan and verdict != "rest" and hevy_routines.routine_id(cfg, plan) else None)
+        else:
+            done = hevy_routines.auto(cfg, plan, verdict, hevy.api_key(cfg))
         if done:
             print(f"hevy: {done}")
     except (hevy_routines.Refused, OSError, ValueError, SystemExit) as e:

@@ -163,7 +163,7 @@ def _run(cfg, feed_only):
         _prune_feed(cfg, int(cfg.sync["keep_feed_days"]))
     # raw/cronometer too: the tables are rebuilt from it, so a copy that's missing the
     # server's latest pull rebuilds a different day (seen on the first server sync).
-    paths = [p for p in ("tidy", "health-context.txt", "raw/cronometer", "calls.csv", "hevy_writes.csv") if (data / p).exists()]
+    paths = [p for p in ("tidy", "health-context.txt", "raw/cronometer", "calls.csv", "calls_replaced.csv", "hevy_writes.csv") if (data / p).exists()]
     subprocess.run(git + ["add", "--", *paths], check=True)
     if subprocess.run(git + ["diff", "--cached", "--quiet", "--", *paths]).returncode == 0:
         print("-- commit: nothing changed")

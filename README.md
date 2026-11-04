@@ -173,7 +173,7 @@ more depth, how I verify refactors, and the known problems.
 | `analysis/engine.py` | Coverage gates, load ratio, the readiness signals, strength standards, the next-session plan. |
 | `analysis/nutrition.py` | Energy balance, protein, and micronutrient gaps against the US reference intakes. |
 | `analysis/predictions.py` | Reads the prediction ledger and shows interim progress on open claims. |
-| `analysis/calls.py` | Writes each morning's first call to `calls.csv`, never rewritten, so the calls can be graded as they were made. |
+| `analysis/calls.py` | Writes each morning's call to `calls.csv` once, so the calls can be graded as they were made. A check-in saved again before the workout redoes it, and the replaced call is kept in `calls_replaced.csv`. |
 | `web/` | FastAPI and Jinja templates. It formats numbers the engine computed; it does not compute its own. Also Google sign-in, Ask EsteCoach, and the sentence check-in. |
 | `daily.py` | The unattended daily sync: at noon on the server (`deploy/scheduler.py`), or with launchd on a Mac. |
 | `demo.py` | A complete data directory for a made-up person, from one seed. |

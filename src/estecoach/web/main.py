@@ -406,9 +406,10 @@ def set_goal(request: Request, goal_weight_lb: float = Form(...), day: str = For
 
 
 def _record_call(p):
-    """Record today's call now, in the background, so a morning check-in is in it."""
+    """Record today's call now, in the background, so a morning check-in is in it. A save
+    after the call was recorded makes it again until lifting is logged (calls.resaved)."""
     sync_log = open(p.cfg.data_dir / ".sync.log", "a")
-    subprocess.Popen([sys.executable, "-m", "estecoach.analysis.calls"], stdout=sync_log, stderr=sync_log,
+    subprocess.Popen([sys.executable, "-m", "estecoach.analysis.calls", "--resaved"], stdout=sync_log, stderr=sync_log,
                      env={**os.environ, "ESTECOACH_CONFIG": str(p.cfg.path)}, start_new_session=True)
 
 def _hevy_card(p, plan, verdict):
