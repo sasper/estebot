@@ -312,7 +312,7 @@ def auto(cfg, plan, verdict, key, day=None):
 
 def last_write(cfg, day=None):
     day = day or date.today().isoformat()
-    rows = [r for r in load_log(cfg) if r["date"] == day and r["source"] in ("auto", "button")]
+    rows = [r for r in load_log(cfg) if r["date"] == day and r["source"] in ("auto", "button", "resave")]
     return rows[-1] if rows else None
 
 
@@ -364,7 +364,7 @@ def main(argv):
         return 1 if diff else 0
     if "--restore" in argv:
         day = argv[argv.index("--restore") + 1]
-        rows = [r for r in load_log(cfg) if r["date"] == day and r["source"] in ("auto", "button")]
+        rows = [r for r in load_log(cfg) if r["date"] == day and r["source"] in ("auto", "button", "resave")]
         if not rows:
             print(f"no write logged on {day}")
             return 1

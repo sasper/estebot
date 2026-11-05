@@ -36,3 +36,52 @@ def test_an_upload_after_the_days_call_doesnt_make_another(con, monkeypatch, cap
     monkeypatch.setattr(calls, "make_call", lambda *a, **k: (_ for _ in ()).throw(AssertionError("made")))
     assert calls.main([]) == 0
     assert "already recorded today" in capsys.readouterr().out
+
+
+def _resave_setup(con, monkeypatch, saved_at):
+    from estecoach import config
+    from estecoach.analysis import calls
+    path = config.load().data_file("calls.csv")
+    kept = {f: "" for f in calls.FIELDS} | {"date": "2026-11-04", "recorded_at": "2026-11-04T08:02:26",
+                                            "verdict": "normal", "score": "71", "plan": "push B",
+                                            "targets": '[{"action":"deload"}]'}
+    calls.record(path, kept)
+    con.execute("INSERT INTO checkin (date, back, energy, source, back_reported, saved_at) "
+                "VALUES ('2026-11-04', 'ok', 3, 'manual', 1, ?)", (saved_at,))
+    con.commit()
+    sent = []
+    monkeypatch.setattr(calls, "_prefill_hevy", lambda cfg, plan, verdict, again=False: sent.append(again))
+    return calls, path, kept, sent
+
+
+def test_a_check_in_saved_again_before_the_session_remakes_the_call(con, monkeypatch, tmp_path):
+    # A mis-tapped back level fixed 12 s later left a whole session at 60%: the first save
+    # recorded the call and the second was turned away.
+    calls, path, kept, sent = _resave_setup(con, monkeypatch, "2026-11-04T08:02:38")
+    assert calls.resaved(con, kept)
+    new = dict(kept, recorded_at="2026-11-04T08:02:40", targets='[{"action":"repeat"}]')
+    monkeypatch.setattr(calls, "call_and_plan", lambda *a, **k: (new, {"kind": "push", "variant": "B"}))
+    monkeypatch.setattr(calls, "datetime", type("D", (), {"now": staticmethod(lambda: __import__("datetime").datetime(2026, 11, 4, 8, 3))}))
+    assert calls._remake(calls.config.load(), con, path, kept) == 0
+    assert [c["targets"] for c in calls.load(path)] == ['[{"action":"repeat"}]']
+    gone = calls.load(path.with_name(calls.REPLACED))
+    assert [(c["targets"], c["reason"]) for c in gone] == [('[{"action":"deload"}]', calls.RESAVED)]
+    assert con.execute("SELECT targets FROM call_record WHERE date='2026-11-04'").fetchone()[0] == '[{"action":"repeat"}]'
+    assert sent == [True]
+
+
+def test_an_unchanged_call_after_a_re_save_is_left_alone(con, monkeypatch):
+    calls, path, kept, sent = _resave_setup(con, monkeypatch, "2026-11-04T08:02:38")
+    monkeypatch.setattr(calls, "call_and_plan", lambda *a, **k: (dict(kept, recorded_at="x"), None))
+    assert calls._remake(calls.config.load(), con, path, kept) == 0
+    assert not path.with_name(calls.REPLACED).exists() and sent == []
+
+
+def test_the_call_locks_once_lifting_is_logged_or_the_save_came_first(con, monkeypatch):
+    calls, path, kept, sent = _resave_setup(con, monkeypatch, "2026-11-04T08:02:22")
+    assert not calls.resaved(con, kept)                       # the save the call was made from
+    con.execute("UPDATE checkin SET saved_at='2026-11-04T09:30:00'")
+    assert calls.resaved(con, kept)
+    con.execute("INSERT INTO lift_set (date, exercise, set_idx, weight_lb, reps) "
+                "VALUES ('2026-11-04', 'Barbell Military Press', 1, 205, 3)")
+    assert not calls.resaved(con, kept)                       # the session has started

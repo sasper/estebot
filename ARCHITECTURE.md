@@ -67,7 +67,7 @@ src/estecoach/
                    the evidence table behind the votes, training load, e1RM windows,
                    spinal-load scoring, the training plan (next day in the rotation, a
                    target per exercise)
-    calls.py       each morning's first call, written to calls.csv and never rewritten
+    calls.py       each morning's call, written to calls.csv once (a check-in re-save redoes it)
     evidence.py    the evidence table as a text report
     nutrition.py   energy balance, protein, micronutrient gaps and upper limits vs the US DRI
     predictions.py pre-registered predictions and their interim progress
@@ -99,8 +99,11 @@ forces rest.
 
 The earlier version counted every area (`core.combine_signals`). Over 689 sessions its calls
 didn't separate outcomes: 78% of targets met after its top call, 77% after "take it easy".
-Each morning's first call now goes to `calls.csv` and is never rewritten, so the page grades
-the calls as they were made, not as today's rules would remake them.
+Each morning's first call now goes to `calls.csv` and is never rewritten by later uploads or
+rule changes, so the page grades the calls as they were made, not as today's rules would remake
+them. The one exception is a check-in saved again before any lifting is logged that day: the
+call is made again and re-sent to Hevy, and the replaced row moves to `calls_replaced.csv`
+with when and why.
 
 ## Verifying a refactor
 
